@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   if (rateLimited) return rateLimited;
 
   try {
-    const data = await tmdbFetch({ pathname: "/trending/tv/week" });
+    const data = await tmdbFetch("/trending/tv/week");
     return NextResponse.json(data);
   } 
   catch (error) {

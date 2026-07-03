@@ -1,11 +1,9 @@
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
-interface TMDBFetchOptions {
-  pathname: string;
-  params?: Record<string, string | number | boolean | undefined>;
-}
-
-export async function tmdbFetch<T>({ pathname, params = {} }: TMDBFetchOptions) {
+export async function tmdbFetch<T>(
+  pathname: string, 
+  params: Record<string, string | number | boolean | undefined> = {}
+) {
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) throw new Error("TMDB_API_KEY is not configured.");
 
