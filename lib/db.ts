@@ -4,7 +4,8 @@ import path from "node:path";
 
 type DatabaseInstance = BetterSqlite3.Database;
 
-const DB_DIR = path.resolve(process.cwd(), process.env.DB_DIR ?? "./data");
+const DEFAULT_DB_DIR = path.join(process.cwd(), "data");
+const DB_DIR = process.env.DB_DIR ? path.resolve(process.env.DB_DIR) : DEFAULT_DB_DIR;
 const DB_PATH = path.join(DB_DIR, "pilot2finale.db");
 
 const globalForDb = globalThis as typeof globalThis & {
