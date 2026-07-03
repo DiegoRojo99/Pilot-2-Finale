@@ -21,9 +21,52 @@ import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { RatingBadge } from "@/components/ui/RatingBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { STATUS_LABELS, type EpisodeLog, type ShowStatus, type TMDBEpisode } from "@/types";
+import { STATUS_LABELS, type EpisodeLog, type ShowStatus, type TMDBEpisode, type TMDBSeason } from "@/types";
 
 const ALL_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "on_hold", "dropped"];
+
+function MarkAllConfirmDialog({
+  isOpen,
+  episodeNumber,
+  count,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean;
+  episodeNumber: number;
+  count: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="rounded-xl bg-slate-800 p-6 shadow-xl max-w-sm">
+        <h3 className="text-lg font-semibold text-slate-100">Mark Previous Episodes?</h3>
+        <p className="mt-2 text-sm text-slate-400">
+          You're marking episode {episodeNumber} as watched. Would you also like to mark the {count} earlier {count === 1 ? "episode" : "episodes"} as watched?
+        </p>
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 active:bg-slate-600"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white active:bg-blue-700"
+          >
+            Mark All
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function StatusPicker({
   current,
@@ -214,6 +257,16 @@ export default function ShowDetailPage() {
   const params = useParams<{ id: string }>();
   const showId = Number(params.id);
   const queryClient = useQueryClient();
+
+  const [markAllConfirm, setMarkAllConfirm] = useState<{
+    season: number;
+    episode: number;
+    episodeName: string;
+    unwatchedCount: number;
+  } | null>(null);
+  const [seasonDataCache, setSeasonDataCache] = useState<
+    Map<string, TMDBSeason>
+  >(new Map());
 
   const { data: show, isLoading: showLoading, error: showError } = useQuery({
     queryKey: ["show", showId],
@@ -411,14 +464,62 @@ export default function ShowDetailPage() {
                 episodeCount={season.episode_count}
                 seasonName={season.name}
                 watchedSet={watchedSet}
-                onToggleEpisode={(seasonNumber, episodeNumber, name, watched) =>
-                  toggleEpisodeMutation.mutate({
-                    season: seasonNumber,
-                    episode: episodeNumber,
-                    name,
-                    watched,
-                  })
-                }
+                onToggleEpisode={async (seasonNumber, episodeNumber, name, watched) => {
+                  // If unmarking, just remove it
+                  if (watched) {
+                    toggleEpisodeMutation.mutate({
+                      season: seasonNumber,
+                      episode: episodeNumber,
+                      name,
+                      watched,
+                    });
+                    return;
+                  }
+
+                  // If marking as watched, check for unwatched earlier episodes
+                  const cacheKey = `${showId}-${seasonNumber}`;
+                  let seasonData = seasonDataCache.get(cacheKey);
+
+                  if (!seasonData) {
+                    try {
+                      seasonData = await getSeasonDetails(showId, seasonNumber);
+                      setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData!));
+                    } catch {
+                      // If we can't get season data, just mark it
+                      toggleEpisodeMutation.mutate({
+                        season: seasonNumber,
+                        episode: episodeNumber,
+                        name,
+                        watched,
+                      });
+                      return;
+                    }
+                  }
+
+                  if (!seasonData) return;
+                  const episodes = seasonData.episodes || [];
+                  const unwatchedBefore = episodes.filter(
+                    (ep) =>
+                      ep.episode_number < episodeNumber &&
+                      !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+                  );
+
+                  if (unwatchedBefore.length > 0) {
+                    setMarkAllConfirm({
+                      season: seasonNumber,
+                      episode: episodeNumber,
+                      episodeName: name,
+                      unwatchedCount: unwatchedBefore.length,
+                    });
+                  } else {
+                    toggleEpisodeMutation.mutate({
+                      season: seasonNumber,
+                      episode: episodeNumber,
+                      name,
+                      watched,
+                    });
+                  }
+                }}
               />
             ))}
           </div>
@@ -429,6 +530,58 @@ export default function ShowDetailPage() {
             <p className="text-sm text-slate-400">Add this show to your list to track episodes</p>
           </div>
         )}
+
+        <MarkAllConfirmDialog
+          isOpen={!!markAllConfirm}
+          episodeNumber={markAllConfirm?.episode ?? 0}
+          count={markAllConfirm?.unwatchedCount ?? 0}
+          onConfirm={async () => {
+            if (!markAllConfirm) return;
+
+            const cacheKey = `${showId}-${markAllConfirm.season}`;
+            const seasonData = seasonDataCache.get(cacheKey);
+            const episodes = seasonData?.episodes || [];
+
+            // Mark the current episode first
+            toggleEpisodeMutation.mutate({
+              season: markAllConfirm.season,
+              episode: markAllConfirm.episode,
+              name: markAllConfirm.episodeName,
+              watched: false,
+            });
+
+            // Then mark all earlier unwatched episodes
+            const unwatchedBefore = episodes.filter(
+              (ep) =>
+                ep.episode_number < markAllConfirm.episode &&
+                !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+            );
+
+            for (const ep of unwatchedBefore) {
+              toggleEpisodeMutation.mutate({
+                season: ep.season_number,
+                episode: ep.episode_number,
+                name: ep.name,
+                watched: false,
+              });
+            }
+
+            setMarkAllConfirm(null);
+          }}
+          onCancel={() => {
+            if (!markAllConfirm) return;
+
+            // Just mark the selected episode without marking previous ones
+            toggleEpisodeMutation.mutate({
+              season: markAllConfirm.season,
+              episode: markAllConfirm.episode,
+              name: markAllConfirm.episodeName,
+              watched: false,
+            });
+
+            setMarkAllConfirm(null);
+          }}
+        />
 
         <div className="h-6" />
       </div>
