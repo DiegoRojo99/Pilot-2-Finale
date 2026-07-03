@@ -1,112 +1,69 @@
-# 📺 Pilot 2 Finale
+# Pilot 2 Finale
 
-A mobile-first Progressive Web App (PWA) for tracking TV shows — from the pilot episode all the way to the finale.
-
-Built with **React + TypeScript** (frontend) and **Express + TypeScript** (backend), connected to the [TMDB API](https://www.themoviedb.org/).
-
----
+Pilot 2 Finale is a mobile-first TV show tracker built as a single Next.js application.
 
 ## Features
 
-- 🔍 **Search** TV shows via TMDB
-- 📺 **Track status** — Watching, Want to Watch, Watched, On Hold, Dropped
-- ✅ **Log episodes** — mark individual episodes as watched per season
-- 📊 **Stats** — total episodes watched, shows by status
-- 📱 **Mobile-first PWA** — installable, works offline, feels like a native app
-- 🌐 **Trending** — browse trending shows from TMDB
+- Search TV shows from TMDB
+- Browse weekly trending shows
+- Track shows by status: Watching, Want to Watch, Watched, On Hold, Dropped
+- Log watched episodes per season
+- View watch history and stats
+- Store local tracking data in SQLite
 
----
+## Stack
 
-## Project Structure
+- Next.js 16 + React 19
+- App Router for UI and API routes
+- Tailwind CSS v4
+- TanStack Query
+- SQLite via `better-sqlite3`
 
-```
-pilot2finale/
-├── backend/          # Express + TypeScript API
-│   ├── src/
-│   │   ├── db/       # SQLite setup + TMDB client
-│   │   ├── routes/   # shows, my-shows, episodes
-│   │   └── index.ts  # Express entry point
-│   └── .env.example
-├── frontend/         # Vite + React + TypeScript PWA
-│   ├── src/
-│   │   ├── api/      # API client functions
-│   │   ├── components/
-│   │   ├── pages/    # Search, Watching, Watchlist, History, Stats, ShowDetail
-│   │   ├── types/    # Shared TypeScript types
-│   │   └── utils/    # TMDB image helpers, formatters
-│   └── index.html
-└── package.json      # Root scripts
-```
+## Getting started
 
----
+1. Install dependencies:
 
-## Getting Started
+   ```bash
+   npm install
+   ```
 
-### 1. Get a TMDB API Key
+2. Create a local environment file:
 
-Sign up at [themoviedb.org](https://www.themoviedb.org/settings/api) and get a free API key.
+   ```bash
+   cp .env.example .env
+   ```
 
-### 2. Configure Backend
+3. Set your TMDB API key in `.env`:
 
-```bash
-cd backend
-cp .env.example .env
-# Edit .env and set TMDB_API_KEY=your_key_here
-npm install
-```
+   ```bash
+   TMDB_API_KEY=your_tmdb_api_key_here
+   ```
 
-### 3. Configure Frontend
+4. Run the app:
 
-```bash
-cd frontend
-npm install
-```
+   ```bash
+   npm run dev
+   ```
 
-### 4. Run in Development
+5. Open `http://localhost:3000`.
 
-In two terminals:
+## Scripts
 
-```bash
-# Terminal 1 - Backend (port 3001)
-npm run dev:backend
+- `npm run dev`
+- `npm run build`
+- `npm run start`
+- `npm run lint`
 
-# Terminal 2 - Frontend (port 5173)
-npm run dev:frontend
-```
+## API routes
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### 5. Build for Production
-
-```bash
-npm run build
-```
-
----
-
-## Tech Stack
-
-| Layer     | Technology                              |
-|-----------|-----------------------------------------|
-| Frontend  | React 19, TypeScript, Vite, Tailwind CSS|
-| PWA       | vite-plugin-pwa (Workbox)               |
-| State     | TanStack Query (react-query)            |
-| Routing   | React Router v7                         |
-| Backend   | Express, TypeScript, Node.js            |
-| Database  | SQLite (better-sqlite3)                 |
-| TMDB      | REST API via axios proxy                |
-
----
-
-## API Routes
-
-### TMDB Proxy
-- `GET /api/shows/search?query=...` — search TV shows
-- `GET /api/shows/trending/week` — trending shows
-- `GET /api/shows/:id` — show details
-- `GET /api/shows/:id/season/:n` — season + episodes
-
-### User Data
-- `GET/POST/PATCH/DELETE /api/my-shows` — manage tracked shows
-- `GET/POST/DELETE /api/episodes` — manage episode logs
-- `GET /api/episodes/stats` — watch stats
+- `GET /api/shows/search?query=...`
+- `GET /api/shows/trending/week`
+- `GET /api/shows/:id`
+- `GET /api/shows/:id/season/:n`
+- `GET/POST /api/my-shows`
+- `GET/PATCH/DELETE /api/my-shows/:tmdbId`
+- `GET/POST /api/episodes`
+- `DELETE /api/episodes/:id`
+- `GET /api/episodes/show/:tmdbShowId`
+- `DELETE /api/episodes/show/:tmdbShowId/season/:season/episode/:episode`
+- `GET /api/episodes/stats`

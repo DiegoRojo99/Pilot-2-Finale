@@ -1,11 +1,9 @@
 # Dependencies
 node_modules/
-frontend/node_modules/
-backend/node_modules/
 
 # Build outputs
-frontend/dist/
-backend/dist/
+.next/
+out/
 
 # Database
 data/
@@ -15,8 +13,6 @@ data/
 
 # Environment files
 .env
-backend/.env
-frontend/.env
 
 # Editor
 .vscode/
