@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { getPosterUrl, formatYear } from "@/lib/utils";
+import { getShowEpisodeLogs } from "@/lib/api";
 import { RatingBadge } from "@/components/ui/RatingBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { TMDBShow, UserShow } from "@/types";
@@ -12,6 +14,20 @@ type UserShowCardProps = {
 
 export function UserShowCard({ show }: UserShowCardProps) {
   const router = useRouter();
+
+  const { data: episodeLogs = [] } = useQuery({
+    queryKey: ["episode-logs", show.tmdb_id],
+    queryFn: () => getShowEpisodeLogs(show.tmdb_id),
+    staleTime: 30_000,
+  });
+
+  // Find the latest watched episode
+  const latestEpisode = episodeLogs.length > 0
+    ? episodeLogs.sort((a, b) => {
+        if (a.season_number !== b.season_number) return b.season_number - a.season_number;
+        return b.episode_number - a.episode_number;
+      })[0]
+    : null;
 
   return (
     <button
@@ -32,10 +48,17 @@ export function UserShowCard({ show }: UserShowCardProps) {
           <StatusBadge status={show.status} size="sm" />
           {show.vote_average > 0 && <RatingBadge rating={show.vote_average} size="sm" />}
         </div>
-        <p className="mt-1 text-xs text-slate-500">
-          {show.number_of_seasons} season{show.number_of_seasons !== 1 ? "s" : ""}
-          {show.number_of_episodes > 0 ? ` · ${show.number_of_episodes} eps` : ""}
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            {show.number_of_seasons} season{show.number_of_seasons !== 1 ? "s" : ""}
+            {show.number_of_episodes > 0 ? ` · ${show.number_of_episodes} eps` : ""}
+          </p>
+          {latestEpisode && (
+            <p className="text-xs font-medium text-blue-400">
+              S{String(latestEpisode.season_number).padStart(2, "0")} E{String(latestEpisode.episode_number).padStart(2, "0")}
+            </p>
+          )}
+        </div>
       </div>
     </button>
   );
