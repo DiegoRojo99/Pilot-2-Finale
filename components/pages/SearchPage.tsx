@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search as SearchIcon, TrendingUp, X } from "lucide-react";
-import { addShow, getMyShows, getTrendingShows, searchShows } from "@/lib/api";
+import { Search as SearchIcon, Star, TrendingUp, X } from "lucide-react";
+import { addShow, getMyShows, getTopRatedShows, getTrendingShows, searchShows } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { PosterCard, SearchShowCard } from "@/components/show/ShowCard";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
@@ -42,6 +42,12 @@ export default function SearchPage() {
   const { data: trendingData, isLoading: trendingLoading } = useQuery({
     queryKey: ["trending"],
     queryFn: getTrendingShows,
+    staleTime: 10 * 60_000,
+  });
+
+  const { data: topRatedData, isLoading: topRatedLoading } = useQuery({
+    queryKey: ["top-rated"],
+    queryFn: () => getTopRatedShows(),
     staleTime: 10 * 60_000,
   });
 
@@ -126,6 +132,19 @@ export default function SearchPage() {
           {trendingData && (
             <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
               {trendingData.results.slice(0, 15).map((show) => (
+                <PosterCard key={show.id} show={show} />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-6 mb-3 flex items-center gap-2">
+            <Star className="h-4 w-4 text-blue-400" />
+            <h2 className="text-sm font-semibold text-slate-200">Top Rated</h2>
+          </div>
+          {topRatedLoading && <PageLoader />}
+          {topRatedData && (
+            <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
+              {topRatedData.results.slice(0, 15).map((show) => (
                 <PosterCard key={show.id} show={show} />
               ))}
             </div>

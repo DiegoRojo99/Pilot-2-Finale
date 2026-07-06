@@ -51,7 +51,11 @@ export const getSeasonDetails = (showId: number, seasonNumber: number) =>
 
 export const getTrendingShows = () => fetchJson<TMDBSearchResult>("/api/shows/trending/week");
 
-export const getPopularShows = (page = 1) => fetchJson<TMDBSearchResult>(`/api/shows?page=${page}`);
+export const filterOutUnwatchedShowsParams = "&include_null_first_air_dates=false&vote_count.gte=5000";
+export const getPopularShows = (page = 1) => fetchJson<TMDBSearchResult>(`/api/shows?page=${page}&sort_by=popularity.desc${filterOutUnwatchedShowsParams}`);
+
+export const getTopRatedShows = (page = 1) =>
+  fetchJson<TMDBSearchResult>(`/api/shows/top-rated?page=${page}`);
 
 export const getMyShows = (status?: ShowStatus) =>
   fetchJson<UserShow[]>(status ? `/api/my-shows?status=${status}` : "/api/my-shows");

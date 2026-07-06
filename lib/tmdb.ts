@@ -14,6 +14,7 @@ export async function tmdbFetch<T>(
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
 
+  console.log(`Fetching TMDB: ${url.toString()}`);
   const response = await fetch(url, { cache: "no-store" });
 
   const text = await response.text();
