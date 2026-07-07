@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -19,14 +20,20 @@ export async function DELETE(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { tmdbShowId, season, episode } = await params;
   const result = await db.query(
     `
       DELETE FROM episode_logs
-      WHERE tmdb_show_id = $1 AND season_number = $2 AND episode_number = $3
+      WHERE user_id = $1 AND tmdb_show_id = $2 AND season_number = $3 AND episode_number = $4
       RETURNING id
     `,
-    [Number(tmdbShowId), Number(season), Number(episode)],
+    [userId, Number(tmdbShowId), Number(season), Number(episode)],
   );
 
   if (result.rows.length === 0) {

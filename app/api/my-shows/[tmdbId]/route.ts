@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { isNumericId, readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import type { ShowStatus } from "@/types";
@@ -23,8 +24,17 @@ export async function GET(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { tmdbId } = await params;
-  const show = await db.one("SELECT * FROM user_shows WHERE tmdb_id = $1", [Number(tmdbId)]);
+  const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+    userId,
+    Number(tmdbId),
+  ]);
 
   if (!show) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
@@ -48,6 +58,12 @@ export async function PATCH(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { tmdbId } = await params;
 
   if (!isNumericId(tmdbId)) {
@@ -62,15 +78,18 @@ export async function PATCH(
   }
 
   const result = await db.query(
-    "UPDATE user_shows SET status = $1, updated_at = now() WHERE tmdb_id = $2 RETURNING tmdb_id",
-    [status, Number(tmdbId)],
+    "UPDATE user_shows SET status = $1, updated_at = now() WHERE user_id = $2 AND tmdb_id = $3 RETURNING tmdb_id",
+    [status, userId, Number(tmdbId)],
   );
 
   if (result.rows.length === 0) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   }
 
-  const show = await db.one("SELECT * FROM user_shows WHERE tmdb_id = $1", [Number(tmdbId)]);
+  const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+    userId,
+    Number(tmdbId),
+  ]);
   return NextResponse.json(show);
 }
 
@@ -89,8 +108,17 @@ export async function DELETE(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { tmdbId } = await params;
-  const result = await db.query("DELETE FROM user_shows WHERE tmdb_id = $1 RETURNING tmdb_id", [Number(tmdbId)]);
+  const result = await db.query("DELETE FROM user_shows WHERE user_id = $1 AND tmdb_id = $2 RETURNING tmdb_id", [
+    userId,
+    Number(tmdbId),
+  ]);
 
   if (result.rows.length === 0) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });

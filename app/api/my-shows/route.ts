@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import type { ShowStatus } from "@/types";
@@ -33,13 +34,19 @@ export async function GET(request: Request) {
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
 
   const query = status
-    ? "SELECT * FROM user_shows WHERE status = $1 ORDER BY updated_at DESC"
-    : "SELECT * FROM user_shows ORDER BY updated_at DESC";
-  const { rows: shows } = status ? await db.query(query, [status]) : await db.query(query);
+    ? "SELECT * FROM user_shows WHERE user_id = $1 AND status = $2 ORDER BY updated_at DESC"
+    : "SELECT * FROM user_shows WHERE user_id = $1 ORDER BY updated_at DESC";
+  const { rows: shows } = status ? await db.query(query, [userId, status]) : await db.query(query, [userId]);
 
   return NextResponse.json(shows);
 }
@@ -55,6 +62,12 @@ export async function POST(request: Request) {
   if (rateLimited) {
     return rateLimited;
   }
+
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
 
   const body = await readJson<CreateShowPayload>(request);
 
@@ -72,6 +85,7 @@ export async function POST(request: Request) {
     await db.query(
       `
       INSERT INTO user_shows (
+        user_id,
         tmdb_id,
         name,
         poster_path,
@@ -83,8 +97,8 @@ export async function POST(request: Request) {
         number_of_seasons,
         number_of_episodes
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      ON CONFLICT(tmdb_id) DO UPDATE SET
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT(user_id, tmdb_id) DO UPDATE SET
         name = excluded.name,
         poster_path = excluded.poster_path,
         backdrop_path = excluded.backdrop_path,
@@ -97,6 +111,7 @@ export async function POST(request: Request) {
         updated_at = now()
       `,
       [
+        userId,
         body.tmdb_id,
         body.name,
         body.poster_path ?? null,
@@ -110,7 +125,10 @@ export async function POST(request: Request) {
       ],
     );
 
-    const show = await db.one("SELECT * FROM user_shows WHERE tmdb_id = $1", [body.tmdb_id]);
+    const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+      userId,
+      body.tmdb_id,
+    ]);
     return NextResponse.json(show, { status: 201 });
   } catch (error) {
     console.error("Error adding show:", error);

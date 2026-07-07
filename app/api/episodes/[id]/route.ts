@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -19,8 +20,17 @@ export async function DELETE(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { id } = await params;
-  const result = await db.query("DELETE FROM episode_logs WHERE id = $1 RETURNING id", [Number(id)]);
+  const result = await db.query("DELETE FROM episode_logs WHERE user_id = $1 AND id = $2 RETURNING id", [
+    userId,
+    Number(id),
+  ]);
 
   if (result.rows.length === 0) {
     return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
