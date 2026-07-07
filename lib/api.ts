@@ -14,6 +14,12 @@ type RequestOptions = RequestInit & {
   allow404?: boolean;
 };
 
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  const next = `${window.location.pathname}${window.location.search}`;
+  window.location.href = `/auth/login?next=${encodeURIComponent(next)}`;
+}
+
 async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { allow404 = false, headers, ...init } = options;
   const response = await fetch(path, {
@@ -27,6 +33,11 @@ async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise
 
   if (allow404 && response.status === 404) {
     return null as T;
+  }
+
+  if (response.status === 401) {
+    redirectToLogin();
+    throw new Error("Unauthorized");
   }
 
   if (!response.ok) {
