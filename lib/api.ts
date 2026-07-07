@@ -31,11 +31,9 @@ async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise
     },
   });
 
-  if (allow404 && response.status === 404) {
-    return null as T;
-  }
-
-  if (response.status === 401) {
+  const status = response.status;
+  if (allow404 && status === 404) return null as T;
+  if (status === 401) {
     redirectToLogin();
     throw new Error("Unauthorized");
   }
@@ -45,10 +43,7 @@ async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise
     throw new Error(data?.error ?? "Request failed");
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
+  if (status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
