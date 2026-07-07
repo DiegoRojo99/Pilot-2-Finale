@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -19,15 +20,23 @@ export async function DELETE(
     return rateLimited;
   }
 
-  const { tmdbShowId, season, episode } = await params;
-  const result = db
-    .prepare(`
-      DELETE FROM episode_logs
-      WHERE tmdb_show_id = ? AND season_number = ? AND episode_number = ?
-    `)
-    .run(tmdbShowId, Number(season), Number(episode));
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
 
-  if (result.changes === 0) {
+  const { tmdbShowId, season, episode } = await params;
+  const result = await db.query(
+    `
+      DELETE FROM episode_logs
+      WHERE user_id = $1 AND tmdb_show_id = $2 AND season_number = $3 AND episode_number = $4
+      RETURNING id
+    `,
+    [userId, Number(tmdbShowId), Number(season), Number(episode)],
+  );
+
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
   }
 

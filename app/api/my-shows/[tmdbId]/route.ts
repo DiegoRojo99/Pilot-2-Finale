@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { isNumericId, readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import type { ShowStatus } from "@/types";
@@ -23,8 +24,17 @@ export async function GET(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { tmdbId } = await params;
-  const show = db.prepare("SELECT * FROM user_shows WHERE tmdb_id = ?").get(tmdbId);
+  const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+    userId,
+    Number(tmdbId),
+  ]);
 
   if (!show) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
@@ -48,6 +58,12 @@ export async function PATCH(
     return rateLimited;
   }
 
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
   const { tmdbId } = await params;
 
   if (!isNumericId(tmdbId)) {
@@ -61,15 +77,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const result = db
-    .prepare("UPDATE user_shows SET status = ?, updated_at = datetime('now') WHERE tmdb_id = ?")
-    .run(status, tmdbId);
+  const result = await db.query(
+    "UPDATE user_shows SET status = $1, updated_at = now() WHERE user_id = $2 AND tmdb_id = $3 RETURNING tmdb_id",
+    [status, userId, Number(tmdbId)],
+  );
 
-  if (result.changes === 0) {
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   }
 
-  const show = db.prepare("SELECT * FROM user_shows WHERE tmdb_id = ?").get(tmdbId);
+  const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+    userId,
+    Number(tmdbId),
+  ]);
   return NextResponse.json(show);
 }
 
@@ -88,10 +108,19 @@ export async function DELETE(
     return rateLimited;
   }
 
-  const { tmdbId } = await params;
-  const result = db.prepare("DELETE FROM user_shows WHERE tmdb_id = ?").run(tmdbId);
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
 
-  if (result.changes === 0) {
+  const { tmdbId } = await params;
+  const result = await db.query("DELETE FROM user_shows WHERE user_id = $1 AND tmdb_id = $2 RETURNING tmdb_id", [
+    userId,
+    Number(tmdbId),
+  ]);
+
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   }
 

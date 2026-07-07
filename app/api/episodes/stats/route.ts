@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -16,17 +17,38 @@ export async function GET(request: Request) {
     return rateLimited;
   }
 
-  const totalEpisodes = (db.prepare("SELECT COUNT(*) as count FROM episode_logs").get() as { count: number }).count;
-  const totalShows = (db.prepare("SELECT COUNT(*) as count FROM user_shows").get() as { count: number }).count;
-  const watchingShows = (
-    db.prepare("SELECT COUNT(*) as count FROM user_shows WHERE status = 'watching'").get() as { count: number }
-  ).count;
-  const watchedShows = (
-    db.prepare("SELECT COUNT(*) as count FROM user_shows WHERE status = 'watched'").get() as { count: number }
-  ).count;
-  const wantToWatch = (
-    db.prepare("SELECT COUNT(*) as count FROM user_shows WHERE status = 'want_to_watch'").get() as { count: number }
-  ).count;
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { userId } = authResult.context;
+
+  const totalEpisodesResult = await db.one<{ count: string }>(
+    "SELECT COUNT(*)::text as count FROM episode_logs WHERE user_id = $1",
+    [userId],
+  );
+  const totalShowsResult = await db.one<{ count: string }>(
+    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1",
+    [userId],
+  );
+  const watchingShowsResult = await db.one<{ count: string }>(
+    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1 AND status = 'watching'",
+    [userId],
+  );
+  const watchedShowsResult = await db.one<{ count: string }>(
+    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1 AND status = 'watched'",
+    [userId],
+  );
+  const wantToWatchResult = await db.one<{ count: string }>(
+    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1 AND status = 'want_to_watch'",
+    [userId],
+  );
+
+  const totalEpisodes = Number(totalEpisodesResult?.count ?? 0);
+  const totalShows = Number(totalShowsResult?.count ?? 0);
+  const watchingShows = Number(watchingShowsResult?.count ?? 0);
+  const watchedShows = Number(watchedShowsResult?.count ?? 0);
+  const wantToWatch = Number(wantToWatchResult?.count ?? 0);
 
   return NextResponse.json({
     totalEpisodes,
