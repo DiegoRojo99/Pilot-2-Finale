@@ -20,14 +20,16 @@ export async function DELETE(
   }
 
   const { tmdbShowId, season, episode } = await params;
-  const result = db
-    .prepare(`
+  const result = await db.query(
+    `
       DELETE FROM episode_logs
-      WHERE tmdb_show_id = ? AND season_number = ? AND episode_number = ?
-    `)
-    .run(tmdbShowId, Number(season), Number(episode));
+      WHERE tmdb_show_id = $1 AND season_number = $2 AND episode_number = $3
+      RETURNING id
+    `,
+    [Number(tmdbShowId), Number(season), Number(episode)],
+  );
 
-  if (result.changes === 0) {
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
   }
 

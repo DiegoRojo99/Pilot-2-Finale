@@ -20,14 +20,15 @@ export async function GET(
   }
 
   const { tmdbShowId } = await params;
-  const logs = db
-    .prepare(`
+  const { rows: logs } = await db.query(
+    `
       SELECT season_number, episode_number, rating, notes, watched_at
       FROM episode_logs
-      WHERE tmdb_show_id = ?
+      WHERE tmdb_show_id = $1
       ORDER BY season_number ASC, episode_number ASC
-    `)
-    .all(tmdbShowId);
+    `,
+    [Number(tmdbShowId)],
+  );
 
   return NextResponse.json(logs);
 }

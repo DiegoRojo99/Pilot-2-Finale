@@ -9,7 +9,7 @@ Pilot 2 Finale is a mobile-first TV show tracker built as a single Next.js appli
 - Track shows by status: Watching, Want to Watch, Watched, On Hold, Dropped
 - Log watched episodes per season
 - View watch history and stats
-- Store local tracking data in SQLite
+- Store tracking data in Neon Postgres
 
 ## Stack
 
@@ -17,7 +17,7 @@ Pilot 2 Finale is a mobile-first TV show tracker built as a single Next.js appli
 - App Router for UI and API routes
 - Tailwind CSS v4
 - TanStack Query
-- SQLite via `better-sqlite3`
+- Neon Postgres via `pg`
 
 ## Getting started
 

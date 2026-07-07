@@ -24,7 +24,7 @@ export async function GET(
   }
 
   const { tmdbId } = await params;
-  const show = db.prepare("SELECT * FROM user_shows WHERE tmdb_id = ?").get(tmdbId);
+  const show = await db.one("SELECT * FROM user_shows WHERE tmdb_id = $1", [Number(tmdbId)]);
 
   if (!show) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
@@ -61,15 +61,16 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const result = db
-    .prepare("UPDATE user_shows SET status = ?, updated_at = datetime('now') WHERE tmdb_id = ?")
-    .run(status, tmdbId);
+  const result = await db.query(
+    "UPDATE user_shows SET status = $1, updated_at = now() WHERE tmdb_id = $2 RETURNING tmdb_id",
+    [status, Number(tmdbId)],
+  );
 
-  if (result.changes === 0) {
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   }
 
-  const show = db.prepare("SELECT * FROM user_shows WHERE tmdb_id = ?").get(tmdbId);
+  const show = await db.one("SELECT * FROM user_shows WHERE tmdb_id = $1", [Number(tmdbId)]);
   return NextResponse.json(show);
 }
 
@@ -89,9 +90,9 @@ export async function DELETE(
   }
 
   const { tmdbId } = await params;
-  const result = db.prepare("DELETE FROM user_shows WHERE tmdb_id = ?").run(tmdbId);
+  const result = await db.query("DELETE FROM user_shows WHERE tmdb_id = $1 RETURNING tmdb_id", [Number(tmdbId)]);
 
-  if (result.changes === 0) {
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   }
 

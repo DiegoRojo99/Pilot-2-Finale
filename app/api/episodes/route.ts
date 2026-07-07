@@ -33,29 +33,31 @@ export async function GET(request: Request) {
   const offset = Number(searchParams.get("offset") ?? "0");
 
   if (tmdbShowId) {
-    const logs = db
-      .prepare(`
+    const { rows: logs } = await db.query(
+      `
         SELECT el.*, us.name as show_name, us.poster_path
         FROM episode_logs el
         JOIN user_shows us ON el.tmdb_show_id = us.tmdb_id
-        WHERE el.tmdb_show_id = ?
+        WHERE el.tmdb_show_id = $1
         ORDER BY el.season_number ASC, el.episode_number ASC
-        LIMIT ? OFFSET ?
-      `)
-      .all(tmdbShowId, limit, offset);
+        LIMIT $2 OFFSET $3
+      `,
+      [Number(tmdbShowId), limit, offset],
+    );
 
     return NextResponse.json(logs);
   }
 
-  const logs = db
-    .prepare(`
+  const { rows: logs } = await db.query(
+    `
       SELECT el.*, us.name as show_name, us.poster_path
       FROM episode_logs el
       JOIN user_shows us ON el.tmdb_show_id = us.tmdb_id
       ORDER BY el.watched_at DESC
-      LIMIT ? OFFSET ?
-    `)
-    .all(limit, offset);
+      LIMIT $1 OFFSET $2
+    `,
+    [limit, offset],
+  );
 
   return NextResponse.json(logs);
 }
@@ -81,14 +83,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const show = db.prepare("SELECT id FROM user_shows WHERE tmdb_id = ?").get(body.tmdb_show_id);
+  const show = await db.one("SELECT id FROM user_shows WHERE tmdb_id = $1", [body.tmdb_show_id]);
 
   if (!show) {
     return NextResponse.json({ error: "Show not in your list. Add it first." }, { status: 404 });
   }
 
   try {
-    const statement = db.prepare(`
+    await db.query(
+      `
       INSERT INTO episode_logs (
         tmdb_show_id,
         season_number,
@@ -98,31 +101,32 @@ export async function POST(request: Request) {
         notes,
         watched_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT(tmdb_show_id, season_number, episode_number) DO UPDATE SET
         episode_name = excluded.episode_name,
         rating = excluded.rating,
         notes = excluded.notes,
         watched_at = excluded.watched_at
-    `);
-
-    statement.run(
-      body.tmdb_show_id,
-      body.season_number,
-      body.episode_number,
-      body.episode_name ?? null,
-      body.rating ?? null,
-      body.notes ?? null,
-      body.watched_at ?? new Date().toISOString(),
+      `,
+      [
+        body.tmdb_show_id,
+        body.season_number,
+        body.episode_number,
+        body.episode_name ?? null,
+        body.rating ?? null,
+        body.notes ?? null,
+        body.watched_at ?? new Date().toISOString(),
+      ],
     );
 
-    const log = db
-      .prepare(`
+    const log = await db.one(
+      `
         SELECT *
         FROM episode_logs
-        WHERE tmdb_show_id = ? AND season_number = ? AND episode_number = ?
-      `)
-      .get(body.tmdb_show_id, body.season_number, body.episode_number);
+        WHERE tmdb_show_id = $1 AND season_number = $2 AND episode_number = $3
+      `,
+      [body.tmdb_show_id, body.season_number, body.episode_number],
+    );
 
     return NextResponse.json(log, { status: 201 });
   } catch (error) {

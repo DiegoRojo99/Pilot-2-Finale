@@ -20,9 +20,9 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const result = db.prepare("DELETE FROM episode_logs WHERE id = ?").run(id);
+  const result = await db.query("DELETE FROM episode_logs WHERE id = $1 RETURNING id", [Number(id)]);
 
-  if (result.changes === 0) {
+  if (result.rows.length === 0) {
     return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
   }
 
