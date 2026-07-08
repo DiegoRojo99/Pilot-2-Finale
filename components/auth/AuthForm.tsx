@@ -121,7 +121,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <section className="w-full overflow-hidden rounded-3xl border border-white/10 bg-slate-900/85 shadow-2xl backdrop-blur md:grid md:grid-cols-[1.1fr_1fr]">
           <aside className="hidden border-r border-white/10 bg-slate-900/80 p-8 md:flex md:flex-col md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300">Pilot 2 Finale</p>
+              <img src="/Logo.png" alt="Pilot 2 Finale" className="h-10 w-auto" />
               <h2 className="mt-4 text-3xl font-semibold leading-tight text-white">Track from first episode to last credit.</h2>
               <p className="mt-4 text-sm text-slate-300">
                 Keep your watch progress synced, organized, and ready across devices.
@@ -136,7 +136,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           </aside>
 
           <div className="p-5 sm:p-7 md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300 md:hidden">Pilot 2 Finale</p>
+            <img src="/Logo.png" alt="Pilot 2 Finale" className="h-8 w-auto md:hidden" />
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">{copy.title}</h1>
             <p className="mt-2 text-sm text-slate-300">{copy.subtitle}</p>
 

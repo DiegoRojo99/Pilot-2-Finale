@@ -7,8 +7,14 @@ export const metadata: Metadata = {
   title: "Pilot 2 Finale",
   description: "Track your TV shows from pilot to finale with a single Next.js app.",
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/Logo.png", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/Logo.png",
+    apple: "/Logo.png",
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
