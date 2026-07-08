@@ -107,6 +107,22 @@ export const logEpisode = (data: {
     body: JSON.stringify(data),
   });
 
+export const logEpisodesBulk = (data: {
+  tmdb_show_id: number;
+  episodes: Array<{
+    season_number: number;
+    episode_number: number;
+    episode_name?: string;
+    rating?: number;
+    notes?: string;
+    watched_at?: string;
+  }>;
+}) =>
+  fetchJson<{ count: number }>("/api/episodes", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
 export const removeEpisodeLog = (showId: number, season: number, episode: number) =>
   fetchJson<{ success: boolean }>(
     `/api/episodes/show/${showId}/season/${season}/episode/${episode}`,

@@ -14,6 +14,14 @@ type EpisodeLogPayload = {
   rating?: number | null;
   notes?: string | null;
   watched_at?: string | null;
+  episodes?: Array<{
+    season_number?: number;
+    episode_number?: number;
+    episode_name?: string | null;
+    rating?: number | null;
+    notes?: string | null;
+    watched_at?: string | null;
+  }>;
 };
 
 export async function GET(request: Request) {
@@ -83,27 +91,90 @@ export async function POST(request: Request) {
   }
 
   const authResult = await requireAuthenticatedUser();
-  if ("response" in authResult) {
-    return authResult.response;
-  }
+  if ("response" in authResult) return authResult.response;
   const { userId } = authResult.context;
-
   const body = await readJson<EpisodeLogPayload>(request);
-
-  if (!body?.tmdb_show_id || body.season_number === undefined || body.episode_number === undefined) {
-    return NextResponse.json(
-      { error: "tmdb_show_id, season_number, and episode_number are required" },
-      { status: 400 },
-    );
-  }
+  if (!body?.tmdb_show_id) return NextResponse.json({ error: "tmdb_show_id is required" }, { status: 400 });
 
   const show = await db.one("SELECT id FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
     userId,
     body.tmdb_show_id,
   ]);
 
-  if (!show) {
-    return NextResponse.json({ error: "Show not in your list. Add it first." }, { status: 404 });
+  if (!show) return NextResponse.json({ error: "Show not in your list. Add it first." }, { status: 404 });
+  const isBulk = Array.isArray(body.episodes);
+
+  if (isBulk) {
+    const episodes = body.episodes ?? [];
+    if (episodes.length === 0) return NextResponse.json({ error: "episodes must contain at least one item" }, { status: 400 });
+
+    const hasInvalidEpisode = episodes.some((episode) => episode.season_number === undefined || episode.episode_number === undefined);
+
+    if (hasInvalidEpisode) {
+      return NextResponse.json(
+        { error: "Each episode requires season_number and episode_number" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const { rows } = await db.query<{ count: string }>(
+        `
+        WITH payload AS (
+          SELECT *
+          FROM jsonb_to_recordset($3::jsonb) AS episode(
+            season_number INTEGER,
+            episode_number INTEGER,
+            episode_name TEXT,
+            rating INTEGER,
+            notes TEXT,
+            watched_at TEXT
+          )
+        ), upserted AS (
+          INSERT INTO episode_logs (
+            user_id,
+            tmdb_show_id,
+            season_number,
+            episode_number,
+            episode_name,
+            rating,
+            notes,
+            watched_at
+          )
+          SELECT
+            $1,
+            $2,
+            payload.season_number,
+            payload.episode_number,
+            payload.episode_name,
+            payload.rating,
+            payload.notes,
+            COALESCE(NULLIF(payload.watched_at, '')::timestamptz, now())
+          FROM payload
+          ON CONFLICT(user_id, tmdb_show_id, season_number, episode_number) DO UPDATE SET
+            episode_name = excluded.episode_name,
+            rating = excluded.rating,
+            notes = excluded.notes,
+            watched_at = excluded.watched_at
+          RETURNING id
+        )
+        SELECT COUNT(*)::text AS count FROM upserted
+        `,
+        [userId, body.tmdb_show_id, JSON.stringify(episodes)],
+      );
+
+      return NextResponse.json({ count: Number(rows[0]?.count ?? 0) }, { status: 201 });
+    } catch (error) {
+      console.error("Error logging episodes in bulk:", error);
+      return NextResponse.json({ error: "Failed to log episodes" }, { status: 500 });
+    }
+  }
+
+  if (body.season_number === undefined || body.episode_number === undefined) {
+    return NextResponse.json(
+      { error: "tmdb_show_id, season_number, and episode_number are required" },
+      { status: 400 },
+    );
   }
 
   try {

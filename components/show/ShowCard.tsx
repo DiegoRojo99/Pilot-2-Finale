@@ -74,9 +74,16 @@ export function SearchShowCard({ show, onAdd, isAdded }: SearchShowCardProps) {
   const router = useRouter();
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => router.push(`/show/${show.id}`)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(`/show/${show.id}`);
+        }
+      }}
       className="flex cursor-pointer items-center gap-3 rounded-xl bg-slate-800/60 p-3 text-left transition-colors active:bg-slate-700/60"
     >
       <img
@@ -110,7 +117,7 @@ export function SearchShowCard({ show, onAdd, isAdded }: SearchShowCardProps) {
           {isAdded ? "✓" : "+"}
         </button>
       )}
-    </button>
+    </div>
   );
 }
 

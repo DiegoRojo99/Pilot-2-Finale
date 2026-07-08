@@ -11,6 +11,7 @@ import {
   getShowDetails,
   getShowEpisodeLogs,
   logEpisode,
+  logEpisodesBulk,
   removeEpisodeLog,
   removeShow,
   updateShowStatus,
@@ -18,7 +19,7 @@ import {
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { PageLoader } from "@/components/ui/LoadingSpinner";
+import { LoadingSpinner, PageLoader } from "@/components/ui/LoadingSpinner";
 import { RatingBadge } from "@/components/ui/RatingBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { STATUS_LABELS, type EpisodeLog, type ShowStatus, type TMDBEpisode, type TMDBSeason } from "@/types";
@@ -29,12 +30,14 @@ function MarkAllConfirmDialog({
   isOpen,
   episodeNumber,
   count,
+  isPending,
   onConfirm,
   onCancel,
 }: {
   isOpen: boolean;
   episodeNumber: number;
   count: number;
+  isPending: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -51,16 +54,18 @@ function MarkAllConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 active:bg-slate-600"
+            disabled={isPending}
+            className="flex-1 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 active:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Skip
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white active:bg-blue-700"
+            disabled={isPending}
+            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Mark All
+            {isPending ? "Adding…" : "Mark All"}
           </button>
         </div>
       </div>
@@ -70,10 +75,12 @@ function MarkAllConfirmDialog({
 
 function StatusPicker({
   current,
+  disabled,
   onChange,
   onRemove,
 }: {
   current: ShowStatus | null;
+  disabled?: boolean;
   onChange: (status: ShowStatus) => void;
   onRemove: () => void;
 }) {
@@ -84,7 +91,8 @@ function StatusPicker({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-1.5 rounded-xl bg-slate-700 px-3 py-2 text-sm font-medium text-slate-200 active:bg-slate-600"
+        disabled={disabled}
+        className="flex items-center gap-1.5 rounded-xl bg-slate-700 px-3 py-2 text-sm font-medium text-slate-200 active:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {current ? STATUS_LABELS[current] : "Add to List"}
         <ChevronDown className="h-4 w-4" />
@@ -131,10 +139,12 @@ function StatusPicker({
 function EpisodeRow({
   episode,
   isWatched,
+  disabled,
   onToggle,
 }: {
   episode: TMDBEpisode;
   isWatched: boolean;
+  disabled?: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -142,6 +152,7 @@ function EpisodeRow({
       <button
         type="button"
         onClick={onToggle}
+        disabled={disabled}
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
           isWatched ? "border-green-500 bg-green-500 text-white" : "border-slate-600 text-transparent active:border-slate-400"
         }`}
@@ -183,6 +194,7 @@ function SeasonAccordion({
   episodeCount,
   seasonName,
   watchedSet,
+  disabled,
   onToggleEpisode,
 }: {
   showId: number;
@@ -190,6 +202,7 @@ function SeasonAccordion({
   episodeCount: number;
   seasonName: string;
   watchedSet: Set<string>;
+  disabled?: boolean;
   onToggleEpisode: (season: number, episode: number, name: string, watched: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -209,8 +222,9 @@ function SeasonAccordion({
     <div className="mb-2 overflow-hidden rounded-xl bg-slate-800/50">
       <button
         type="button"
-        className="flex w-full items-center justify-between p-4"
+        className="flex w-full items-center justify-between p-4 disabled:cursor-not-allowed disabled:opacity-70"
         onClick={() => setExpanded((value) => !value)}
+        disabled={disabled}
       >
         <div className="text-left">
           <p className="text-sm font-semibold text-slate-200">{seasonName}</p>
@@ -236,6 +250,7 @@ function SeasonAccordion({
             <EpisodeRow
               key={episode.id}
               episode={episode}
+              disabled={disabled}
               isWatched={watchedSet.has(episodeKey(episode.season_number, episode.episode_number))}
               onToggle={() =>
                 onToggleEpisode(
@@ -362,6 +377,31 @@ export default function ShowDetailPage() {
     },
   });
 
+  const bulkLogEpisodesMutation = useMutation({
+    mutationFn: async ({
+      season,
+      episodes,
+    }: {
+      season: number;
+      episodes: Array<{ episode: number; name: string }>;
+    }) =>
+      logEpisodesBulk({
+        tmdb_show_id: showId,
+        episodes: episodes.map((item) => ({
+          season_number: season,
+          episode_number: item.episode,
+          episode_name: item.name,
+        })),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs", showId] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["stats"] });
+    },
+  });
+
+  const isBulkAddingEpisodes = bulkLogEpisodesMutation.isPending;
+
   if (!Number.isFinite(showId)) {
     return (
       <PageShell showBack>
@@ -423,6 +463,7 @@ export default function ShowDetailPage() {
           </div>
           <StatusPicker
             current={userShow?.status ?? null}
+            disabled={isBulkAddingEpisodes}
             onChange={(status) => statusMutation.mutate(status)}
             onRemove={() => removeMutation.mutate()}
           />
@@ -464,7 +505,12 @@ export default function ShowDetailPage() {
                 episodeCount={season.episode_count}
                 seasonName={season.name}
                 watchedSet={watchedSet}
+                disabled={isBulkAddingEpisodes}
                 onToggleEpisode={async (seasonNumber, episodeNumber, name, watched) => {
+                  if (isBulkAddingEpisodes) {
+                    return;
+                  }
+
                   // If unmarking, just remove it
                   if (watched) {
                     toggleEpisodeMutation.mutate({
@@ -535,6 +581,7 @@ export default function ShowDetailPage() {
           isOpen={!!markAllConfirm}
           episodeNumber={markAllConfirm?.episode ?? 0}
           count={markAllConfirm?.unwatchedCount ?? 0}
+          isPending={isBulkAddingEpisodes}
           onConfirm={async () => {
             if (!markAllConfirm) return;
 
@@ -542,31 +589,23 @@ export default function ShowDetailPage() {
             const seasonData = seasonDataCache.get(cacheKey);
             const episodes = seasonData?.episodes || [];
 
-            // Mark the current episode first
-            toggleEpisodeMutation.mutate({
-              season: markAllConfirm.season,
-              episode: markAllConfirm.episode,
-              name: markAllConfirm.episodeName,
-              watched: false,
-            });
-
-            // Then mark all earlier unwatched episodes
             const unwatchedBefore = episodes.filter(
               (ep) =>
                 ep.episode_number < markAllConfirm.episode &&
                 !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
             );
 
-            for (const ep of unwatchedBefore) {
-              toggleEpisodeMutation.mutate({
-                season: ep.season_number,
-                episode: ep.episode_number,
-                name: ep.name,
-                watched: false,
-              });
-            }
-
             setMarkAllConfirm(null);
+
+            const episodesToLog = [
+              { episode: markAllConfirm.episode, name: markAllConfirm.episodeName },
+              ...unwatchedBefore.map((ep) => ({ episode: ep.episode_number, name: ep.name })),
+            ];
+
+            bulkLogEpisodesMutation.mutate({
+              season: markAllConfirm.season,
+              episodes: episodesToLog,
+            });
           }}
           onCancel={() => {
             if (!markAllConfirm) return;
@@ -582,6 +621,16 @@ export default function ShowDetailPage() {
             setMarkAllConfirm(null);
           }}
         />
+
+        {isBulkAddingEpisodes && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 backdrop-blur-[2px]">
+            <div className="rounded-2xl border border-slate-700 bg-slate-900 px-6 py-5 text-center shadow-2xl">
+              <LoadingSpinner size="md" className="mb-3" />
+              <p className="text-sm font-medium text-slate-100">Adding episodes...</p>
+              <p className="mt-1 text-xs text-slate-400">Please wait until the update finishes.</p>
+            </div>
+          </div>
+        )}
 
         <div className="h-6" />
       </div>
