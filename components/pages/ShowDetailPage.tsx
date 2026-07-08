@@ -192,17 +192,21 @@ function SeasonAccordion({
   showId,
   seasonNumber,
   episodeCount,
+  watchedCount,
   seasonName,
   watchedSet,
   disabled,
+  onMarkSeasonAll,
   onToggleEpisode,
 }: {
   showId: number;
   seasonNumber: number;
   episodeCount: number;
+  watchedCount: number;
   seasonName: string;
   watchedSet: Set<string>;
   disabled?: boolean;
+  onMarkSeasonAll: (season: number) => void;
   onToggleEpisode: (season: number, episode: number, name: string, watched: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -214,38 +218,68 @@ function SeasonAccordion({
     staleTime: 30 * 60_000,
   });
 
-  const watchedCount =
+  const loadedWatchedCount =
     seasonData?.episodes?.filter((episode) => watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
-      .length ?? 0;
+      .length;
+  const effectiveWatchedCount = loadedWatchedCount ?? watchedCount;
+  const remainingCount = Math.max(episodeCount - effectiveWatchedCount, 0);
 
   return (
     <div className="mb-2 overflow-hidden rounded-xl bg-slate-800/50">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between p-4 disabled:cursor-not-allowed disabled:opacity-70"
-        onClick={() => setExpanded((value) => !value)}
-        disabled={disabled}
-      >
-        <div className="text-left">
-          <p className="text-sm font-semibold text-slate-200">{seasonName}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {watchedCount}/{episodeCount} episodes
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-700">
-            <div
-              className="h-full rounded-full bg-green-500 transition-all"
-              style={{ width: `${episodeCount > 0 ? (watchedCount / episodeCount) * 100 : 0}%` }}
-            />
+      <div className="flex items-center gap-2 p-4">
+        <div
+          role="button"
+          tabIndex={disabled ? -1 : 0}
+          className="flex min-w-0 flex-1 items-center justify-between text-left disabled:cursor-not-allowed disabled:opacity-70"
+          onClick={() => setExpanded((value) => !value)}
+          onKeyDown={(event) => {
+            if (disabled) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setExpanded((value) => !value);
+            }
+          }}
+          aria-disabled={disabled}
+        >
+          <div className="min-w-0 text-left">
+            <p className="truncate text-sm font-semibold text-slate-200">{seasonName}</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {effectiveWatchedCount}/{episodeCount} episodes
+            </p>
           </div>
-          {expanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+          <div className="flex items-center gap-2">
+            {remainingCount > 0 && (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onMarkSeasonAll(seasonNumber);
+                }}
+                title={`Mark all ${remainingCount} remaining episodes in this season`}
+                aria-label={`Mark all ${remainingCount} remaining episodes in this season`}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-slate-600 text-transparent transition-colors active:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="h-4 w-4" />
+              </button>
+            )}
+
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-700">
+              <div
+                className="h-full rounded-full bg-green-500 transition-all"
+                style={{ width: `${episodeCount > 0 ? (effectiveWatchedCount / episodeCount) * 100 : 0}%` }}
+              />
+            </div>
+
+            {expanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+          </div>
         </div>
-      </button>
+      </div>
 
       {expanded && (
         <div className="px-4 pb-3">
           {isLoading && <div className="py-4 text-center text-sm text-slate-500">Loading episodes…</div>}
+
           {seasonData?.episodes?.map((episode) => (
             <EpisodeRow
               key={episode.id}
@@ -310,15 +344,19 @@ export default function ShowDetailPage() {
     return set;
   }, [episodeLogs]);
 
+  const watchedCountBySeason = useMemo(() => {
+    const counts = new Map<number, number>();
+    episodeLogs.forEach((log: EpisodeLog) => {
+      const current = counts.get(log.season_number) ?? 0;
+      counts.set(log.season_number, current + 1);
+    });
+    return counts;
+  }, [episodeLogs]);
+
   const statusMutation = useMutation({
     mutationFn: async (status: ShowStatus) => {
-      if (!show) {
-        return null;
-      }
-
-      if (userShow) {
-        return updateShowStatus(showId, status);
-      }
+      if (!show) return null;
+      if (userShow) return updateShowStatus(showId, status);
 
       return addShow({
         tmdb_id: show.id,
@@ -359,9 +397,7 @@ export default function ShowDetailPage() {
       name: string;
       watched: boolean;
     }) => {
-      if (watched) {
-        return removeEpisodeLog(showId, season, episode);
-      }
+      if (watched) return removeEpisodeLog(showId, season, episode);
 
       return logEpisode({
         tmdb_show_id: showId,
@@ -503,13 +539,43 @@ export default function ShowDetailPage() {
                 showId={showId}
                 seasonNumber={season.season_number}
                 episodeCount={season.episode_count}
+                watchedCount={watchedCountBySeason.get(season.season_number) ?? 0}
                 seasonName={season.name}
                 watchedSet={watchedSet}
                 disabled={isBulkAddingEpisodes}
-                onToggleEpisode={async (seasonNumber, episodeNumber, name, watched) => {
-                  if (isBulkAddingEpisodes) {
-                    return;
+                onMarkSeasonAll={async (seasonNumber) => {
+                  if (isBulkAddingEpisodes) return;
+
+                  const cacheKey = `${showId}-${seasonNumber}`;
+                  let seasonData = seasonDataCache.get(cacheKey);
+
+                  if (!seasonData) {
+                    try {
+                      seasonData = await getSeasonDetails(showId, seasonNumber);
+                      setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData!));
+                    } catch {
+                      return;
+                    }
                   }
+
+                  if (!seasonData?.episodes?.length) return;
+
+                  const episodesToLog = seasonData.episodes
+                    .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
+                    .map((episode) => ({
+                      episode: episode.episode_number,
+                      name: episode.name,
+                    }));
+
+                  if (episodesToLog.length === 0) return;
+
+                  bulkLogEpisodesMutation.mutate({
+                    season: seasonNumber,
+                    episodes: episodesToLog,
+                  });
+                }}
+                onToggleEpisode={async (seasonNumber, episodeNumber, name, watched) => {
+                  if (isBulkAddingEpisodes) return;
 
                   // If unmarking, just remove it
                   if (watched) {
@@ -530,7 +596,8 @@ export default function ShowDetailPage() {
                     try {
                       seasonData = await getSeasonDetails(showId, seasonNumber);
                       setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData!));
-                    } catch {
+                    } 
+                    catch {
                       // If we can't get season data, just mark it
                       toggleEpisodeMutation.mutate({
                         season: seasonNumber,
