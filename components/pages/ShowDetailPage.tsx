@@ -89,7 +89,6 @@ function EpisodeDiaryModal({
   const [watchedDate, setWatchedDate] = useState("");
   const [ratingInput, setRatingInput] = useState("");
   const [error, setError] = useState<string | null>(null);
-
   if (!isOpen) return null;
 
   return (
@@ -145,17 +144,16 @@ function EpisodeDiaryModal({
             type="button"
             onClick={() => {
               const parsedRating = ratingInput.trim() === "" ? null : Number(ratingInput);
-
-              if (parsedRating !== null && (!Number.isFinite(parsedRating) || parsedRating < 0 || parsedRating > 10)) {
+              const isValidNumber = parsedRating === null || (Number.isFinite(parsedRating) && parsedRating >= 0 && parsedRating <= 10);
+              if (isValidNumber) setError(null);
+              else {
                 setError("Rating must be between 0 and 10.");
                 return;
               }
 
-              setError(null);
-
-              const watchedAt = watchedDate
-                ? new Date(`${watchedDate}T12:00:00.000Z`).toISOString()
-                : null;
+              // Check if the date is today, if so, use the current timestamp; otherwise, use the provided date at noon UTC.
+              const wasWatchedToday = watchedDate && new Date(watchedDate).toDateString() === new Date().toDateString();
+              const watchedAt = wasWatchedToday ? new Date().toISOString() : watchedDate ? new Date(`${watchedDate}T12:00:00Z`).toISOString() : null;
 
               onSubmit({
                 watchedAt,
