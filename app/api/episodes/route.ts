@@ -50,9 +50,9 @@ export async function GET(request: Request) {
   if (tmdbShowId) {
     const { rows: logs } = await db.query(
       `
-        SELECT el.*, us.name as show_name, us.poster_path
+        SELECT el.*, s.name as show_name, s.poster_path
         FROM episode_logs el
-        JOIN user_shows us ON el.tmdb_show_id = us.tmdb_id AND el.user_id = us.user_id
+        JOIN shows s ON el.tmdb_show_id = s.tmdb_id
         WHERE el.user_id = $1 AND el.tmdb_show_id = $2
         ORDER BY el.season_number ASC, el.episode_number ASC
         LIMIT $3 OFFSET $4
@@ -65,9 +65,9 @@ export async function GET(request: Request) {
 
   const { rows: logs } = await db.query(
     `
-      SELECT el.*, us.name as show_name, us.poster_path
+      SELECT el.*, s.name as show_name, s.poster_path
       FROM episode_logs el
-      JOIN user_shows us ON el.tmdb_show_id = us.tmdb_id AND el.user_id = us.user_id
+      JOIN shows s ON el.tmdb_show_id = s.tmdb_id
       WHERE el.user_id = $1
       ORDER BY el.watched_at DESC
       LIMIT $2 OFFSET $3

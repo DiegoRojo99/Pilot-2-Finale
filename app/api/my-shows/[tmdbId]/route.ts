@@ -7,6 +7,25 @@ import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";
 
+const USER_SHOW_SELECT = `
+  SELECT
+    us.id,
+    us.tmdb_id,
+    s.name,
+    s.poster_path,
+    s.backdrop_path,
+    s.overview,
+    s.first_air_date,
+    us.status,
+    s.vote_average,
+    s.number_of_seasons,
+    s.number_of_episodes,
+    us.added_at,
+    us.updated_at
+  FROM user_shows us
+  JOIN shows s ON s.tmdb_id = us.tmdb_id
+`;
+
 const VALID_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "dropped", "on_hold"];
 
 export async function GET(
@@ -31,7 +50,7 @@ export async function GET(
   const { userId } = authResult.context;
 
   const { tmdbId } = await params;
-  const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+  const show = await db.one(`${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`, [
     userId,
     Number(tmdbId),
   ]);
@@ -86,7 +105,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   }
 
-  const show = await db.one("SELECT * FROM user_shows WHERE user_id = $1 AND tmdb_id = $2", [
+  const show = await db.one(`${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`, [
     userId,
     Number(tmdbId),
   ]);
