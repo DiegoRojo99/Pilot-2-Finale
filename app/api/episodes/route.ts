@@ -26,6 +26,15 @@ type EpisodeLogPayload = {
   }>;
 };
 
+function normalizeRating(value: unknown): number | null | "invalid" {
+  if (value === undefined || value === null || value === "") return null;
+
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 10) return "invalid";
+
+  return parsed;
+}
+
 const EPISODE_LOG_SELECT = `
   SELECT
     we.id,
@@ -133,7 +142,7 @@ export async function GET(request: Request) {
         FROM (
           ${LATEST_EPISODE_LOG_SELECT}
           WHERE we.user_id = $1 AND e.tmdb_show_id = $2
-          ORDER BY we.episode_id, we.watched_at DESC, we.created_at DESC, we.id DESC
+          ORDER BY we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
         ) latest
         ORDER BY latest.season_number ASC, latest.episode_number ASC
         LIMIT $3 OFFSET $4
@@ -148,7 +157,7 @@ export async function GET(request: Request) {
     `
       ${EPISODE_LOG_SELECT}
       WHERE we.user_id = $1
-      ORDER BY we.watched_at DESC, we.created_at DESC, we.id DESC
+      ORDER BY we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
       LIMIT $2 OFFSET $3
     `,
     [userId, limit, offset],
@@ -196,6 +205,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const normalizedEpisodes = episodes.map((episode) => {
+      const normalizedRating = normalizeRating(episode.rating);
+      return {
+        ...episode,
+        rating: normalizedRating === "invalid" ? episode.rating : normalizedRating,
+      };
+    });
+
+    const hasInvalidRating = normalizedEpisodes.some((episode) => normalizeRating(episode.rating) === "invalid");
+
+    if (hasInvalidRating) {
+      return NextResponse.json({ error: "rating must be between 0 and 10" }, { status: 400 });
+    }
+
     try {
       const { rows } = await db.query<{ count: string }>(
         `
@@ -206,7 +229,7 @@ export async function POST(request: Request) {
             season_number INTEGER,
             episode_number INTEGER,
             episode_name TEXT,
-            rating INTEGER,
+            rating DOUBLE PRECISION,
             notes TEXT,
             watched_at TEXT
           )
@@ -243,7 +266,7 @@ export async function POST(request: Request) {
             e.id,
             payload.rating,
             payload.notes,
-            COALESCE(NULLIF(payload.watched_at, '')::timestamptz, now())
+            NULLIF(payload.watched_at, '')::timestamptz
           FROM payload
           JOIN episodes e
             ON e.tmdb_show_id = $2
@@ -253,7 +276,7 @@ export async function POST(request: Request) {
         )
         SELECT COUNT(*)::text AS count FROM inserted_entries
         `,
-        [userId, body.tmdb_show_id, JSON.stringify(episodes)],
+        [userId, body.tmdb_show_id, JSON.stringify(normalizedEpisodes)],
       );
 
       return NextResponse.json({ count: Number(rows[0]?.count ?? 0) }, { status: 201 });
@@ -268,6 +291,11 @@ export async function POST(request: Request) {
       { error: "tmdb_show_id, season_number, and episode_number are required" },
       { status: 400 },
     );
+  }
+
+  const normalizedRating = normalizeRating(body.rating);
+  if (normalizedRating === "invalid") {
+    return NextResponse.json({ error: "rating must be between 0 and 10" }, { status: 400 });
   }
 
   try {
@@ -298,9 +326,9 @@ export async function POST(request: Request) {
       [
         userId,
         episodeId,
-        body.rating ?? null,
+        normalizedRating,
         body.notes ?? null,
-        body.watched_at ?? new Date().toISOString(),
+        body.watched_at ?? null,
       ],
     );
 

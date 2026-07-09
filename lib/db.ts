@@ -176,8 +176,8 @@ async function initializeSchema() {
         id SERIAL PRIMARY KEY,
         user_id TEXT,
         episode_id INTEGER,
-        watched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        rating INTEGER CHECK(rating >= 1 AND rating <= 10),
+        watched_at TIMESTAMPTZ,
+        rating DOUBLE PRECISION,
         notes TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -185,9 +185,11 @@ async function initializeSchema() {
     `);
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS user_id TEXT");
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS episode_id INTEGER");
+    await client.query("ALTER TABLE watch_entries ALTER COLUMN rating TYPE DOUBLE PRECISION USING rating::double precision");
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()");
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
     await client.query("ALTER TABLE watch_entries DROP COLUMN IF EXISTS legacy_episode_log_id");
+    await client.query("ALTER TABLE watch_entries ALTER COLUMN watched_at DROP NOT NULL");
 
     await client.query(`
       DO $$
@@ -236,6 +238,24 @@ async function initializeSchema() {
         ) THEN
           ALTER TABLE watch_entries DROP CONSTRAINT fk_watch_entries_episode_id;
         END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'watch_entries_rating_check'
+            AND conrelid = 'watch_entries'::regclass
+        ) THEN
+          ALTER TABLE watch_entries DROP CONSTRAINT watch_entries_rating_check;
+        END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'chk_watch_entries_rating'
+            AND conrelid = 'watch_entries'::regclass
+        ) THEN
+          ALTER TABLE watch_entries DROP CONSTRAINT chk_watch_entries_rating;
+        END IF;
       END
       $$
     `);
@@ -266,6 +286,10 @@ async function initializeSchema() {
     await client.query(`
       ALTER TABLE watch_entries
       ADD CONSTRAINT fk_watch_entries_episode_id FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
+    `);
+    await client.query(`
+      ALTER TABLE watch_entries
+      ADD CONSTRAINT chk_watch_entries_rating CHECK (rating IS NULL OR (rating >= 0 AND rating <= 10))
     `);
 
     // ON CONFLICT(user_id, ...) requires a non-partial unique index/constraint.

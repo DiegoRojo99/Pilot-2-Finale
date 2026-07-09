@@ -102,6 +102,7 @@ export const logEpisode = (data: {
   episode_name?: string;
   rating?: number;
   notes?: string;
+  watched_at?: string | null;
 }) =>
   fetchJson<EpisodeLog>("/api/episodes", {
     method: "POST",
@@ -117,7 +118,7 @@ export const logEpisodesBulk = (data: {
     episode_name?: string;
     rating?: number;
     notes?: string;
-    watched_at?: string;
+    watched_at?: string | null;
   }>;
 }) =>
   fetchJson<{ count: number }>("/api/episodes", {

@@ -47,7 +47,7 @@ export async function GET(
         FROM watch_entries we
         JOIN episodes e ON e.id = we.episode_id
         WHERE we.user_id = $1 AND e.tmdb_show_id = $2
-        ORDER BY we.episode_id, we.watched_at DESC, we.created_at DESC, we.id DESC
+        ORDER BY we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
       ) latest
       ORDER BY latest.season_number ASC, latest.episode_number ASC
     `,

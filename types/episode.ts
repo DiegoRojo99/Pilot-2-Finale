@@ -6,7 +6,7 @@ export interface EpisodeLog {
   season_number: number;
   episode_number: number;
   episode_name: string | null;
-  watched_at: string;
+  watched_at: string | null;
   created_at: string;
   updated_at: string;
   rating: number | null;

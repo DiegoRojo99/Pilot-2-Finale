@@ -13,7 +13,6 @@ import {
   getShowEpisodeLogs,
   logEpisode,
   logEpisodesBulk,
-  removeEpisodeLog,
   removeShow,
   updateShowStatus,
 } from "@/lib/api";
@@ -67,6 +66,109 @@ function MarkAllConfirmDialog({
             className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? "Adding…" : "Mark All"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EpisodeDiaryModal({
+  isOpen,
+  episodeLabel,
+  isPending,
+  onSubmit,
+  onCancel,
+}: {
+  isOpen: boolean;
+  episodeLabel: string;
+  isPending: boolean;
+  onSubmit: (payload: { watchedAt: string | null; rating: number | null }) => void;
+  onCancel: () => void;
+}) {
+  const [watchedDate, setWatchedDate] = useState("");
+  const [ratingInput, setRatingInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-slate-800 p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-slate-100">Log Episode Watch</h3>
+        <p className="mt-1 text-sm text-slate-400">{episodeLabel}</p>
+
+        <div className="mt-4 space-y-4">
+          <label className="block text-sm">
+            <span className="mb-1 block text-slate-300">Watched date (optional)</span>
+            <input
+              type="date"
+              value={watchedDate}
+              onChange={(event) => setWatchedDate(event.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-blue-500"
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="mb-1 block text-slate-300">Rating 0-10 (optional)</span>
+            <input
+              type="number"
+              min={0}
+              max={10}
+              step={0.1}
+              value={ratingInput}
+              onChange={(event) => setRatingInput(event.target.value)}
+              placeholder="e.g. 8"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-blue-500"
+            />
+          </label>
+        </div>
+
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (isPending) return;
+              setError(null);
+              setWatchedDate("");
+              setRatingInput("");
+              onCancel();
+            }}
+            disabled={isPending}
+            className="flex-1 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 active:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const parsedRating = ratingInput.trim() === "" ? null : Number(ratingInput);
+
+              if (parsedRating !== null && (!Number.isFinite(parsedRating) || parsedRating < 0 || parsedRating > 10)) {
+                setError("Rating must be between 0 and 10.");
+                return;
+              }
+
+              setError(null);
+
+              const watchedAt = watchedDate
+                ? new Date(`${watchedDate}T12:00:00.000Z`).toISOString()
+                : null;
+
+              onSubmit({
+                watchedAt,
+                rating: parsedRating,
+              });
+
+              setWatchedDate("");
+              setRatingInput("");
+            }}
+            disabled={isPending}
+            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isPending ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
@@ -208,7 +310,7 @@ function SeasonAccordion({
   watchedSet: Set<string>;
   disabled?: boolean;
   onMarkSeasonAll: (season: number) => void;
-  onToggleEpisode: (season: number, episode: number, name: string, watched: boolean, tmdbEpisodeId?: number) => void;
+  onToggleEpisode: (season: number, episode: number, name: string, tmdbEpisodeId?: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -292,7 +394,6 @@ function SeasonAccordion({
                   episode.season_number,
                   episode.episode_number,
                   episode.name,
-                  watchedSet.has(episodeKey(episode.season_number, episode.episode_number)),
                   episode.id,
                 )
               }
@@ -315,6 +416,13 @@ export default function ShowDetailPage() {
     tmdbEpisodeId?: number;
     episodeName: string;
     unwatchedCount: number;
+  } | null>(null);
+  const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
+  const [selectedEpisodeForDiary, setSelectedEpisodeForDiary] = useState<{
+    seasonNumber: number;
+    episodeNumber: number;
+    episodeName: string;
+    tmdbEpisodeId?: number;
   } | null>(null);
   const [seasonDataCache, setSeasonDataCache] = useState<
     Map<string, TMDBSeason>
@@ -388,28 +496,30 @@ export default function ShowDetailPage() {
     },
   });
 
-  const toggleEpisodeMutation = useMutation({
+  const createEpisodeLogMutation = useMutation({
     mutationFn: async ({
       season,
       episode,
       name,
-      watched,
       tmdbEpisodeId,
+      watchedAt,
+      rating,
     }: {
       season: number;
       episode: number;
       name: string;
-      watched: boolean;
       tmdbEpisodeId?: number;
+      watchedAt: string | null;
+      rating: number | null;
     }) => {
-      if (watched) return removeEpisodeLog(showId, season, episode);
-
       return logEpisode({
         tmdb_show_id: showId,
         tmdb_episode_id: tmdbEpisodeId,
         season_number: season,
         episode_number: episode,
         episode_name: name,
+        watched_at: watchedAt,
+        rating: rating ?? undefined,
       });
     },
     onSuccess: () => {
@@ -434,6 +544,7 @@ export default function ShowDetailPage() {
           season_number: season,
           episode_number: item.episode,
           episode_name: item.name,
+          watched_at: null,
         })),
       }),
     onSuccess: () => {
@@ -444,6 +555,7 @@ export default function ShowDetailPage() {
   });
 
   const isBulkAddingEpisodes = bulkLogEpisodesMutation.isPending;
+  const isCreatingEpisodeLog = createEpisodeLogMutation.isPending;
 
   if (!Number.isFinite(showId)) {
     return (
@@ -508,7 +620,7 @@ export default function ShowDetailPage() {
           </div>
           <StatusPicker
             current={userShow?.status ?? null}
-            disabled={isBulkAddingEpisodes}
+            disabled={isBulkAddingEpisodes || isCreatingEpisodeLog}
             onChange={(status) => statusMutation.mutate(status)}
             onRemove={() => removeMutation.mutate()}
           />
@@ -551,9 +663,9 @@ export default function ShowDetailPage() {
                 watchedCount={watchedCountBySeason.get(season.season_number) ?? 0}
                 seasonName={season.name}
                 watchedSet={watchedSet}
-                disabled={isBulkAddingEpisodes}
+                disabled={isBulkAddingEpisodes || isCreatingEpisodeLog}
                 onMarkSeasonAll={async (seasonNumber) => {
-                  if (isBulkAddingEpisodes) return;
+                  if (isBulkAddingEpisodes || isCreatingEpisodeLog) return;
 
                   const cacheKey = `${showId}-${seasonNumber}`;
                   let seasonData = seasonDataCache.get(cacheKey);
@@ -584,22 +696,10 @@ export default function ShowDetailPage() {
                     episodes: episodesToLog,
                   });
                 }}
-                onToggleEpisode={async (seasonNumber, episodeNumber, name, watched, tmdbEpisodeId) => {
-                  if (isBulkAddingEpisodes) return;
+                onToggleEpisode={async (seasonNumber, episodeNumber, name, tmdbEpisodeId) => {
+                  if (isBulkAddingEpisodes || isCreatingEpisodeLog) return;
 
-                  // If unmarking, just remove it
-                  if (watched) {
-                    toggleEpisodeMutation.mutate({
-                      season: seasonNumber,
-                      episode: episodeNumber,
-                      name,
-                      watched,
-                      tmdbEpisodeId,
-                    });
-                    return;
-                  }
-
-                  // If marking as watched, check for unwatched earlier episodes
+                  // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
                   const cacheKey = `${showId}-${seasonNumber}`;
                   let seasonData = seasonDataCache.get(cacheKey);
 
@@ -609,14 +709,13 @@ export default function ShowDetailPage() {
                       setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData!));
                     } 
                     catch {
-                      // If we can't get season data, just mark it
-                      toggleEpisodeMutation.mutate({
-                        season: seasonNumber,
-                        episode: episodeNumber,
-                        name,
-                        watched,
+                      setSelectedEpisodeForDiary({
+                        seasonNumber,
+                        episodeNumber,
+                        episodeName: name,
                         tmdbEpisodeId,
                       });
+                      setIsEpisodeDiaryModalOpen(true);
                       return;
                     }
                   }
@@ -638,13 +737,13 @@ export default function ShowDetailPage() {
                       unwatchedCount: unwatchedBefore.length,
                     });
                   } else {
-                    toggleEpisodeMutation.mutate({
-                      season: seasonNumber,
-                      episode: episodeNumber,
-                      name,
-                      watched,
+                    setSelectedEpisodeForDiary({
+                      seasonNumber,
+                      episodeNumber,
+                      episodeName: name,
                       tmdbEpisodeId,
                     });
+                    setIsEpisodeDiaryModalOpen(true);
                   }
                 }}
               />
@@ -691,16 +790,51 @@ export default function ShowDetailPage() {
           onCancel={() => {
             if (!markAllConfirm) return;
 
-            // Just mark the selected episode without marking previous ones
-            toggleEpisodeMutation.mutate({
-              season: markAllConfirm.season,
-              episode: markAllConfirm.episode,
-              name: markAllConfirm.episodeName,
-              watched: false,
+            setSelectedEpisodeForDiary({
+              seasonNumber: markAllConfirm.season,
+              episodeNumber: markAllConfirm.episode,
+              episodeName: markAllConfirm.episodeName,
               tmdbEpisodeId: markAllConfirm.tmdbEpisodeId,
             });
+            setIsEpisodeDiaryModalOpen(true);
 
             setMarkAllConfirm(null);
+          }}
+        />
+
+        <EpisodeDiaryModal
+          isOpen={isEpisodeDiaryModalOpen}
+          episodeLabel={
+            selectedEpisodeForDiary
+              ? `S${String(selectedEpisodeForDiary.seasonNumber).padStart(2, "0")}E${String(
+                  selectedEpisodeForDiary.episodeNumber,
+                ).padStart(2, "0")} - ${selectedEpisodeForDiary.episodeName}`
+              : ""
+          }
+          isPending={isCreatingEpisodeLog}
+          onSubmit={(payload) => {
+            if (!selectedEpisodeForDiary) return;
+
+            createEpisodeLogMutation.mutate(
+              {
+                season: selectedEpisodeForDiary.seasonNumber,
+                episode: selectedEpisodeForDiary.episodeNumber,
+                name: selectedEpisodeForDiary.episodeName,
+                tmdbEpisodeId: selectedEpisodeForDiary.tmdbEpisodeId,
+                watchedAt: payload.watchedAt,
+                rating: payload.rating,
+              },
+              {
+                onSuccess: () => {
+                  setIsEpisodeDiaryModalOpen(false);
+                  setSelectedEpisodeForDiary(null);
+                },
+              },
+            );
+          }}
+          onCancel={() => {
+            setIsEpisodeDiaryModalOpen(false);
+            setSelectedEpisodeForDiary(null);
           }}
         />
 
