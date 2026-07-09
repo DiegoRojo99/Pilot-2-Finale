@@ -1,5 +1,7 @@
 export interface EpisodeLog {
   id: number;
+  episode_id?: number;
+  tmdb_episode_id?: number | null;
   tmdb_show_id: number;
   season_number: number;
   episode_number: number;

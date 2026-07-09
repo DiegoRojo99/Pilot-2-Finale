@@ -208,7 +208,7 @@ function SeasonAccordion({
   watchedSet: Set<string>;
   disabled?: boolean;
   onMarkSeasonAll: (season: number) => void;
-  onToggleEpisode: (season: number, episode: number, name: string, watched: boolean) => void;
+  onToggleEpisode: (season: number, episode: number, name: string, watched: boolean, tmdbEpisodeId?: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -293,6 +293,7 @@ function SeasonAccordion({
                   episode.episode_number,
                   episode.name,
                   watchedSet.has(episodeKey(episode.season_number, episode.episode_number)),
+                  episode.id,
                 )
               }
             />
@@ -311,6 +312,7 @@ export default function ShowDetailPage() {
   const [markAllConfirm, setMarkAllConfirm] = useState<{
     season: number;
     episode: number;
+    tmdbEpisodeId?: number;
     episodeName: string;
     unwatchedCount: number;
   } | null>(null);
@@ -392,16 +394,19 @@ export default function ShowDetailPage() {
       episode,
       name,
       watched,
+      tmdbEpisodeId,
     }: {
       season: number;
       episode: number;
       name: string;
       watched: boolean;
+      tmdbEpisodeId?: number;
     }) => {
       if (watched) return removeEpisodeLog(showId, season, episode);
 
       return logEpisode({
         tmdb_show_id: showId,
+        tmdb_episode_id: tmdbEpisodeId,
         season_number: season,
         episode_number: episode,
         episode_name: name,
@@ -420,11 +425,12 @@ export default function ShowDetailPage() {
       episodes,
     }: {
       season: number;
-      episodes: Array<{ episode: number; name: string }>;
+      episodes: Array<{ episode: number; name: string; tmdbEpisodeId?: number }>;
     }) =>
       logEpisodesBulk({
         tmdb_show_id: showId,
         episodes: episodes.map((item) => ({
+          tmdb_episode_id: item.tmdbEpisodeId,
           season_number: season,
           episode_number: item.episode,
           episode_name: item.name,
@@ -568,6 +574,7 @@ export default function ShowDetailPage() {
                     .map((episode) => ({
                       episode: episode.episode_number,
                       name: episode.name,
+                      tmdbEpisodeId: episode.id,
                     }));
 
                   if (episodesToLog.length === 0) return;
@@ -577,7 +584,7 @@ export default function ShowDetailPage() {
                     episodes: episodesToLog,
                   });
                 }}
-                onToggleEpisode={async (seasonNumber, episodeNumber, name, watched) => {
+                onToggleEpisode={async (seasonNumber, episodeNumber, name, watched, tmdbEpisodeId) => {
                   if (isBulkAddingEpisodes) return;
 
                   // If unmarking, just remove it
@@ -587,6 +594,7 @@ export default function ShowDetailPage() {
                       episode: episodeNumber,
                       name,
                       watched,
+                      tmdbEpisodeId,
                     });
                     return;
                   }
@@ -607,6 +615,7 @@ export default function ShowDetailPage() {
                         episode: episodeNumber,
                         name,
                         watched,
+                        tmdbEpisodeId,
                       });
                       return;
                     }
@@ -624,6 +633,7 @@ export default function ShowDetailPage() {
                     setMarkAllConfirm({
                       season: seasonNumber,
                       episode: episodeNumber,
+                      tmdbEpisodeId,
                       episodeName: name,
                       unwatchedCount: unwatchedBefore.length,
                     });
@@ -633,6 +643,7 @@ export default function ShowDetailPage() {
                       episode: episodeNumber,
                       name,
                       watched,
+                      tmdbEpisodeId,
                     });
                   }
                 }}
@@ -668,8 +679,8 @@ export default function ShowDetailPage() {
             setMarkAllConfirm(null);
 
             const episodesToLog = [
-              { episode: markAllConfirm.episode, name: markAllConfirm.episodeName },
-              ...unwatchedBefore.map((ep) => ({ episode: ep.episode_number, name: ep.name })),
+              { episode: markAllConfirm.episode, name: markAllConfirm.episodeName, tmdbEpisodeId: markAllConfirm.tmdbEpisodeId },
+              ...unwatchedBefore.map((ep) => ({ episode: ep.episode_number, name: ep.name, tmdbEpisodeId: ep.id })),
             ];
 
             bulkLogEpisodesMutation.mutate({
@@ -686,6 +697,7 @@ export default function ShowDetailPage() {
               episode: markAllConfirm.episode,
               name: markAllConfirm.episodeName,
               watched: false,
+              tmdbEpisodeId: markAllConfirm.tmdbEpisodeId,
             });
 
             setMarkAllConfirm(null);

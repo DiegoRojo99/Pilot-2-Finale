@@ -96,6 +96,7 @@ export const getShowEpisodeLogs = (tmdbShowId: number) =>
 
 export const logEpisode = (data: {
   tmdb_show_id: number;
+  tmdb_episode_id?: number;
   season_number: number;
   episode_number: number;
   episode_name?: string;
@@ -110,6 +111,7 @@ export const logEpisode = (data: {
 export const logEpisodesBulk = (data: {
   tmdb_show_id: number;
   episodes: Array<{
+    tmdb_episode_id?: number;
     season_number: number;
     episode_number: number;
     episode_name?: string;

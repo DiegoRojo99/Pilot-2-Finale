@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const { userId } = authResult.context;
 
   const totalEpisodesResult = await db.one<{ count: string }>(
-    "SELECT COUNT(*)::text as count FROM episode_logs WHERE user_id = $1",
+    "SELECT COUNT(*)::text as count FROM watch_entries WHERE user_id = $1",
     [userId],
   );
   const totalShowsResult = await db.one<{ count: string }>(

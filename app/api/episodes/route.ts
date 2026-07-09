@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 
 type EpisodeLogPayload = {
   tmdb_show_id?: number;
+  tmdb_episode_id?: number | null;
   season_number?: number;
   episode_number?: number;
   episode_name?: string | null;
@@ -15,6 +16,7 @@ type EpisodeLogPayload = {
   notes?: string | null;
   watched_at?: string | null;
   episodes?: Array<{
+    tmdb_episode_id?: number | null;
     season_number?: number;
     episode_number?: number;
     episode_name?: string | null;
@@ -23,6 +25,83 @@ type EpisodeLogPayload = {
     watched_at?: string | null;
   }>;
 };
+
+const EPISODE_LOG_SELECT = `
+  SELECT
+    we.id,
+    e.id AS episode_id,
+    e.tmdb_episode_id,
+    e.tmdb_show_id,
+    e.season_number,
+    e.episode_number,
+    e.name AS episode_name,
+    we.watched_at,
+    we.created_at,
+    we.updated_at,
+    we.rating,
+    we.notes,
+    s.name AS show_name,
+    s.poster_path
+  FROM watch_entries we
+  JOIN episodes e ON e.id = we.episode_id
+  JOIN shows s ON s.tmdb_id = e.tmdb_show_id
+`;
+
+const LATEST_EPISODE_LOG_SELECT = `
+  SELECT DISTINCT ON (we.episode_id)
+    we.id,
+    e.id AS episode_id,
+    e.tmdb_episode_id,
+    e.tmdb_show_id,
+    e.season_number,
+    e.episode_number,
+    e.name AS episode_name,
+    we.watched_at,
+    we.created_at,
+    we.updated_at,
+    we.rating,
+    we.notes,
+    s.name AS show_name,
+    s.poster_path
+  FROM watch_entries we
+  JOIN episodes e ON e.id = we.episode_id
+  JOIN shows s ON s.tmdb_id = e.tmdb_show_id
+`;
+
+async function ensureEpisodeRecord(input: {
+  tmdbShowId: number;
+  tmdbEpisodeId?: number | null;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeName?: string | null;
+}) {
+  const { rows } = await db.query<{ id: number }>(
+    `
+    INSERT INTO episodes (
+      tmdb_episode_id,
+      tmdb_show_id,
+      season_number,
+      episode_number,
+      name
+    )
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (tmdb_show_id, season_number, episode_number) DO UPDATE SET
+      tmdb_episode_id = COALESCE(excluded.tmdb_episode_id, episodes.tmdb_episode_id),
+      name = COALESCE(excluded.name, episodes.name),
+      updated_at = now()
+    RETURNING id
+    `,
+    [
+      input.tmdbEpisodeId ?? null,
+      input.tmdbShowId,
+      input.seasonNumber,
+      input.episodeNumber,
+      input.episodeName ?? null,
+    ],
+  );
+
+  return rows[0]?.id;
+}
 
 export async function GET(request: Request) {
   const rateLimited = enforceRateLimit({
@@ -50,11 +129,13 @@ export async function GET(request: Request) {
   if (tmdbShowId) {
     const { rows: logs } = await db.query(
       `
-        SELECT el.*, s.name as show_name, s.poster_path
-        FROM episode_logs el
-        JOIN shows s ON el.tmdb_show_id = s.tmdb_id
-        WHERE el.user_id = $1 AND el.tmdb_show_id = $2
-        ORDER BY el.season_number ASC, el.episode_number ASC
+        SELECT *
+        FROM (
+          ${LATEST_EPISODE_LOG_SELECT}
+          WHERE we.user_id = $1 AND e.tmdb_show_id = $2
+          ORDER BY we.episode_id, we.watched_at DESC, we.created_at DESC, we.id DESC
+        ) latest
+        ORDER BY latest.season_number ASC, latest.episode_number ASC
         LIMIT $3 OFFSET $4
       `,
       [userId, Number(tmdbShowId), limit, offset],
@@ -65,11 +146,9 @@ export async function GET(request: Request) {
 
   const { rows: logs } = await db.query(
     `
-      SELECT el.*, s.name as show_name, s.poster_path
-      FROM episode_logs el
-      JOIN shows s ON el.tmdb_show_id = s.tmdb_id
-      WHERE el.user_id = $1
-      ORDER BY el.watched_at DESC
+      ${EPISODE_LOG_SELECT}
+      WHERE we.user_id = $1
+      ORDER BY we.watched_at DESC, we.created_at DESC, we.id DESC
       LIMIT $2 OFFSET $3
     `,
     [userId, limit, offset],
@@ -123,6 +202,7 @@ export async function POST(request: Request) {
         WITH payload AS (
           SELECT *
           FROM jsonb_to_recordset($3::jsonb) AS episode(
+            tmdb_episode_id INTEGER,
             season_number INTEGER,
             episode_number INTEGER,
             episode_name TEXT,
@@ -130,36 +210,48 @@ export async function POST(request: Request) {
             notes TEXT,
             watched_at TEXT
           )
-        ), upserted AS (
-          INSERT INTO episode_logs (
-            user_id,
+        ), upserted_episodes AS (
+          INSERT INTO episodes (
+            tmdb_episode_id,
             tmdb_show_id,
             season_number,
             episode_number,
-            episode_name,
+            name
+          )
+          SELECT
+            payload.tmdb_episode_id,
+            $2,
+            payload.season_number,
+            payload.episode_number,
+            payload.episode_name
+          FROM payload
+          ON CONFLICT (tmdb_show_id, season_number, episode_number) DO UPDATE SET
+            tmdb_episode_id = COALESCE(excluded.tmdb_episode_id, episodes.tmdb_episode_id),
+            name = COALESCE(excluded.name, episodes.name),
+            updated_at = now()
+          RETURNING id
+        ), inserted_entries AS (
+          INSERT INTO watch_entries (
+            user_id,
+            episode_id,
             rating,
             notes,
             watched_at
           )
           SELECT
             $1,
-            $2,
-            payload.season_number,
-            payload.episode_number,
-            payload.episode_name,
+            e.id,
             payload.rating,
             payload.notes,
             COALESCE(NULLIF(payload.watched_at, '')::timestamptz, now())
           FROM payload
-          ON CONFLICT(user_id, tmdb_show_id, season_number, episode_number) DO UPDATE SET
-            episode_name = excluded.episode_name,
-            rating = excluded.rating,
-            notes = excluded.notes,
-            watched_at = excluded.watched_at,
-            updated_at = now()
+          JOIN episodes e
+            ON e.tmdb_show_id = $2
+           AND e.season_number = payload.season_number
+           AND e.episode_number = payload.episode_number
           RETURNING id
         )
-        SELECT COUNT(*)::text AS count FROM upserted
+        SELECT COUNT(*)::text AS count FROM inserted_entries
         `,
         [userId, body.tmdb_show_id, JSON.stringify(episodes)],
       );
@@ -179,32 +271,33 @@ export async function POST(request: Request) {
   }
 
   try {
-    await db.query(
+    const episodeId = await ensureEpisodeRecord({
+      tmdbShowId: body.tmdb_show_id,
+      tmdbEpisodeId: body.tmdb_episode_id,
+      seasonNumber: body.season_number,
+      episodeNumber: body.episode_number,
+      episodeName: body.episode_name ?? null,
+    });
+
+    if (!episodeId) {
+      return NextResponse.json({ error: "Failed to resolve episode record" }, { status: 500 });
+    }
+
+    const inserted = await db.one<{ id: number }>(
       `
-      INSERT INTO episode_logs (
+      INSERT INTO watch_entries (
         user_id,
-        tmdb_show_id,
-        season_number,
-        episode_number,
-        episode_name,
+        episode_id,
         rating,
         notes,
         watched_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      ON CONFLICT(user_id, tmdb_show_id, season_number, episode_number) DO UPDATE SET
-        episode_name = excluded.episode_name,
-        rating = excluded.rating,
-        notes = excluded.notes,
-        watched_at = excluded.watched_at,
-        updated_at = now()
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id
       `,
       [
         userId,
-        body.tmdb_show_id,
-        body.season_number,
-        body.episode_number,
-        body.episode_name ?? null,
+        episodeId,
         body.rating ?? null,
         body.notes ?? null,
         body.watched_at ?? new Date().toISOString(),
@@ -213,11 +306,10 @@ export async function POST(request: Request) {
 
     const log = await db.one(
       `
-        SELECT *
-        FROM episode_logs
-        WHERE user_id = $1 AND tmdb_show_id = $2 AND season_number = $3 AND episode_number = $4
+        ${EPISODE_LOG_SELECT}
+        WHERE we.user_id = $1 AND we.id = $2
       `,
-      [userId, body.tmdb_show_id, body.season_number, body.episode_number],
+      [userId, inserted?.id],
     );
 
     return NextResponse.json(log, { status: 201 });

@@ -29,9 +29,14 @@ export async function DELETE(
   const { tmdbShowId, season, episode } = await params;
   const result = await db.query(
     `
-      DELETE FROM episode_logs
-      WHERE user_id = $1 AND tmdb_show_id = $2 AND season_number = $3 AND episode_number = $4
-      RETURNING id
+      DELETE FROM watch_entries we
+      USING episodes e
+      WHERE we.user_id = $1
+        AND we.episode_id = e.id
+        AND e.tmdb_show_id = $2
+        AND e.season_number = $3
+        AND e.episode_number = $4
+      RETURNING we.id
     `,
     [userId, Number(tmdbShowId), Number(season), Number(episode)],
   );
