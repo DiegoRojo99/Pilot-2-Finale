@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,7 +49,7 @@ function MarkAllConfirmDialog({
       <div className="rounded-xl bg-slate-800 p-6 shadow-xl max-w-sm">
         <h3 className="text-lg font-semibold text-slate-100">Mark Previous Episodes?</h3>
         <p className="mt-2 text-sm text-slate-400">
-          You're marking episode {episodeNumber} as watched. Would you also like to mark the {count} earlier {count === 1 ? "episode" : "episodes"} as watched?
+          You&apos;re marking episode {episodeNumber} as watched. Would you also like to mark the {count} earlier {count === 1 ? "episode" : "episodes"} as watched?
         </p>
         <div className="mt-6 flex gap-3">
           <button
@@ -469,7 +470,7 @@ export default function ShowDetailPage() {
       <div className="relative">
         {show.backdrop_path ? (
           <div className="relative h-48 overflow-hidden">
-            <img src={getBackdropUrl(show.backdrop_path)} alt="" className="h-full w-full object-cover" />
+            <Image src={getBackdropUrl(show.backdrop_path)} alt="" fill className="object-cover" sizes="100vw" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900" />
           </div>
         ) : (
@@ -477,9 +478,11 @@ export default function ShowDetailPage() {
         )}
 
         <div className="relative -mt-16 flex gap-4 px-4">
-          <img
+          <Image
             src={getPosterUrl(show.poster_path, "w342")}
             alt={show.name}
+            width={96}
+            height={144}
             className="h-36 w-24 shrink-0 rounded-xl bg-slate-700 object-cover shadow-xl"
           />
           <div className="min-w-0 flex-1 pt-20">

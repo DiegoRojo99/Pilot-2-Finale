@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getPosterUrl, formatYear } from "@/lib/utils";
@@ -35,11 +36,12 @@ export function UserShowCard({ show }: UserShowCardProps) {
       onClick={() => router.push(`/show/${show.tmdb_id}`)}
       className="flex cursor-pointer items-center gap-3 rounded-xl bg-slate-800/60 p-3 text-left transition-colors active:bg-slate-700/60"
     >
-      <img
+      <Image
         src={getPosterUrl(show.poster_path, "w185")}
         alt={show.name}
+        width={56}
+        height={80}
         className="h-20 w-14 shrink-0 rounded-lg bg-slate-700 object-cover"
-        loading="lazy"
       />
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
@@ -86,11 +88,12 @@ export function SearchShowCard({ show, onAdd, isAdded }: SearchShowCardProps) {
       }}
       className="flex cursor-pointer items-center gap-3 rounded-xl bg-slate-800/60 p-3 text-left transition-colors active:bg-slate-700/60"
     >
-      <img
+      <Image
         src={getPosterUrl(show.poster_path, "w185")}
         alt={show.name}
+        width={56}
+        height={80}
         className="h-20 w-14 shrink-0 rounded-lg bg-slate-700 object-cover"
-        loading="lazy"
       />
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
@@ -130,11 +133,12 @@ export function PosterCard({ show }: PosterCardProps) {
 
   return (
     <button type="button" onClick={() => router.push(`/show/${show.id}`)} className="w-28 shrink-0 cursor-pointer text-left">
-      <img
+      <Image
         src={getPosterUrl(show.poster_path, "w185")}
         alt={show.name}
+        width={112}
+        height={160}
         className="h-40 w-28 rounded-xl bg-slate-700 object-cover"
-        loading="lazy"
       />
       <p className="mt-1.5 truncate text-xs font-medium text-slate-300">{show.name}</p>
       {show.vote_average > 0 && <RatingBadge rating={show.vote_average} size="sm" />}

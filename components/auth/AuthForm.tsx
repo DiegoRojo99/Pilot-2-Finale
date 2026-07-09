@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -121,7 +122,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <section className="w-full overflow-hidden rounded-3xl border border-white/10 bg-slate-900/85 shadow-2xl backdrop-blur md:grid md:grid-cols-[1.1fr_1fr]">
           <aside className="hidden border-r border-white/10 bg-slate-900/80 p-8 md:flex md:flex-col md:justify-between">
             <div>
-              <img src="/Logo.png" alt="Pilot 2 Finale" className="h-10 w-auto" />
+              <Image src="/Logo.png" alt="Pilot 2 Finale" width={160} height={40} className="h-10 w-auto" priority />
               <h2 className="mt-4 text-3xl font-semibold leading-tight text-white">Track from first episode to last credit.</h2>
               <p className="mt-4 text-sm text-slate-300">
                 Keep your watch progress synced, organized, and ready across devices.
@@ -136,7 +137,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           </aside>
 
           <div className="p-5 sm:p-7 md:p-8">
-            <img src="/Logo.png" alt="Pilot 2 Finale" className="h-8 w-auto md:hidden" />
+            <Image src="/Logo.png" alt="Pilot 2 Finale" width={128} height={32} className="h-8 w-auto md:hidden" priority />
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">{copy.title}</h1>
             <p className="mt-2 text-sm text-slate-300">{copy.subtitle}</p>
 

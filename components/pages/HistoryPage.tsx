@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { CheckSquare, Clock } from "lucide-react";
 import { getEpisodeLogs } from "@/lib/api";
@@ -35,11 +36,12 @@ export default function HistoryPage() {
               {data.map((log) => (
                 <div key={log.id} className="flex items-center gap-3 rounded-xl bg-slate-800/60 p-3">
                   {log.poster_path && (
-                    <img
+                    <Image
                       src={getPosterUrl(log.poster_path, "w185")}
                       alt={log.show_name ?? "Poster"}
+                      width={40}
+                      height={56}
                       className="h-14 w-10 shrink-0 rounded-lg bg-slate-700 object-cover"
-                      loading="lazy"
                     />
                   )}
                   <div className="min-w-0 flex-1">
