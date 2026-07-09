@@ -13,7 +13,6 @@ import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { RatingBadge } from "@/components/ui/RatingBadge";
 import { EpisodeLog } from "@/types/episode";
-import { log } from "util";
 
 function EpisodeWatchLog({ log, classes }: { log: EpisodeLog; classes?: string }) {
   return (

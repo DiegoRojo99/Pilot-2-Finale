@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Pilot 2 Finale",
-    short_name: "Pilot2Finale",
+    short_name: "P2F",
     description: "Track your TV shows from pilot to finale.",
     start_url: "/",
     display: "standalone",
