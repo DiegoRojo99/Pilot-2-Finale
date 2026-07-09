@@ -5,6 +5,8 @@ export interface EpisodeLog {
   episode_number: number;
   episode_name: string | null;
   watched_at: string;
+  created_at: string;
+  updated_at: string;
   rating: number | null;
   notes: string | null;
   show_name?: string;

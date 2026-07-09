@@ -64,6 +64,7 @@ async function initializeSchema() {
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS number_of_episodes INTEGER DEFAULT 0");
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()");
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await client.query("UPDATE shows SET created_at = COALESCE(created_at, now()), updated_at = COALESCE(updated_at, now())");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_shows (
@@ -86,6 +87,9 @@ async function initializeSchema() {
 
     await client.query("ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS user_id TEXT");
     await client.query("ALTER TABLE user_shows ALTER COLUMN name DROP NOT NULL");
+    await client.query("UPDATE user_shows SET status = 'watching' WHERE status IS NULL OR status NOT IN ('watching', 'want_to_watch', 'watched', 'dropped', 'on_hold')");
+    await client.query("DELETE FROM episode_logs WHERE user_id IS NULL");
+    await client.query("DELETE FROM user_shows WHERE user_id IS NULL");
 
     await client.query(`
       INSERT INTO shows (
@@ -101,7 +105,7 @@ async function initializeSchema() {
       )
       SELECT DISTINCT ON (tmdb_id)
         tmdb_id,
-        name,
+        COALESCE(name, 'TMDB Show ' || tmdb_id::text),
         poster_path,
         backdrop_path,
         overview,
@@ -122,6 +126,26 @@ async function initializeSchema() {
         number_of_seasons = COALESCE(EXCLUDED.number_of_seasons, shows.number_of_seasons),
         number_of_episodes = COALESCE(EXCLUDED.number_of_episodes, shows.number_of_episodes),
         updated_at = now()
+    `);
+
+    await client.query(`
+      INSERT INTO shows (
+        tmdb_id,
+        name,
+        vote_average,
+        number_of_seasons,
+        number_of_episodes
+      )
+      SELECT DISTINCT
+        el.tmdb_show_id,
+        'TMDB Show ' || el.tmdb_show_id::text,
+        0,
+        0,
+        0
+      FROM episode_logs el
+      LEFT JOIN shows s ON s.tmdb_id = el.tmdb_show_id
+      WHERE s.tmdb_id IS NULL
+      ON CONFLICT (tmdb_id) DO NOTHING
     `);
 
     await client.query(`
@@ -148,12 +172,17 @@ async function initializeSchema() {
         episode_number INTEGER NOT NULL,
         episode_name TEXT,
         watched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         rating INTEGER CHECK(rating >= 1 AND rating <= 10),
         notes TEXT
       )
     `);
 
     await client.query("ALTER TABLE episode_logs ADD COLUMN IF NOT EXISTS user_id TEXT");
+    await client.query("ALTER TABLE episode_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await client.query("ALTER TABLE episode_logs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await client.query("UPDATE episode_logs SET created_at = COALESCE(created_at, watched_at, now()), updated_at = COALESCE(updated_at, watched_at, now())");
 
     await client.query(`
       DO $$
@@ -175,8 +204,50 @@ async function initializeSchema() {
         ) THEN
           ALTER TABLE episode_logs DROP CONSTRAINT uq_episode_logs_episode;
         END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'chk_user_shows_status'
+            AND conrelid = 'user_shows'::regclass
+        ) THEN
+          ALTER TABLE user_shows DROP CONSTRAINT chk_user_shows_status;
+        END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'fk_user_shows_tmdb_id'
+            AND conrelid = 'user_shows'::regclass
+        ) THEN
+          ALTER TABLE user_shows DROP CONSTRAINT fk_user_shows_tmdb_id;
+        END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'fk_episode_logs_tmdb_show_id'
+            AND conrelid = 'episode_logs'::regclass
+        ) THEN
+          ALTER TABLE episode_logs DROP CONSTRAINT fk_episode_logs_tmdb_show_id;
+        END IF;
       END
       $$
+    `);
+
+    await client.query("ALTER TABLE user_shows ALTER COLUMN user_id SET NOT NULL");
+    await client.query("ALTER TABLE episode_logs ALTER COLUMN user_id SET NOT NULL");
+    await client.query(`
+      ALTER TABLE user_shows
+      ADD CONSTRAINT chk_user_shows_status CHECK (status IN ('watching', 'want_to_watch', 'watched', 'dropped', 'on_hold'))
+    `);
+    await client.query(`
+      ALTER TABLE user_shows
+      ADD CONSTRAINT fk_user_shows_tmdb_id FOREIGN KEY (tmdb_id) REFERENCES shows(tmdb_id) ON DELETE RESTRICT
+    `);
+    await client.query(`
+      ALTER TABLE episode_logs
+      ADD CONSTRAINT fk_episode_logs_tmdb_show_id FOREIGN KEY (tmdb_show_id) REFERENCES shows(tmdb_id) ON DELETE RESTRICT
     `);
 
     // ON CONFLICT(user_id, ...) requires a non-partial unique index/constraint.
@@ -190,6 +261,7 @@ async function initializeSchema() {
     );
     await client.query("CREATE INDEX IF NOT EXISTS idx_episode_logs_user_show ON episode_logs(user_id, tmdb_show_id)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_episode_logs_show ON episode_logs(tmdb_show_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_episode_logs_user_watched_at ON episode_logs(user_id, watched_at DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_shows_updated_at ON shows(updated_at DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_user_shows_user_status ON user_shows(user_id, status)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_user_shows_status ON user_shows(status)");

@@ -155,7 +155,8 @@ export async function POST(request: Request) {
             episode_name = excluded.episode_name,
             rating = excluded.rating,
             notes = excluded.notes,
-            watched_at = excluded.watched_at
+            watched_at = excluded.watched_at,
+            updated_at = now()
           RETURNING id
         )
         SELECT COUNT(*)::text AS count FROM upserted
@@ -195,7 +196,8 @@ export async function POST(request: Request) {
         episode_name = excluded.episode_name,
         rating = excluded.rating,
         notes = excluded.notes,
-        watched_at = excluded.watched_at
+        watched_at = excluded.watched_at,
+        updated_at = now()
       `,
       [
         userId,
