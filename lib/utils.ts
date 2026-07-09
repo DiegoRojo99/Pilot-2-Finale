@@ -4,10 +4,7 @@ export function getPosterUrl(
   path: string | null | undefined,
   size: "w185" | "w342" | "w500" = "w342",
 ) {
-  if (!path) {
-    return "/placeholder-poster.svg";
-  }
-
+  if (!path) return "/placeholder-poster.svg";
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
@@ -15,18 +12,12 @@ export function getBackdropUrl(
   path: string | null | undefined,
   size: "w780" | "w1280" = "w780",
 ) {
-  if (!path) {
-    return "";
-  }
-
+  if (!path) return "";
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
 export function formatDate(dateStr: string | null | undefined) {
-  if (!dateStr) {
-    return "Unknown";
-  }
-
+  if (!dateStr) return "Unknown";
   return new Date(dateStr).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -35,10 +26,7 @@ export function formatDate(dateStr: string | null | undefined) {
 }
 
 export function formatYear(dateStr: string | null | undefined) {
-  if (!dateStr) {
-    return "";
-  }
-
+  if (!dateStr) return "";
   return new Date(dateStr).getFullYear().toString();
 }
 

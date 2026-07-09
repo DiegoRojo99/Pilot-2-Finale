@@ -56,8 +56,7 @@ export default function HistoryPage() {
                       <p className="mt-0.5 text-xs text-amber-400">★ {log.rating}/10</p>
                     ) : null}
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <Clock className="h-3 w-3 text-slate-600" />
+                  <div className="flex shrink-0 items-end gap-1">
                     <p className="text-xs text-slate-500">{log.watched_at ? formatDate(log.watched_at) : "No date"}</p>
                   </div>
                 </div>
