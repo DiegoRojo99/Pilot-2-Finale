@@ -128,26 +128,6 @@ async function initializeSchema() {
     `);
 
     await client.query(`
-      INSERT INTO shows (
-        tmdb_id,
-        name,
-        vote_average,
-        number_of_seasons,
-        number_of_episodes
-      )
-      SELECT DISTINCT
-        el.tmdb_show_id,
-        'TMDB Show ' || el.tmdb_show_id::text,
-        0,
-        0,
-        0
-      FROM episode_logs el
-      LEFT JOIN shows s ON s.tmdb_id = el.tmdb_show_id
-      WHERE s.tmdb_id IS NULL
-      ON CONFLICT (tmdb_id) DO NOTHING
-    `);
-
-    await client.query(`
       DO $$
       BEGIN
         IF EXISTS (
@@ -161,28 +141,6 @@ async function initializeSchema() {
       END
       $$
     `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS episode_logs (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT,
-        tmdb_show_id INTEGER NOT NULL,
-        season_number INTEGER NOT NULL,
-        episode_number INTEGER NOT NULL,
-        episode_name TEXT,
-        watched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        rating INTEGER CHECK(rating >= 1 AND rating <= 10),
-        notes TEXT
-      )
-    `);
-
-    await client.query("ALTER TABLE episode_logs ADD COLUMN IF NOT EXISTS user_id TEXT");
-    await client.query("ALTER TABLE episode_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()");
-    await client.query("ALTER TABLE episode_logs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
-    await client.query("UPDATE episode_logs SET created_at = COALESCE(created_at, watched_at, now()), updated_at = COALESCE(updated_at, watched_at, now())");
-    await client.query("DELETE FROM episode_logs WHERE user_id IS NULL");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS episodes (
@@ -222,90 +180,18 @@ async function initializeSchema() {
         rating INTEGER CHECK(rating >= 1 AND rating <= 10),
         notes TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        legacy_episode_log_id INTEGER
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS user_id TEXT");
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS episode_id INTEGER");
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()");
     await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
-    await client.query("ALTER TABLE watch_entries ADD COLUMN IF NOT EXISTS legacy_episode_log_id INTEGER");
-
-    await client.query(`
-      INSERT INTO episodes (
-        tmdb_show_id,
-        season_number,
-        episode_number,
-        name,
-        created_at,
-        updated_at
-      )
-      SELECT DISTINCT ON (tmdb_show_id, season_number, episode_number)
-        tmdb_show_id,
-        season_number,
-        episode_number,
-        episode_name,
-        created_at,
-        updated_at
-      FROM episode_logs
-      WHERE user_id IS NOT NULL
-      ORDER BY tmdb_show_id, season_number, episode_number, watched_at DESC, created_at DESC, id DESC
-      ON CONFLICT (tmdb_show_id, season_number, episode_number) DO UPDATE SET
-        name = COALESCE(EXCLUDED.name, episodes.name),
-        updated_at = GREATEST(episodes.updated_at, EXCLUDED.updated_at)
-    `);
-
-    await client.query(`
-      INSERT INTO watch_entries (
-        user_id,
-        episode_id,
-        watched_at,
-        rating,
-        notes,
-        created_at,
-        updated_at,
-        legacy_episode_log_id
-      )
-      SELECT
-        el.user_id,
-        e.id,
-        el.watched_at,
-        el.rating,
-        el.notes,
-        el.created_at,
-        el.updated_at,
-        el.id
-      FROM episode_logs el
-      JOIN episodes e
-        ON e.tmdb_show_id = el.tmdb_show_id
-       AND e.season_number = el.season_number
-       AND e.episode_number = el.episode_number
-      LEFT JOIN watch_entries we ON we.legacy_episode_log_id = el.id
-      WHERE el.user_id IS NOT NULL AND we.id IS NULL
-    `);
+    await client.query("ALTER TABLE watch_entries DROP COLUMN IF EXISTS legacy_episode_log_id");
 
     await client.query(`
       DO $$
       BEGIN
-        IF EXISTS (
-          SELECT 1
-          FROM pg_constraint
-          WHERE conname = 'fk_episode_logs_show'
-            AND conrelid = 'episode_logs'::regclass
-        ) THEN
-          ALTER TABLE episode_logs DROP CONSTRAINT fk_episode_logs_show;
-        END IF;
-
-        IF EXISTS (
-          SELECT 1
-          FROM pg_constraint
-          WHERE conname = 'uq_episode_logs_episode'
-            AND conrelid = 'episode_logs'::regclass
-        ) THEN
-          ALTER TABLE episode_logs DROP CONSTRAINT uq_episode_logs_episode;
-        END IF;
-
         IF EXISTS (
           SELECT 1
           FROM pg_constraint
@@ -322,15 +208,6 @@ async function initializeSchema() {
             AND conrelid = 'user_shows'::regclass
         ) THEN
           ALTER TABLE user_shows DROP CONSTRAINT fk_user_shows_tmdb_id;
-        END IF;
-
-        IF EXISTS (
-          SELECT 1
-          FROM pg_constraint
-          WHERE conname = 'fk_episode_logs_tmdb_show_id'
-            AND conrelid = 'episode_logs'::regclass
-        ) THEN
-          ALTER TABLE episode_logs DROP CONSTRAINT fk_episode_logs_tmdb_show_id;
         END IF;
 
         IF EXISTS (
@@ -364,7 +241,6 @@ async function initializeSchema() {
     `);
 
     await client.query("ALTER TABLE user_shows ALTER COLUMN user_id SET NOT NULL");
-    await client.query("ALTER TABLE episode_logs ALTER COLUMN user_id SET NOT NULL");
     await client.query("ALTER TABLE episodes ALTER COLUMN tmdb_show_id SET NOT NULL");
     await client.query("ALTER TABLE episodes ALTER COLUMN season_number SET NOT NULL");
     await client.query("ALTER TABLE episodes ALTER COLUMN episode_number SET NOT NULL");
@@ -378,10 +254,6 @@ async function initializeSchema() {
     await client.query(`
       ALTER TABLE user_shows
       ADD CONSTRAINT fk_user_shows_tmdb_id FOREIGN KEY (tmdb_id) REFERENCES shows(tmdb_id) ON DELETE RESTRICT
-    `);
-    await client.query(`
-      ALTER TABLE episode_logs
-      ADD CONSTRAINT fk_episode_logs_tmdb_show_id FOREIGN KEY (tmdb_show_id) REFERENCES shows(tmdb_id) ON DELETE RESTRICT
     `);
     await client.query(`
       ALTER TABLE episodes
@@ -398,7 +270,6 @@ async function initializeSchema() {
 
     // ON CONFLICT(user_id, ...) requires a non-partial unique index/constraint.
     await client.query("DROP INDEX IF EXISTS idx_user_shows_user_tmdb_unique");
-    await client.query("DROP INDEX IF EXISTS idx_episode_logs_user_show_se_unique");
     await client.query("DROP INDEX IF EXISTS idx_episodes_tmdb_episode_id");
     await client.query("DROP INDEX IF EXISTS idx_episodes_show_season_episode");
     await client.query("DROP INDEX IF EXISTS idx_watch_entries_user_episode");
@@ -406,12 +277,6 @@ async function initializeSchema() {
     await client.query(
       "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_shows_user_tmdb_unique ON user_shows(user_id, tmdb_id)",
     );
-    await client.query(
-      "CREATE UNIQUE INDEX IF NOT EXISTS idx_episode_logs_user_show_se_unique ON episode_logs(user_id, tmdb_show_id, season_number, episode_number)",
-    );
-    await client.query("CREATE INDEX IF NOT EXISTS idx_episode_logs_user_show ON episode_logs(user_id, tmdb_show_id)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_episode_logs_show ON episode_logs(tmdb_show_id)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_episode_logs_user_watched_at ON episode_logs(user_id, watched_at DESC)");
     await client.query("CREATE UNIQUE INDEX IF NOT EXISTS idx_episodes_tmdb_episode_id ON episodes(tmdb_episode_id) WHERE tmdb_episode_id IS NOT NULL");
     await client.query("CREATE INDEX IF NOT EXISTS idx_episodes_show_season_episode ON episodes(tmdb_show_id, season_number, episode_number)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_watch_entries_user_episode ON watch_entries(user_id, episode_id)");
