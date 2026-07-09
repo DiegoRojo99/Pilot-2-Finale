@@ -1,0 +1,47 @@
+export type ShowStatus = "watching" | "want_to_watch" | "watched" | "dropped" | "on_hold";
+
+export interface ShowRecord {
+  tmdb_id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string | null;
+  first_air_date: string | null;
+  vote_average: number;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserShow {
+  id: number;
+  tmdb_id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string | null;
+  first_air_date: string | null;
+  status: ShowStatus;
+  vote_average: number;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  added_at: string;
+  updated_at: string;
+}
+
+export const STATUS_LABELS: Record<ShowStatus, string> = {
+  watching: "Watching",
+  want_to_watch: "Want to Watch",
+  watched: "Watched",
+  dropped: "Dropped",
+  on_hold: "On Hold",
+};
+
+export const STATUS_COLORS: Record<ShowStatus, string> = {
+  watching: "bg-blue-400/10 text-blue-400",
+  want_to_watch: "bg-purple-400/10 text-purple-400",
+  watched: "bg-green-400/10 text-green-400",
+  dropped: "bg-red-400/10 text-red-400",
+  on_hold: "bg-yellow-400/10 text-yellow-400",
+};

@@ -27,7 +27,7 @@ export async function DELETE(
   const { userId } = authResult.context;
 
   const { id } = await params;
-  const result = await db.query("DELETE FROM episode_logs WHERE user_id = $1 AND id = $2 RETURNING id", [
+  const result = await db.query("DELETE FROM watch_entries WHERE user_id = $1 AND id = $2 RETURNING id", [
     userId,
     Number(id),
   ]);

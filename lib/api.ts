@@ -86,21 +86,30 @@ export const removeShow = (tmdbId: number) =>
     method: "DELETE",
   });
 
-export const getEpisodeLogs = (tmdbShowId?: number) =>
-  fetchJson<EpisodeLog[]>(
-    tmdbShowId ? `/api/episodes?tmdb_show_id=${tmdbShowId}` : "/api/episodes",
-  );
+export const getEpisodeLogs = (
+  tmdbShowId?: number,
+  options?: { withWatchDate?: boolean },
+) => {
+  const params = new URLSearchParams();
+  if (tmdbShowId !== undefined) params.set("tmdb_show_id", String(tmdbShowId));
+  if (options?.withWatchDate) params.set("with_watch_date", "1");
+
+  const query = params.toString();
+  return fetchJson<EpisodeLog[]>(query ? `/api/episodes?${query}` : "/api/episodes");
+};
 
 export const getShowEpisodeLogs = (tmdbShowId: number) =>
   fetchJson<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);
 
 export const logEpisode = (data: {
   tmdb_show_id: number;
+  tmdb_episode_id?: number;
   season_number: number;
   episode_number: number;
   episode_name?: string;
   rating?: number;
   notes?: string;
+  watched_at?: string | null;
 }) =>
   fetchJson<EpisodeLog>("/api/episodes", {
     method: "POST",
@@ -110,12 +119,13 @@ export const logEpisode = (data: {
 export const logEpisodesBulk = (data: {
   tmdb_show_id: number;
   episodes: Array<{
+    tmdb_episode_id?: number;
     season_number: number;
     episode_number: number;
     episode_name?: string;
     rating?: number;
     notes?: string;
-    watched_at?: string;
+    watched_at?: string | null;
   }>;
 }) =>
   fetchJson<{ count: number }>("/api/episodes", {

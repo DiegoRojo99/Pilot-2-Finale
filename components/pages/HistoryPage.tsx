@@ -12,7 +12,7 @@ import { PageLoader } from "@/components/ui/LoadingSpinner";
 export default function HistoryPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["episode-logs"],
-    queryFn: () => getEpisodeLogs(),
+    queryFn: () => getEpisodeLogs(undefined, { withWatchDate: true }),
     staleTime: 30_000,
   });
 
@@ -26,9 +26,9 @@ export default function HistoryPage() {
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
               <CheckSquare className="h-12 w-12 opacity-30" />
               <p className="text-center text-sm">
-                No episodes logged yet.
+                No episodes with a watch date yet.
                 <br />
-                Start tracking your watched episodes!
+                Add a watch date to see entries in history.
               </p>
             </div>
           ) : (
@@ -52,11 +52,13 @@ export default function HistoryPage() {
                       {log.episode_name || `Episode ${log.episode_number}`}
                     </p>
                     <p className="truncate text-xs text-slate-400">{log.show_name}</p>
-                    {log.rating && <p className="mt-0.5 text-xs text-amber-400">★ {log.rating}/10</p>}
+                    {log.rating !== null && log.rating !== undefined ? (
+                      <p className="mt-0.5 text-xs text-amber-400">★ {log.rating}/10</p>
+                    ) : null}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <Clock className="h-3 w-3 text-slate-600" />
-                    <p className="text-xs text-slate-500">{formatDate(log.watched_at)}</p>
+                    <p className="text-xs text-slate-500">{log.watched_at ? formatDate(log.watched_at) : "No date"}</p>
                   </div>
                 </div>
               ))}
