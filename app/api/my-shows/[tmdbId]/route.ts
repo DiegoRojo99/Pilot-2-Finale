@@ -3,7 +3,8 @@ import db from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { isNumericId, readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
-import type { ShowStatus } from "@/types";
+import { repairShowCatalogIfNeeded } from "@/lib/show-catalog";
+import type { ShowStatus, UserShow } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -50,13 +51,20 @@ export async function GET(
   const { userId } = authResult.context;
 
   const { tmdbId } = await params;
-  const show = await db.one(`${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`, [
+  let show = await db.one<UserShow>(`${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`, [
     userId,
     Number(tmdbId),
   ]);
 
   if (!show) {
     return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
+  }
+
+  if (await repairShowCatalogIfNeeded(show)) {
+    show = await db.one<UserShow>(`${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`, [
+      userId,
+      Number(tmdbId),
+    ]);
   }
 
   return NextResponse.json(show);
