@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className="min-h-full">
         <Providers>
           <div className="flex min-h-full flex-col bg-slate-950">
-            <div className="mx-auto flex min-h-full w-full max-w-lg flex-1 flex-col bg-slate-900">
+            <div className="mx-auto flex min-h-full w-full flex-1 flex-col bg-slate-900 sm:max-w-3xl xl:max-w-full xl:px-4">
               <div className="flex-1 overflow-hidden pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
                 {children}
               </div>
