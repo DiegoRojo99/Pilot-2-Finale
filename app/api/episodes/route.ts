@@ -132,6 +132,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const tmdbShowId = searchParams.get("tmdb_show_id");
+  const withWatchDate = ["1", "true"].includes((searchParams.get("with_watch_date") ?? "").toLowerCase());
   const limit = Number(searchParams.get("limit") ?? "50");
   const offset = Number(searchParams.get("offset") ?? "0");
 
@@ -141,7 +142,7 @@ export async function GET(request: Request) {
         SELECT *
         FROM (
           ${LATEST_EPISODE_LOG_SELECT}
-          WHERE we.user_id = $1 AND e.tmdb_show_id = $2
+          WHERE we.user_id = $1 AND e.tmdb_show_id = $2 ${withWatchDate ? "AND we.watched_at IS NOT NULL" : ""}
           ORDER BY we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
         ) latest
         ORDER BY latest.season_number ASC, latest.episode_number ASC
@@ -156,7 +157,7 @@ export async function GET(request: Request) {
   const { rows: logs } = await db.query(
     `
       ${EPISODE_LOG_SELECT}
-      WHERE we.user_id = $1
+      WHERE we.user_id = $1 ${withWatchDate ? "AND we.watched_at IS NOT NULL" : ""}
       ORDER BY we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
       LIMIT $2 OFFSET $3
     `,
@@ -252,7 +253,7 @@ export async function POST(request: Request) {
             tmdb_episode_id = COALESCE(excluded.tmdb_episode_id, episodes.tmdb_episode_id),
             name = COALESCE(excluded.name, episodes.name),
             updated_at = now()
-          RETURNING id
+          RETURNING id, season_number, episode_number
         ), inserted_entries AS (
           INSERT INTO watch_entries (
             user_id,
@@ -263,15 +264,14 @@ export async function POST(request: Request) {
           )
           SELECT
             $1,
-            e.id,
+            ue.id,
             payload.rating,
             payload.notes,
             NULLIF(payload.watched_at, '')::timestamptz
           FROM payload
-          JOIN episodes e
-            ON e.tmdb_show_id = $2
-           AND e.season_number = payload.season_number
-           AND e.episode_number = payload.episode_number
+          JOIN upserted_episodes ue
+            ON ue.season_number = payload.season_number
+           AND ue.episode_number = payload.episode_number
           RETURNING id
         )
         SELECT COUNT(*)::text AS count FROM inserted_entries

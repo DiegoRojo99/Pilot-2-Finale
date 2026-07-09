@@ -12,7 +12,7 @@ import { PageLoader } from "@/components/ui/LoadingSpinner";
 export default function HistoryPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["episode-logs"],
-    queryFn: () => getEpisodeLogs(),
+    queryFn: () => getEpisodeLogs(undefined, { withWatchDate: true }),
     staleTime: 30_000,
   });
 
@@ -26,9 +26,9 @@ export default function HistoryPage() {
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
               <CheckSquare className="h-12 w-12 opacity-30" />
               <p className="text-center text-sm">
-                No episodes logged yet.
+                No episodes with a watch date yet.
                 <br />
-                Start tracking your watched episodes!
+                Add a watch date to see entries in history.
               </p>
             </div>
           ) : (
