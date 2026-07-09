@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CheckSquare, Clock } from "lucide-react";
+import { CheckSquare } from "lucide-react";
 import { getEpisodeLogs } from "@/lib/api";
 import { episodeKey, formatDate, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
@@ -36,21 +37,26 @@ export default function HistoryPage() {
               {data.map((log) => (
                 <div key={log.id} className="flex items-center gap-3 rounded-xl bg-slate-800/60 p-3">
                   {log.poster_path && (
-                    <Image
-                      src={getPosterUrl(log.poster_path, "w185")}
-                      alt={log.show_name ?? "Poster"}
-                      width={40}
-                      height={56}
-                      className="h-14 w-10 shrink-0 rounded-lg bg-slate-700 object-cover"
-                    />
+                    <Link href={`/show/${log.tmdb_show_id}`} className="shrink-0">
+                      <Image
+                        src={getPosterUrl(log.poster_path, "w185")}
+                        alt={log.show_name ?? "Poster"}
+                        width={40}
+                        height={56}
+                        className="h-14 w-10 rounded-lg bg-slate-700 object-cover"
+                      />
+                    </Link>
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-blue-400">
                       {episodeKey(log.season_number, log.episode_number)}
                     </p>
-                    <p className="truncate text-sm font-medium text-slate-200">
+                    <Link
+                      href={`/show/${log.tmdb_show_id}/season/${log.season_number}/episode/${log.episode_number}`}
+                      className="block truncate text-sm font-medium text-slate-200 transition-colors hover:text-blue-300"
+                    >
                       {log.episode_name || `Episode ${log.episode_number}`}
-                    </p>
+                    </Link>
                     <p className="truncate text-xs text-slate-400">{log.show_name}</p>
                     {log.rating !== null && log.rating !== undefined ? (
                       <p className="mt-0.5 text-xs text-amber-400">★ {log.rating}/10</p>

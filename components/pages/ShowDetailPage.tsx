@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -238,11 +239,13 @@ function StatusPicker({
 }
 
 function EpisodeRow({
+  showId,
   episode,
   isWatched,
   disabled,
   onToggle,
 }: {
+  showId: number;
   episode: TMDBEpisode;
   isWatched: boolean;
   disabled?: boolean;
@@ -265,9 +268,12 @@ function EpisodeRow({
           <span className="shrink-0 font-mono text-xs text-slate-500">
             {String(episode.episode_number).padStart(2, "0")}
           </span>
-          <span className={`truncate text-sm ${isWatched ? "text-slate-400" : "text-slate-200"}`}>
+          <Link
+            href={`/show/${showId}/season/${episode.season_number}/episode/${episode.episode_number}`}
+            className={`truncate text-sm transition-colors active:text-blue-300 ${isWatched ? "text-slate-400 hover:text-slate-200" : "text-slate-200 hover:text-blue-300"}`}
+          >
             {episode.name}
-          </span>
+          </Link>
         </div>
         <div className="mt-0.5 ml-6 flex items-center gap-2">
           {episode.air_date && (
@@ -384,6 +390,7 @@ function SeasonAccordion({
           {seasonData?.episodes?.map((episode) => (
             <EpisodeRow
               key={episode.id}
+              showId={showId}
               episode={episode}
               disabled={disabled}
               isWatched={watchedSet.has(episodeKey(episode.season_number, episode.episode_number))}
