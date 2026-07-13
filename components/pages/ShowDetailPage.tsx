@@ -152,18 +152,21 @@ function EpisodeRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 border-b border-slate-800/60 py-2.5 last:border-0">
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled}
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-          isWatched ? "border-green-500 bg-green-500 text-white" : "border-slate-600 text-transparent active:border-slate-400"
-        }`}
-      >
-        <Check className="h-4 w-4" />
-      </button>
-      <div className="min-w-0 flex-1">
+    <div className="flex items-center gap-3 border-b border-slate-800/60 last:border-0 py-1">
+      {episode.still_path ? (
+        <Image
+          src={getBackdropUrl(episode.still_path)}
+          alt={episode.name}
+          width={64}
+          height={48}
+          className="h-12 w-16 shrink-0 rounded-lg bg-slate-700 object-cover"
+        />
+      ) : (
+        <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          No image
+        </div>
+      )}
+      <div className="min-w-0 flex-1 py-2">
         <div className="flex items-center gap-2">
           <span className="shrink-0 font-mono text-xs text-slate-500">
             {String(episode.episode_number).padStart(2, "0")}
@@ -191,6 +194,16 @@ function EpisodeRow({
           {episode.runtime ? <span className="text-xs text-slate-600">{episode.runtime}m</span> : null}
         </div>
       </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+          isWatched ? "border-green-500 bg-green-500 text-white" : "border-slate-600 text-transparent active:border-slate-400"
+        }`}
+      >
+        <Check className="h-4 w-4" />
+      </button>
     </div>
   );
 }
@@ -600,12 +613,13 @@ export default function ShowDetailPage() {
           </div>
         )}
 
-        {userShow && visibleSeasons.length > 0 && (
+        {visibleSeasons.length > 0 && (
           <div className="mt-5 px-4">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-300">
               <Plus className="h-4 w-4 text-blue-400" />
               Track Episodes
             </h2>
+            {!userShow ? <p className="mb-3 text-xs text-slate-500">Add this show to your list to mark episodes as watched.</p> : null}
             {visibleSeasons.map((season) => (
               <SeasonAccordion
                 key={season.season_number}
@@ -615,7 +629,7 @@ export default function ShowDetailPage() {
                 watchedCount={watchedCountBySeason.get(season.season_number) ?? 0}
                 seasonName={season.name}
                 watchedSet={watchedSet}
-                disabled={isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
+                disabled={!userShow || isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
                 onMarkSeasonAll={async (seasonNumber) => {
                   if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
 
@@ -691,12 +705,6 @@ export default function ShowDetailPage() {
                 }}
               />
             ))}
-          </div>
-        )}
-
-        {!userShow && show.number_of_seasons && show.number_of_seasons > 0 && (
-          <div className="mx-4 mt-4 rounded-xl bg-slate-800/40 py-4 text-center">
-            <p className="text-sm text-slate-400">Add this show to your list to track episodes</p>
           </div>
         )}
 
