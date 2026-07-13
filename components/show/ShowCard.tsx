@@ -2,11 +2,13 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getPosterUrl, formatYear } from "@/lib/utils";
-import { getShowEpisodeLogs } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check } from "lucide-react";
+import { logEpisode, getSeasonDetails, getShowDetails, getShowEpisodeLogs } from "@/lib/api";
+import { getPosterUrl, episodeKey, formatYear } from "@/lib/utils";
+import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { TMDBShow, UserShow } from "@/types";
 
 type UserShowCardProps = {
@@ -15,6 +17,8 @@ type UserShowCardProps = {
 
 export function UserShowCard({ show }: UserShowCardProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
 
   const { data: episodeLogs = [] } = useQuery({
     queryKey: ["episode-logs", show.tmdb_id],
@@ -22,47 +26,173 @@ export function UserShowCard({ show }: UserShowCardProps) {
     staleTime: 30_000,
   });
 
-  // Find the latest watched episode
-  const latestEpisode = episodeLogs.length > 0
-    ? episodeLogs.sort((a, b) => {
-        if (a.season_number !== b.season_number) return b.season_number - a.season_number;
-        return b.episode_number - a.episode_number;
-      })[0]
+  const watchedEpisodes = useMemo(() => {
+    const seen = new Set<string>();
+
+    return episodeLogs
+      .filter((episodeLog) => {
+        const key = episodeKey(episodeLog.season_number, episodeLog.episode_number);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.season_number !== b.season_number) return a.season_number - b.season_number;
+        return a.episode_number - b.episode_number;
+      });
+  }, [episodeLogs]);
+
+  const remainingEpisodes = Math.max(show.number_of_episodes - watchedEpisodes.length, 0);
+
+  const watchedSet = useMemo(
+    () => new Set(watchedEpisodes.map((episodeLog) => episodeKey(episodeLog.season_number, episodeLog.episode_number))),
+    [watchedEpisodes],
+  );
+
+  const { data: showDetails } = useQuery({
+    queryKey: ["show", show.tmdb_id],
+    queryFn: () => getShowDetails(show.tmdb_id),
+    enabled: remainingEpisodes > 0 && show.number_of_seasons > 0,
+    staleTime: 30 * 60_000,
+  });
+
+  let nextEpisode: { seasonNumber: number; episodeNumber: number } | null = null;
+
+  if (remainingEpisodes > 0) {
+    const visibleSeasons = (showDetails?.seasons ?? [])
+      .filter((season) => season.season_number > 0)
+      .sort((a, b) => a.season_number - b.season_number);
+
+    for (const season of visibleSeasons) {
+      for (let episodeNumber = 1; episodeNumber <= season.episode_count; episodeNumber += 1) {
+        if (!watchedSet.has(episodeKey(season.season_number, episodeNumber))) {
+          nextEpisode = { seasonNumber: season.season_number, episodeNumber };
+          break;
+        }
+      }
+
+      if (nextEpisode) break;
+    }
+
+    if (!nextEpisode && watchedEpisodes.length === 0) nextEpisode = { seasonNumber: 1, episodeNumber: 1 };
+    if (!nextEpisode && watchedEpisodes.length > 0) {
+      const latestEpisode = watchedEpisodes[watchedEpisodes.length - 1];
+      nextEpisode = {
+        seasonNumber: latestEpisode.season_number,
+        episodeNumber: latestEpisode.episode_number + 1,
+      };
+    }
+  }
+
+  const { data: nextEpisodeSeason } = useQuery({
+    queryKey: ["season", show.tmdb_id, nextEpisode?.seasonNumber],
+    queryFn: () => getSeasonDetails(show.tmdb_id, nextEpisode!.seasonNumber),
+    enabled: !!nextEpisode,
+    staleTime: 30 * 60_000,
+  });
+
+  const nextEpisodeName = useMemo(() => {
+    if (!nextEpisode) return null;
+
+    return nextEpisodeSeason?.episodes?.find(
+      (episode) => episode.episode_number === nextEpisode.episodeNumber,
+    )?.name ?? null;
+  }, [nextEpisode, nextEpisodeSeason?.episodes]);
+
+  const remainingAfterNextEpisode = Math.max(remainingEpisodes - (nextEpisode ? 1 : 0), 0);
+  const nextEpisodeLabel = nextEpisode
+    ? `S${String(nextEpisode.seasonNumber).padStart(2, "0")} E${String(nextEpisode.episodeNumber).padStart(2, "0")}`
     : null;
+  const nextEpisodeDetails = nextEpisodeSeason?.episodes?.find(
+    (episode) => episode.episode_number === nextEpisode?.episodeNumber,
+  );
+
+  const createEpisodeLogMutation = useMutation({
+    mutationFn: async ({
+      watchedAt,
+      rating,
+    }: {
+      watchedAt: string | null;
+      rating: number | null;
+    }) => {
+      if (!nextEpisode) throw new Error("No next episode available");
+
+      return logEpisode({
+        tmdb_show_id: show.tmdb_id,
+        tmdb_episode_id: nextEpisodeDetails?.id,
+        season_number: nextEpisode.seasonNumber,
+        episode_number: nextEpisode.episodeNumber,
+        episode_name: nextEpisodeDetails?.name ?? nextEpisodeName ?? undefined,
+        watched_at: watchedAt,
+        rating: rating ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs", show.tmdb_id] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
+      void queryClient.invalidateQueries({ queryKey: ["stats"] });
+      setIsEpisodeDiaryModalOpen(false);
+    },
+  });
 
   return (
-    <button
-      type="button"
-      onClick={() => router.push(`/show/${show.tmdb_id}`)}
-      className="flex cursor-pointer items-center gap-3 rounded-xl bg-slate-800/60 p-3 text-left transition-colors active:bg-slate-700/60"
-    >
-      <Image
-        src={getPosterUrl(show.poster_path, "w185")}
-        alt={show.name}
-        width={56}
-        height={80}
-        className="h-20 w-14 shrink-0 rounded-lg bg-slate-700 object-cover"
-      />
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
-        <p className="mt-0.5 text-xs text-slate-400">{formatYear(show.first_air_date)}</p>
-        <div className="mt-1.5 flex items-center gap-2">
-          <StatusBadge status={show.status} size="sm" />
-          {show.vote_average > 0 && <RatingBadge rating={show.vote_average} size="sm" />}
-        </div>
-        <div className="mt-1 flex items-center justify-between">
-          <p className="text-xs text-slate-500">
-            {show.number_of_seasons} season{show.number_of_seasons !== 1 ? "s" : ""}
-            {show.number_of_episodes > 0 ? ` · ${show.number_of_episodes} eps` : ""}
-          </p>
-          {latestEpisode && (
-            <p className="text-xs font-medium text-blue-400">
-              S{String(latestEpisode.season_number).padStart(2, "0")} E{String(latestEpisode.episode_number).padStart(2, "0")}
-            </p>
-          )}
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => router.push(`/show/${show.tmdb_id}`)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            router.push(`/show/${show.tmdb_id}`);
+          }
+        }}
+        className="flex cursor-pointer items-stretch overflow-hidden rounded-xl bg-slate-800/60 text-left transition-colors active:bg-slate-700/60"
+      >
+        <Image
+          src={getPosterUrl(show.poster_path, "w185")}
+          alt={show.name}
+          width={68}
+          height={104}
+          loading="eager"
+          className="h-26 w-[4.25rem] shrink-0 bg-slate-700 object-cover"
+        />
+        <div className="min-w-0 flex-1 p-3">
+          <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
+          <div className="mt-3 flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-blue-400">
+                {nextEpisodeLabel ?? "Completed"}
+                {nextEpisode ? <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : null}
+              </p>
+              <p className="mt-1 truncate text-xs text-slate-400">{nextEpisodeName ?? (nextEpisode ? "Loading episode..." : "All episodes watched")}</p>
+            </div>
+            {nextEpisode ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsEpisodeDiaryModalOpen(true);
+                }}
+                disabled={createEpisodeLogMutation.isPending}
+                aria-label={`Mark ${nextEpisodeLabel} as watched`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-400 transition-colors active:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
-    </button>
+      <EpisodeDiaryModal
+        isOpen={isEpisodeDiaryModalOpen}
+        episodeLabel={nextEpisodeLabel && nextEpisodeName ? `${nextEpisodeLabel} - ${nextEpisodeName}` : nextEpisodeLabel ?? ""}
+        isPending={createEpisodeLogMutation.isPending}
+        onSubmit={(payload) => createEpisodeLogMutation.mutate(payload)}
+        onCancel={() => setIsEpisodeDiaryModalOpen(false)}
+      />
+    </>
   );
 }
 
