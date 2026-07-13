@@ -469,12 +469,22 @@ export default function ShowDetailPage() {
     return counts;
   }, [episodeLogs]);
 
+  const getCachedSeasonDetails = async (seasonNumber: number) => {
+    const cacheKey = `${showId}-${seasonNumber}`;
+    const cachedSeason = seasonDataCache.get(cacheKey);
+    if (cachedSeason) return cachedSeason;
+
+    const seasonData = await getSeasonDetails(showId, seasonNumber);
+    setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData));
+    return seasonData;
+  };
+
   const statusMutation = useMutation({
     mutationFn: async (status: ShowStatus) => {
       if (!show) return null;
-      if (userShow) return updateShowStatus(showId, status);
-
-      return addShow({
+      const savedShow = userShow
+        ? await updateShowStatus(showId, status)
+        : await addShow({
         tmdb_id: show.id,
         name: show.name,
         poster_path: show.poster_path,
@@ -486,10 +496,46 @@ export default function ShowDetailPage() {
         number_of_episodes: show.number_of_episodes,
         status,
       });
+
+      if (status === "watched" && visibleSeasons.length > 0) {
+        const seasonDetails = await Promise.all(
+          visibleSeasons.map(async (season) => ({
+            seasonNumber: season.season_number,
+            seasonData: await getCachedSeasonDetails(season.season_number),
+          })),
+        );
+
+        const episodesToLog = seasonDetails.flatMap(({ seasonNumber, seasonData }) =>
+          (seasonData.episodes ?? [])
+            .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
+            .map((episode) => ({
+              tmdb_episode_id: episode.id,
+              season_number: seasonNumber,
+              episode_number: episode.episode_number,
+              episode_name: episode.name,
+              watched_at: null,
+            })),
+        );
+
+        if (episodesToLog.length > 0) {
+          await logEpisodesBulk({
+            tmdb_show_id: showId,
+            episodes: episodesToLog,
+          });
+        }
+      }
+
+      return savedShow;
     },
-    onSuccess: () => {
+    onSuccess: (_, status) => {
       void queryClient.invalidateQueries({ queryKey: ["my-show", showId] });
       void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
+
+      if (status === "watched") {
+        void queryClient.invalidateQueries({ queryKey: ["episode-logs", showId] });
+        void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
+        void queryClient.invalidateQueries({ queryKey: ["stats"] });
+      }
     },
   });
 
@@ -561,6 +607,7 @@ export default function ShowDetailPage() {
 
   const isBulkAddingEpisodes = bulkLogEpisodesMutation.isPending;
   const isCreatingEpisodeLog = createEpisodeLogMutation.isPending;
+  const isStatusUpdating = statusMutation.isPending || removeMutation.isPending;
 
   if (!Number.isFinite(showId)) {
     return (
@@ -625,7 +672,7 @@ export default function ShowDetailPage() {
           </div>
           <StatusPicker
             current={userShow?.status ?? null}
-            disabled={isBulkAddingEpisodes || isCreatingEpisodeLog}
+            disabled={isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
             onChange={(status) => statusMutation.mutate(status)}
             onRemove={() => removeMutation.mutate()}
           />
@@ -668,20 +715,16 @@ export default function ShowDetailPage() {
                 watchedCount={watchedCountBySeason.get(season.season_number) ?? 0}
                 seasonName={season.name}
                 watchedSet={watchedSet}
-                disabled={isBulkAddingEpisodes || isCreatingEpisodeLog}
+                disabled={isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
                 onMarkSeasonAll={async (seasonNumber) => {
-                  if (isBulkAddingEpisodes || isCreatingEpisodeLog) return;
+                  if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
 
-                  const cacheKey = `${showId}-${seasonNumber}`;
-                  let seasonData = seasonDataCache.get(cacheKey);
+                  let seasonData: TMDBSeason;
 
-                  if (!seasonData) {
-                    try {
-                      seasonData = await getSeasonDetails(showId, seasonNumber);
-                      setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData!));
-                    } catch {
-                      return;
-                    }
+                  try {
+                    seasonData = await getCachedSeasonDetails(seasonNumber);
+                  } catch {
+                    return;
                   }
 
                   if (!seasonData?.episodes?.length) return;
@@ -702,27 +745,22 @@ export default function ShowDetailPage() {
                   });
                 }}
                 onToggleEpisode={async (seasonNumber, episodeNumber, name, tmdbEpisodeId) => {
-                  if (isBulkAddingEpisodes || isCreatingEpisodeLog) return;
+                  if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
 
                   // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
-                  const cacheKey = `${showId}-${seasonNumber}`;
-                  let seasonData = seasonDataCache.get(cacheKey);
+                  let seasonData: TMDBSeason;
 
-                  if (!seasonData) {
-                    try {
-                      seasonData = await getSeasonDetails(showId, seasonNumber);
-                      setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData!));
-                    } 
-                    catch {
-                      setSelectedEpisodeForDiary({
-                        seasonNumber,
-                        episodeNumber,
-                        episodeName: name,
-                        tmdbEpisodeId,
-                      });
-                      setIsEpisodeDiaryModalOpen(true);
-                      return;
-                    }
+                  try {
+                    seasonData = await getCachedSeasonDetails(seasonNumber);
+                  } catch {
+                    setSelectedEpisodeForDiary({
+                      seasonNumber,
+                      episodeNumber,
+                      episodeName: name,
+                      tmdbEpisodeId,
+                    });
+                    setIsEpisodeDiaryModalOpen(true);
+                    return;
                   }
 
                   if (!seasonData) return;
