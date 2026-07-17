@@ -20,12 +20,13 @@ export function UserShowCard({ show }: UserShowCardProps) {
   const queryClient = useQueryClient();
   const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
 
-  const { data: episodeLogs = [] } = useQuery({
+  const episodeLogsQuery = useQuery({
     queryKey: ["episode-logs", show.tmdb_id],
     queryFn: () => getShowEpisodeLogs(show.tmdb_id),
     staleTime: 30_000,
   });
 
+  const episodeLogs = episodeLogsQuery.data ?? [];
   const watchedEpisodes = useMemo(() => {
     const seen = new Set<string>();
 
@@ -49,16 +50,20 @@ export function UserShowCard({ show }: UserShowCardProps) {
     [watchedEpisodes],
   );
 
-  const { data: showDetails } = useQuery({
+  const showDetailsQuery = useQuery({
     queryKey: ["show", show.tmdb_id],
     queryFn: () => getShowDetails(show.tmdb_id),
     enabled: remainingEpisodes > 0 && show.number_of_seasons > 0,
     staleTime: 30 * 60_000,
   });
 
+  const showDetails = showDetailsQuery.data;
+  const isEpisodeMetadataLoading =
+    episodeLogsQuery.isLoading || (remainingEpisodes > 0 && showDetailsQuery.isLoading);
+
   let nextEpisode: { seasonNumber: number; episodeNumber: number } | null = null;
 
-  if (remainingEpisodes > 0) {
+  if (!isEpisodeMetadataLoading && remainingEpisodes > 0) {
     const visibleSeasons = (showDetails?.seasons ?? [])
       .filter((season) => season.season_number > 0)
       .sort((a, b) => a.season_number - b.season_number);
@@ -84,12 +89,16 @@ export function UserShowCard({ show }: UserShowCardProps) {
     }
   }
 
-  const { data: nextEpisodeSeason } = useQuery({
+  const nextEpisodeSeasonQuery = useQuery({
     queryKey: ["season", show.tmdb_id, nextEpisode?.seasonNumber],
     queryFn: () => getSeasonDetails(show.tmdb_id, nextEpisode!.seasonNumber),
     enabled: !!nextEpisode,
     staleTime: 30 * 60_000,
   });
+  
+  const nextEpisodeSeason = nextEpisodeSeasonQuery.data;
+  const isNextEpisodeLoading = !!nextEpisode && nextEpisodeSeasonQuery.isLoading;
+  const shouldHideEpisodeInfo = isEpisodeMetadataLoading || isNextEpisodeLoading;
 
   const nextEpisodeName = useMemo(() => {
     if (!nextEpisode) return null;
@@ -162,13 +171,22 @@ export function UserShowCard({ show }: UserShowCardProps) {
           <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
           <div className="mt-3 flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-blue-400">
-                {nextEpisodeLabel ?? "Completed"}
-                {nextEpisode ? <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : null}
-              </p>
-              <p className="mt-1 truncate text-xs text-slate-400">{nextEpisodeName ?? (nextEpisode ? "Loading episode..." : "All episodes watched")}</p>
+              {shouldHideEpisodeInfo ? (
+                <>
+                  <p className="truncate text-sm font-semibold text-blue-400">Loading episode...</p>
+                  <p className="mt-1 truncate text-xs text-slate-400">Fetching watch progress</p>
+                </>
+              ) : (
+                <>
+                  <p className="truncate text-sm font-semibold text-blue-400">
+                    {nextEpisodeLabel ?? "Completed"}
+                    {nextEpisode ? <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : null}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-slate-400">{nextEpisodeName ?? (nextEpisode ? "Loading episode..." : "All episodes watched")}</p>
+                </>
+              )}
             </div>
-            {nextEpisode ? (
+            {nextEpisode && !shouldHideEpisodeInfo ? (
               <button
                 type="button"
                 onClick={(event) => {
