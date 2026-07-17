@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Tv } from "lucide-react";
-import { getMyShows, getShowEpisodeLogsBatch } from "@/lib/api";
+import { getMyShows, getShowEpisodeLogsBatch, syncShowEpisodeCatalogBatch } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { UserShowCard } from "@/components/show/ShowCard";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
@@ -29,6 +29,26 @@ export default function WatchingPage() {
     enabled: showIds.length > 0,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    if (!logsBatch || showIds.length === 0) return;
+
+    const showsMissingNextEpisode = showIds.filter((showId) => {
+      const progress = logsBatch.progressByShowId?.[showId];
+      return progress && !progress.next_episode && progress.watched_unique_count < progress.number_of_episodes;
+    });
+
+    if (showsMissingNextEpisode.length === 0) return;
+
+    const idsToSync = showsMissingNextEpisode.slice(0, 10);
+    void syncShowEpisodeCatalogBatch(idsToSync)
+      .then(() => {
+        void refetch();
+      })
+      .catch((error) => {
+        console.error("[WatchingPage] catalog sync failed", error);
+      });
+  }, [logsBatch, showIds, refetch]);
 
   const statusMessages: Record<ShowStatus, string> = {
     watching: "No shows being watched. Search and add some!",
@@ -90,7 +110,7 @@ export default function WatchingPage() {
                 <UserShowCard
                   key={show.tmdb_id}
                   show={show}
-                  episodeLogs={logsBatch ? logsBatch.logsByShowId?.[show.tmdb_id] ?? [] : undefined}
+                  progress={logsBatch ? logsBatch.progressByShowId?.[show.tmdb_id] : undefined}
                 />
               ))}
             </div>

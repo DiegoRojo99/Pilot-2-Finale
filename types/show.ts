@@ -1,3 +1,4 @@
+import type { EpisodeLog } from "./episode";
 export type ShowStatus = "watching" | "want_to_watch" | "watched" | "dropped" | "on_hold";
 
 export interface ShowRecord {
@@ -28,6 +29,26 @@ export interface UserShow {
   number_of_episodes: number;
   added_at: string;
   updated_at: string;
+}
+
+export interface ShowNextEpisode {
+  tmdb_episode_id: number | null;
+  season_number: number;
+  episode_number: number;
+  episode_name: string | null;
+  has_reliable_next: boolean;
+}
+
+export interface ShowProgress {
+  tmdb_show_id: number;
+  watched_unique_count: number;
+  number_of_episodes: number;
+  next_episode: ShowNextEpisode | null;
+}
+
+export interface EpisodeBatchResponse {
+  logsByShowId: Record<number, EpisodeLog[]>;
+  progressByShowId: Record<number, ShowProgress>;
 }
 
 export const STATUS_LABELS: Record<ShowStatus, string> = {

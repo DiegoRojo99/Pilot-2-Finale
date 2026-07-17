@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  EpisodeBatchResponse,
   EpisodeLog,
   ShowStatus,
   TMDBSearchResult,
@@ -102,7 +103,21 @@ export const getShowEpisodeLogs = (tmdbShowId: number) =>
   fetchJson<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);
 
 export const getShowEpisodeLogsBatch = (tmdbShowIds: number[]) =>
-  fetchJson<{ logsByShowId: Record<number, EpisodeLog[]> }>("/api/episodes/batch", {
+  fetchJson<EpisodeBatchResponse>("/api/episodes/batch", {
+    method: "POST",
+    body: JSON.stringify({ tmdb_show_ids: tmdbShowIds }),
+  });
+
+export const syncShowEpisodeCatalogBatch = (tmdbShowIds: number[]) =>
+  fetchJson<{
+    results: Array<{
+      tmdbShowId: number;
+      synced: boolean;
+      reason: string;
+      expectedEpisodes: number;
+      knownEpisodes: number;
+    }>;
+  }>("/api/episodes/catalog-sync", {
     method: "POST",
     body: JSON.stringify({ tmdb_show_ids: tmdbShowIds }),
   });

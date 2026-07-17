@@ -2,124 +2,38 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
-import { logEpisode, getSeasonDetails, getShowDetails, getShowEpisodeLogs } from "@/lib/api";
-import { getPosterUrl, episodeKey, formatYear } from "@/lib/utils";
+import { logEpisode } from "@/lib/api";
+import { getPosterUrl, formatYear } from "@/lib/utils";
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import type { EpisodeLog, TMDBShow, UserShow } from "@/types";
+import type { ShowProgress, TMDBShow, UserShow } from "@/types";
 
 type UserShowCardProps = {
   show: UserShow;
-  episodeLogs?: EpisodeLog[];
+  progress?: ShowProgress;
 };
 
-export function UserShowCard({ show, episodeLogs: initialEpisodeLogs }: UserShowCardProps) {
+export function UserShowCard({ show, progress }: UserShowCardProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
 
-  const episodeLogsQuery = useQuery({
-    queryKey: ["episode-logs", show.tmdb_id],
-    queryFn: () => getShowEpisodeLogs(show.tmdb_id),
-    enabled: initialEpisodeLogs === undefined,
-    staleTime: 30_000,
-  });
-
-  const episodeLogs = useMemo(
-    () => initialEpisodeLogs ?? episodeLogsQuery.data ?? [],
-    [initialEpisodeLogs, episodeLogsQuery.data],
-  );
-  const watchedEpisodes = useMemo(() => {
-    const seen = new Set<string>();
-
-    return episodeLogs
-      .filter((episodeLog) => {
-        const key = episodeKey(episodeLog.season_number, episodeLog.episode_number);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.season_number !== b.season_number) return a.season_number - b.season_number;
-        return a.episode_number - b.episode_number;
-      });
-  }, [episodeLogs]);
-
-  const remainingEpisodes = Math.max(show.number_of_episodes - watchedEpisodes.length, 0);
-
-  const watchedSet = useMemo(
-    () => new Set(watchedEpisodes.map((episodeLog) => episodeKey(episodeLog.season_number, episodeLog.episode_number))),
-    [watchedEpisodes],
-  );
-
-  const showDetailsQuery = useQuery({
-    queryKey: ["show", show.tmdb_id],
-    queryFn: () => getShowDetails(show.tmdb_id),
-    enabled: remainingEpisodes > 0 && show.number_of_seasons > 0,
-    staleTime: 30 * 60_000,
-  });
-
-  const showDetails = showDetailsQuery.data;
-  const isEpisodeMetadataLoading =
-    episodeLogsQuery.isLoading || (remainingEpisodes > 0 && showDetailsQuery.isLoading);
-
-  let nextEpisode: { seasonNumber: number; episodeNumber: number } | null = null;
-
-  if (!isEpisodeMetadataLoading && remainingEpisodes > 0) {
-    const visibleSeasons = (showDetails?.seasons ?? [])
-      .filter((season) => season.season_number > 0)
-      .sort((a, b) => a.season_number - b.season_number);
-
-    for (const season of visibleSeasons) {
-      for (let episodeNumber = 1; episodeNumber <= season.episode_count; episodeNumber += 1) {
-        if (!watchedSet.has(episodeKey(season.season_number, episodeNumber))) {
-          nextEpisode = { seasonNumber: season.season_number, episodeNumber };
-          break;
-        }
-      }
-
-      if (nextEpisode) break;
-    }
-
-    if (!nextEpisode && watchedEpisodes.length === 0) nextEpisode = { seasonNumber: 1, episodeNumber: 1 };
-    if (!nextEpisode && watchedEpisodes.length > 0) {
-      const latestEpisode = watchedEpisodes[watchedEpisodes.length - 1];
-      nextEpisode = {
-        seasonNumber: latestEpisode.season_number,
-        episodeNumber: latestEpisode.episode_number + 1,
-      };
-    }
-  }
-
-  const nextEpisodeSeasonQuery = useQuery({
-    queryKey: ["season", show.tmdb_id, nextEpisode?.seasonNumber],
-    queryFn: () => getSeasonDetails(show.tmdb_id, nextEpisode!.seasonNumber),
-    enabled: !!nextEpisode,
-    staleTime: 30 * 60_000,
-  });
-  
-  const nextEpisodeSeason = nextEpisodeSeasonQuery.data;
-  const isNextEpisodeLoading = !!nextEpisode && nextEpisodeSeasonQuery.isLoading;
-  const shouldHideEpisodeInfo = isEpisodeMetadataLoading || isNextEpisodeLoading;
-
-  const nextEpisodeName = useMemo(() => {
-    if (!nextEpisode) return null;
-
-    return nextEpisodeSeason?.episodes?.find(
-      (episode) => episode.episode_number === nextEpisode.episodeNumber,
-    )?.name ?? null;
-  }, [nextEpisode, nextEpisodeSeason?.episodes]);
-
-  const remainingAfterNextEpisode = Math.max(remainingEpisodes - (nextEpisode ? 1 : 0), 0);
+  const shouldHideEpisodeInfo = !progress;
+  const watchedUniqueCount = progress?.watched_unique_count ?? 0;
+  const totalEpisodes = progress?.number_of_episodes ?? show.number_of_episodes;
+  const remainingEpisodes = Math.max(totalEpisodes - watchedUniqueCount, 0);
+  const nextEpisode = progress?.next_episode ?? null;
+  const isCompleted = !!progress && totalEpisodes > 0 && watchedUniqueCount >= totalEpisodes && !nextEpisode;
   const nextEpisodeLabel = nextEpisode
-    ? `S${String(nextEpisode.seasonNumber).padStart(2, "0")} E${String(nextEpisode.episodeNumber).padStart(2, "0")}`
+    ? `S${String(nextEpisode.season_number).padStart(2, "0")} E${String(nextEpisode.episode_number).padStart(2, "0")}`
     : null;
-  const nextEpisodeDetails = nextEpisodeSeason?.episodes?.find(
-    (episode) => episode.episode_number === nextEpisode?.episodeNumber,
-  );
+  const nextEpisodeName = nextEpisode?.episode_name ?? null;
+  const remainingAfterNextEpisode = Math.max(remainingEpisodes - (nextEpisode ? 1 : 0), 0);
+  const primaryStatusLabel = nextEpisodeLabel ?? (isCompleted ? "Completed" : "Pick next episode");
+  const secondaryStatusLabel = nextEpisodeName ?? (isCompleted ? "All episodes watched" : "Open show to continue watching");
 
   const createEpisodeLogMutation = useMutation({
     mutationFn: async ({
@@ -133,16 +47,15 @@ export function UserShowCard({ show, episodeLogs: initialEpisodeLogs }: UserShow
 
       return logEpisode({
         tmdb_show_id: show.tmdb_id,
-        tmdb_episode_id: nextEpisodeDetails?.id,
-        season_number: nextEpisode.seasonNumber,
-        episode_number: nextEpisode.episodeNumber,
-        episode_name: nextEpisodeDetails?.name ?? nextEpisodeName ?? undefined,
+        tmdb_episode_id: nextEpisode.tmdb_episode_id ?? undefined,
+        season_number: nextEpisode.season_number,
+        episode_number: nextEpisode.episode_number,
+        episode_name: nextEpisode.episode_name ?? undefined,
         watched_at: watchedAt,
         rating: rating ?? undefined,
       });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["episode-logs", show.tmdb_id] });
       void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
       void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
       void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
@@ -185,14 +98,14 @@ export function UserShowCard({ show, episodeLogs: initialEpisodeLogs }: UserShow
               ) : (
                 <>
                   <p className="truncate text-sm font-semibold text-blue-400">
-                    {nextEpisodeLabel ?? "Completed"}
+                    {primaryStatusLabel}
                     {nextEpisode ? <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : null}
                   </p>
-                  <p className="mt-1 truncate text-xs text-slate-400">{nextEpisodeName ?? (nextEpisode ? "Loading episode..." : "All episodes watched")}</p>
+                  <p className="mt-1 truncate text-xs text-slate-400">{secondaryStatusLabel}</p>
                 </>
               )}
             </div>
-            {nextEpisode && !shouldHideEpisodeInfo ? (
+            {nextEpisode && !shouldHideEpisodeInfo && nextEpisode.has_reliable_next ? (
               <button
                 type="button"
                 onClick={(event) => {
