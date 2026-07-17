@@ -9,13 +9,14 @@ import { logEpisode, getSeasonDetails, getShowDetails, getShowEpisodeLogs } from
 import { getPosterUrl, episodeKey, formatYear } from "@/lib/utils";
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import type { TMDBShow, UserShow } from "@/types";
+import type { EpisodeLog, TMDBShow, UserShow } from "@/types";
 
 type UserShowCardProps = {
   show: UserShow;
+  episodeLogs?: EpisodeLog[];
 };
 
-export function UserShowCard({ show }: UserShowCardProps) {
+export function UserShowCard({ show, episodeLogs: initialEpisodeLogs }: UserShowCardProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
@@ -23,10 +24,14 @@ export function UserShowCard({ show }: UserShowCardProps) {
   const episodeLogsQuery = useQuery({
     queryKey: ["episode-logs", show.tmdb_id],
     queryFn: () => getShowEpisodeLogs(show.tmdb_id),
+    enabled: initialEpisodeLogs === undefined,
     staleTime: 30_000,
   });
 
-  const episodeLogs = episodeLogsQuery.data ?? [];
+  const episodeLogs = useMemo(
+    () => initialEpisodeLogs ?? episodeLogsQuery.data ?? [],
+    [initialEpisodeLogs, episodeLogsQuery.data],
+  );
   const watchedEpisodes = useMemo(() => {
     const seen = new Set<string>();
 
@@ -139,6 +144,7 @@ export function UserShowCard({ show }: UserShowCardProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["episode-logs", show.tmdb_id] });
       void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
       void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
       void queryClient.invalidateQueries({ queryKey: ["stats"] });
       setIsEpisodeDiaryModalOpen(false);

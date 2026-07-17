@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Tv } from "lucide-react";
-import { getMyShows } from "@/lib/api";
+import { getMyShows, getShowEpisodeLogsBatch } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { UserShowCard } from "@/components/show/ShowCard";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
@@ -19,6 +19,14 @@ export default function WatchingPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["my-shows", selectedStatus],
     queryFn: () => getMyShows(selectedStatus),
+    staleTime: 30_000,
+  });
+
+  const showIds = (data ?? []).map((show) => show.tmdb_id);
+  const { data: logsBatch } = useQuery({
+    queryKey: ["episode-logs-batch", selectedStatus, showIds.join(",")],
+    queryFn: () => getShowEpisodeLogsBatch(showIds),
+    enabled: showIds.length > 0,
     staleTime: 30_000,
   });
 
@@ -79,7 +87,11 @@ export default function WatchingPage() {
           ) : (
             <div className="flex flex-col gap-2">
               {data.map((show) => (
-                <UserShowCard key={show.tmdb_id} show={show} />
+                <UserShowCard
+                  key={show.tmdb_id}
+                  show={show}
+                  episodeLogs={logsBatch ? logsBatch.logsByShowId?.[show.tmdb_id] ?? [] : undefined}
+                />
               ))}
             </div>
           )}

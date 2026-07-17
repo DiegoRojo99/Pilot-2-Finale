@@ -305,6 +305,8 @@ async function initializeSchema() {
     await client.query("CREATE INDEX IF NOT EXISTS idx_episodes_show_season_episode ON episodes(tmdb_show_id, season_number, episode_number)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_watch_entries_user_episode ON watch_entries(user_id, episode_id)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_watch_entries_user_watched_at ON watch_entries(user_id, watched_at DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_watch_entries_user_episode_latest ON watch_entries(user_id, episode_id, watched_at DESC, created_at DESC, id DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_watch_entries_episode_user_latest ON watch_entries(episode_id, user_id, watched_at DESC, created_at DESC, id DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_shows_updated_at ON shows(updated_at DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_user_shows_user_status ON user_shows(user_id, status)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_user_shows_status ON user_shows(status)");

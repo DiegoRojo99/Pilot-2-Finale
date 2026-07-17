@@ -101,6 +101,21 @@ export const getEpisodeLogs = (
 export const getShowEpisodeLogs = (tmdbShowId: number) =>
   fetchJson<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);
 
+export const getShowEpisodeLogsBatch = (tmdbShowIds: number[]) =>
+  fetchJson<{ logsByShowId: Record<number, EpisodeLog[]> }>("/api/episodes/batch", {
+    method: "POST",
+    body: JSON.stringify({ tmdb_show_ids: tmdbShowIds }),
+  });
+
+export const getEpisodeLogsForEpisode = (
+  showId: number,
+  seasonNumber: number,
+  episodeNumber: number,
+) =>
+  fetchJson<EpisodeLog[]>(
+    `/api/episodes/show/${showId}/season/${seasonNumber}/episode/${episodeNumber}`,
+  );
+
 export const logEpisode = (data: {
   tmdb_show_id: number;
   tmdb_episode_id?: number;

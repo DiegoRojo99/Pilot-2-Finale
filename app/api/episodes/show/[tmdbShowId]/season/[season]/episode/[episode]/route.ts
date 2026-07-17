@@ -5,6 +5,52 @@ import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ tmdbShowId: string; season: string; episode: string }> },
+) {
+  const rateLimited = enforceRateLimit({
+    key: `api:${getClientAddress(request)}`,
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    message: "Too many requests, please try again later.",
+  });
+
+  if (rateLimited) return rateLimited;
+
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) return authResult.response;
+  const { userId } = authResult.context;
+  const { tmdbShowId, season, episode } = await params;
+  const result = await db.query(
+    `
+      SELECT
+        we.id,
+        e.id AS episode_id,
+        e.tmdb_episode_id,
+        e.tmdb_show_id,
+        e.season_number,
+        e.episode_number,
+        e.name AS episode_name,
+        we.watched_at,
+        we.created_at,
+        we.updated_at,
+        we.rating,
+        we.notes
+      FROM watch_entries we
+      JOIN episodes e ON e.id = we.episode_id
+      WHERE we.user_id = $1
+        AND e.tmdb_show_id = $2
+        AND e.season_number = $3
+        AND e.episode_number = $4
+      ORDER BY we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
+    `,
+    [userId, Number(tmdbShowId), Number(season), Number(episode)],
+  );
+
+  return NextResponse.json(result.rows);
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ tmdbShowId: string; season: string; episode: string }> },

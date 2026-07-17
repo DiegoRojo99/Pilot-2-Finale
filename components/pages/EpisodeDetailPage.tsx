@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock3, Star } from "lucide-react";
-import { getSeasonDetails, getShowDetails, getShowEpisodeLogs } from "@/lib/api";
+import { getEpisodeLogsForEpisode, getSeasonDetails, getShowDetails } from "@/lib/api";
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
@@ -64,8 +64,8 @@ export default function EpisodeDetailPage() {
   });
 
   const { data: episodeLogs = [] } = useQuery({
-    queryKey: ["episode-logs", showId],
-    queryFn: () => getShowEpisodeLogs(showId),
+    queryKey: ["episode-logs", showId, seasonNumber, episodeNumber],
+    queryFn: () => getEpisodeLogsForEpisode(showId, seasonNumber, episodeNumber),
     enabled: hasValidParams,
     staleTime: 30_000,
   });
@@ -75,10 +75,7 @@ export default function EpisodeDetailPage() {
     [seasonData, episodeNumber],
   );
 
-  const watchLogs = useMemo(
-    () => episodeLogs.filter((log) => log.season_number === seasonNumber && log.episode_number === episodeNumber),
-    [episodeLogs, seasonNumber, episodeNumber],
-  );
+  const watchLogs = useMemo(() => episodeLogs, [episodeLogs]);
 
   if (!hasValidParams) {
     return (

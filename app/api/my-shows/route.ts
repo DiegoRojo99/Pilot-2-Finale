@@ -3,7 +3,7 @@ import db from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
-import { repairShowCatalogIfNeeded, upsertShowCatalog } from "@/lib/show-catalog";
+import { upsertShowCatalog } from "@/lib/show-catalog";
 import type { ShowStatus, UserShow } from "@/types";
 
 export const runtime = "nodejs";
@@ -66,19 +66,9 @@ export async function GET(request: Request) {
   const query = status
     ? `${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.status = $2 ORDER BY us.updated_at DESC`
     : `${USER_SHOW_SELECT} WHERE us.user_id = $1 ORDER BY us.updated_at DESC`;
-  let { rows: shows } = status
+  const { rows: shows } = status
     ? await db.query<UserShow>(query, [userId, status])
     : await db.query<UserShow>(query, [userId]);
-
-  const repaired = await Promise.all(
-    shows.map((show) => repairShowCatalogIfNeeded(show)),
-  );
-
-  if (repaired.some(Boolean)) {
-    ({ rows: shows } = status
-      ? await db.query<UserShow>(query, [userId, status])
-      : await db.query<UserShow>(query, [userId]));
-  }
 
   return NextResponse.json(shows);
 }
@@ -125,16 +115,7 @@ export async function POST(request: Request) {
       number_of_seasons: body.number_of_seasons ?? 0,
       number_of_episodes: body.number_of_episodes ?? 0,
     });
-
-    await repairShowCatalogIfNeeded({
-      tmdb_id: body.tmdb_id,
-      name: body.name,
-      poster_path: body.poster_path ?? null,
-      first_air_date: body.first_air_date ?? null,
-      number_of_seasons: body.number_of_seasons ?? 0,
-      number_of_episodes: body.number_of_episodes ?? 0,
-    });
-
+    
     await db.query(
       `
       INSERT INTO user_shows (

@@ -23,38 +23,31 @@ export async function GET(request: Request) {
   }
   const { userId } = authResult.context;
 
-  const totalEpisodesResult = await db.one<{ count: string }>(
-    "SELECT COUNT(*)::text as count FROM watch_entries WHERE user_id = $1",
+  const stats = await db.one<{
+    total_episodes: number;
+    total_shows: number;
+    watching_shows: number;
+    watched_shows: number;
+    want_to_watch: number;
+  }>(
+    `
+      SELECT
+        (SELECT COUNT(*)::int FROM watch_entries WHERE user_id = $1) AS total_episodes,
+        COUNT(*)::int AS total_shows,
+        COUNT(*) FILTER (WHERE status = 'watching')::int AS watching_shows,
+        COUNT(*) FILTER (WHERE status = 'watched')::int AS watched_shows,
+        COUNT(*) FILTER (WHERE status = 'want_to_watch')::int AS want_to_watch
+      FROM user_shows
+      WHERE user_id = $1
+    `,
     [userId],
   );
-  const totalShowsResult = await db.one<{ count: string }>(
-    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1",
-    [userId],
-  );
-  const watchingShowsResult = await db.one<{ count: string }>(
-    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1 AND status = 'watching'",
-    [userId],
-  );
-  const watchedShowsResult = await db.one<{ count: string }>(
-    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1 AND status = 'watched'",
-    [userId],
-  );
-  const wantToWatchResult = await db.one<{ count: string }>(
-    "SELECT COUNT(*)::text as count FROM user_shows WHERE user_id = $1 AND status = 'want_to_watch'",
-    [userId],
-  );
-
-  const totalEpisodes = Number(totalEpisodesResult?.count ?? 0);
-  const totalShows = Number(totalShowsResult?.count ?? 0);
-  const watchingShows = Number(watchingShowsResult?.count ?? 0);
-  const watchedShows = Number(watchedShowsResult?.count ?? 0);
-  const wantToWatch = Number(wantToWatchResult?.count ?? 0);
 
   return NextResponse.json({
-    totalEpisodes,
-    totalShows,
-    watchingShows,
-    watchedShows,
-    wantToWatch,
+    totalEpisodes: stats?.total_episodes ?? 0,
+    totalShows: stats?.total_shows ?? 0,
+    watchingShows: stats?.watching_shows ?? 0,
+    watchedShows: stats?.watched_shows ?? 0,
+    wantToWatch: stats?.want_to_watch ?? 0,
   });
 }
