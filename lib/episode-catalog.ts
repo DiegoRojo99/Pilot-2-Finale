@@ -10,6 +10,12 @@ type CatalogSyncResult = {
 };
 
 type TmdbShowSummary = {
+  name?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  overview?: string | null;
+  first_air_date?: string | null;
+  vote_average?: number;
   number_of_episodes?: number;
   number_of_seasons?: number;
   seasons?: Array<{ season_number: number; episode_count?: number }>;
@@ -108,12 +114,32 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
     `
       UPDATE shows
       SET
-        number_of_episodes = COALESCE($2, number_of_episodes),
-        number_of_seasons = COALESCE($3, number_of_seasons),
+        name = CASE
+          WHEN (shows.name IS NULL OR shows.name = '' OR shows.name LIKE 'TMDB Show %')
+          THEN COALESCE($2, shows.name)
+          ELSE shows.name
+        END,
+        poster_path = COALESCE($3, poster_path),
+        backdrop_path = COALESCE($4, backdrop_path),
+        overview = COALESCE($5, overview),
+        first_air_date = COALESCE($6, first_air_date),
+        vote_average = CASE WHEN COALESCE($7, 0) > 0 THEN $7 ELSE vote_average END,
+        number_of_episodes = COALESCE($8, number_of_episodes),
+        number_of_seasons = COALESCE($9, number_of_seasons),
         updated_at = now()
       WHERE tmdb_id = $1
     `,
-    [tmdbShowId, show.number_of_episodes ?? null, show.number_of_seasons ?? null],
+    [
+      tmdbShowId,
+      show.name ?? null,
+      show.poster_path ?? null,
+      show.backdrop_path ?? null,
+      show.overview ?? null,
+      show.first_air_date ?? null,
+      show.vote_average ?? null,
+      show.number_of_episodes ?? null,
+      show.number_of_seasons ?? null,
+    ],
   );
 
   const knownEpisodesResult = await db.one<{ known_episodes: number }>(

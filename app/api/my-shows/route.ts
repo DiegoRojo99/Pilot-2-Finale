@@ -12,7 +12,10 @@ const USER_SHOW_SELECT = `
   SELECT
     us.id,
     us.tmdb_id,
-    s.name,
+    CASE
+      WHEN s.name LIKE 'TMDB Show %' AND us.name IS NOT NULL AND us.name <> '' THEN us.name
+      ELSE s.name
+    END AS name,
     s.poster_path,
     s.backdrop_path,
     s.overview,

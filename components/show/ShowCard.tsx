@@ -25,15 +25,28 @@ export function UserShowCard({ show, progress }: UserShowCardProps) {
   const watchedUniqueCount = progress?.watched_unique_count ?? 0;
   const totalEpisodes = progress?.number_of_episodes ?? show.number_of_episodes;
   const remainingEpisodes = Math.max(totalEpisodes - watchedUniqueCount, 0);
-  const nextEpisode = progress?.next_episode ?? null;
-  const isCompleted = !!progress && totalEpisodes > 0 && watchedUniqueCount >= totalEpisodes && !nextEpisode;
+  const nextEpisodeFromProgress = progress?.next_episode ?? null;
+  const isCompletedByCount = !!progress && totalEpisodes > 0 && watchedUniqueCount >= totalEpisodes;
+  const isCompleted = (show.status === "watched" || isCompletedByCount) && !nextEpisodeFromProgress;
+  const shouldSuggestFirstEpisode = !!progress && !nextEpisodeFromProgress && !isCompleted && watchedUniqueCount === 0 && totalEpisodes > 0;
+  const nextEpisode =
+    nextEpisodeFromProgress ??
+    (shouldSuggestFirstEpisode
+      ? {
+          tmdb_episode_id: null,
+          season_number: 1,
+          episode_number: 1,
+          episode_name: null,
+          has_reliable_next: false,
+        }
+      : null);
   const nextEpisodeLabel = nextEpisode
     ? `S${String(nextEpisode.season_number).padStart(2, "0")} E${String(nextEpisode.episode_number).padStart(2, "0")}`
     : null;
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
   const remainingAfterNextEpisode = Math.max(remainingEpisodes - (nextEpisode ? 1 : 0), 0);
-  const primaryStatusLabel = nextEpisodeLabel ?? (isCompleted ? "Completed" : "Pick next episode");
-  const secondaryStatusLabel = nextEpisodeName ?? (isCompleted ? "All episodes watched" : "Open show to continue watching");
+  const primaryStatusLabel = nextEpisodeLabel ?? "Completed";
+  const secondaryStatusLabel = nextEpisodeName ?? (isCompleted ? "All episodes watched" : "Start watching");
 
   const createEpisodeLogMutation = useMutation({
     mutationFn: async ({
@@ -90,7 +103,7 @@ export function UserShowCard({ show, progress }: UserShowCardProps) {
           <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
           <div className="mt-3 flex items-end justify-between gap-3">
             <div className="min-w-0">
-              {shouldHideEpisodeInfo ? (
+              {shouldHideEpisodeInfo || (!nextEpisode && !isCompleted) ? (
                 <>
                   <p className="truncate text-sm font-semibold text-blue-400">Loading episode...</p>
                   <p className="mt-1 truncate text-xs text-slate-400">Fetching watch progress</p>
@@ -105,7 +118,7 @@ export function UserShowCard({ show, progress }: UserShowCardProps) {
                 </>
               )}
             </div>
-            {nextEpisode && !shouldHideEpisodeInfo && nextEpisode.has_reliable_next ? (
+            {nextEpisode && !shouldHideEpisodeInfo ? (
               <button
                 type="button"
                 onClick={(event) => {

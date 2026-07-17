@@ -3,6 +3,7 @@ import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { syncShowEpisodeCatalog } from "@/lib/episode-catalog";
+import { reconcileUserShowStatus } from "@/lib/user-show-status";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
   if (rateLimited) return rateLimited;
   const authResult = await requireAuthenticatedUser();
   if ("response" in authResult) return authResult.response;
+  const { userId } = authResult.context;
 
   const body = await readJson<CatalogSyncPayload>(request);
   const tmdbShowIds = (body?.tmdb_show_ids ?? [])
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
   for (const tmdbShowId of limitedIds) {
     try {
       const result = await syncShowEpisodeCatalog(tmdbShowId);
+      await reconcileUserShowStatus(userId, tmdbShowId);
       results.push(result);
     } catch (error) {
       console.error("[episodes/catalog-sync] failed", { tmdbShowId, error });

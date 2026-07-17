@@ -3,6 +3,7 @@ import db from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { reconcileUserShowStatus } from "@/lib/user-show-status";
 
 export const runtime = "nodejs";
 
@@ -279,8 +280,10 @@ export async function POST(request: Request) {
         [userId, body.tmdb_show_id, JSON.stringify(normalizedEpisodes)],
       );
 
+      await reconcileUserShowStatus(userId, body.tmdb_show_id);
       return NextResponse.json({ count: Number(rows[0]?.count ?? 0) }, { status: 201 });
-    } catch (error) {
+    } 
+    catch (error) {
       console.error("Error logging episodes in bulk:", error);
       return NextResponse.json({ error: "Failed to log episodes" }, { status: 500 });
     }
@@ -340,8 +343,10 @@ export async function POST(request: Request) {
       [userId, inserted?.id],
     );
 
+    await reconcileUserShowStatus(userId, body.tmdb_show_id);
     return NextResponse.json(log, { status: 201 });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error("Error logging episode:", error);
     return NextResponse.json({ error: "Failed to log episode" }, { status: 500 });
   }
