@@ -114,24 +114,18 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
     `
       UPDATE shows
       SET
-        name = CASE
-          WHEN (shows.name IS NULL OR shows.name = '' OR shows.name LIKE 'TMDB Show %')
-          THEN COALESCE($2, shows.name)
-          ELSE shows.name
-        END,
-        poster_path = COALESCE($3, poster_path),
-        backdrop_path = COALESCE($4, backdrop_path),
-        overview = COALESCE($5, overview),
-        first_air_date = COALESCE($6, first_air_date),
-        vote_average = CASE WHEN COALESCE($7, 0) > 0 THEN $7 ELSE vote_average END,
-        number_of_episodes = COALESCE($8, number_of_episodes),
-        number_of_seasons = COALESCE($9, number_of_seasons),
+        poster_path = COALESCE($2, poster_path),
+        backdrop_path = COALESCE($3, backdrop_path),
+        overview = COALESCE($4, overview),
+        first_air_date = COALESCE($5, first_air_date),
+        vote_average = CASE WHEN COALESCE($6, 0) > 0 THEN $6 ELSE vote_average END,
+        number_of_episodes = COALESCE($7, number_of_episodes),
+        number_of_seasons = COALESCE($8, number_of_seasons),
         updated_at = now()
       WHERE tmdb_id = $1
     `,
     [
       tmdbShowId,
-      show.name ?? null,
       show.poster_path ?? null,
       show.backdrop_path ?? null,
       show.overview ?? null,

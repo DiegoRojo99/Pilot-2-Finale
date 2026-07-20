@@ -16,6 +16,10 @@ type ShowCatalogInput = {
   number_of_episodes?: number | null;
 };
 
+type UpsertShowCatalogOptions = {
+  allowNameUpdate?: boolean;
+};
+
 function isPlaceholderName(name: string | null | undefined) {
   return Boolean(name && name.startsWith(PLACEHOLDER_SHOW_NAME_PREFIX));
 }
@@ -44,8 +48,9 @@ function normalizeShowCatalogInput(input: ShowCatalogInput): Required<ShowCatalo
   };
 }
 
-export async function upsertShowCatalog(input: ShowCatalogInput) {
+export async function upsertShowCatalog(input: ShowCatalogInput, options: UpsertShowCatalogOptions = {}) {
   const normalized = normalizeShowCatalogInput(input);
+  const shouldUpdateName = options.allowNameUpdate ?? false;
 
   await db.query(
     `
@@ -63,6 +68,7 @@ export async function upsertShowCatalog(input: ShowCatalogInput) {
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     ON CONFLICT(tmdb_id) DO UPDATE SET
       name = CASE
+        WHEN $10::boolean IS NOT TRUE THEN shows.name
         WHEN excluded.name LIKE 'TMDB Show %' AND shows.name IS NOT NULL AND shows.name NOT LIKE 'TMDB Show %' THEN shows.name
         ELSE excluded.name
       END,
@@ -85,11 +91,12 @@ export async function upsertShowCatalog(input: ShowCatalogInput) {
       normalized.vote_average,
       normalized.number_of_seasons,
       normalized.number_of_episodes,
+      shouldUpdateName,
     ],
   );
 }
 
-export async function fetchAndStoreShowCatalog(tmdbId: number) {
+export async function fetchAndStoreShowCatalog(tmdbId: number, options: UpsertShowCatalogOptions = {}) {
   const show = await tmdbFetch<TMDBShow>(`/tv/${tmdbId}`);
 
   await upsertShowCatalog({
@@ -102,7 +109,7 @@ export async function fetchAndStoreShowCatalog(tmdbId: number) {
     vote_average: show.vote_average,
     number_of_seasons: show.number_of_seasons,
     number_of_episodes: show.number_of_episodes,
-  });
+  }, options);
 }
 
 export async function repairShowCatalogIfNeeded(show: Partial<ShowRecord> & { tmdb_id: number }) {
@@ -110,6 +117,6 @@ export async function repairShowCatalogIfNeeded(show: Partial<ShowRecord> & { tm
     return false;
   }
 
-  await fetchAndStoreShowCatalog(show.tmdb_id);
+  await fetchAndStoreShowCatalog(show.tmdb_id, { allowNameUpdate: true });
   return true;
 }

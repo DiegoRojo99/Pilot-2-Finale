@@ -116,7 +116,7 @@ async function initializeSchema() {
       WHERE tmdb_id IS NOT NULL
       ORDER BY tmdb_id, updated_at DESC, added_at DESC
       ON CONFLICT (tmdb_id) DO UPDATE SET
-        name = EXCLUDED.name,
+        name = shows.name,
         poster_path = COALESCE(EXCLUDED.poster_path, shows.poster_path),
         backdrop_path = COALESCE(EXCLUDED.backdrop_path, shows.backdrop_path),
         overview = COALESCE(EXCLUDED.overview, shows.overview),

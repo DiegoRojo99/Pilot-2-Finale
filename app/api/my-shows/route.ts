@@ -53,22 +53,18 @@ export async function GET(request: Request) {
     message: "Too many requests, please try again later.",
   });
 
-  if (rateLimited) {
-    return rateLimited;
-  }
-
+  if (rateLimited) return rateLimited;
   const authResult = await requireAuthenticatedUser();
-  if ("response" in authResult) {
-    return authResult.response;
-  }
-  const { userId } = authResult.context;
+  if ("response" in authResult) return authResult.response;
 
+  const { userId } = authResult.context;
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
 
   const query = status
     ? `${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.status = $2 ORDER BY us.updated_at DESC`
     : `${USER_SHOW_SELECT} WHERE us.user_id = $1 ORDER BY us.updated_at DESC`;
+  
   const { rows: shows } = status
     ? await db.query<UserShow>(query, [userId, status])
     : await db.query<UserShow>(query, [userId]);
@@ -84,27 +80,16 @@ export async function POST(request: Request) {
     message: "Too many requests, please try again later.",
   });
 
-  if (rateLimited) {
-    return rateLimited;
-  }
-
+  if (rateLimited) return rateLimited;
   const authResult = await requireAuthenticatedUser();
-  if ("response" in authResult) {
-    return authResult.response;
-  }
+  if ("response" in authResult) return authResult.response;
+
   const { userId } = authResult.context;
-
   const body = await readJson<CreateShowPayload>(request);
-
-  if (!body?.tmdb_id || !body.name) {
-    return NextResponse.json({ error: "tmdb_id and name are required" }, { status: 400 });
-  }
+  if (!body?.tmdb_id || !body.name) return NextResponse.json({ error: "tmdb_id and name are required" }, { status: 400 });
 
   const status = body.status ?? "watching";
-
-  if (!VALID_STATUSES.includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-  }
+  if (!VALID_STATUSES.includes(status)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
 
   try {
     await upsertShowCatalog({
