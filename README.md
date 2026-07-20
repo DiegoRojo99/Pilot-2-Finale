@@ -111,3 +111,21 @@ Near-term improvements:
 - Refine auth UX for session transitions and error states
 - Expand stats with streaks and trend views
 - Add tests for auth-guarded API behavior and user data isolation
+
+## Hidden admin utility
+
+- Path: /admin
+- Purpose: hidden admin hub page for internal tools
+- Path: /admin/catalog-refresh
+- Purpose: refreshes show catalog metadata for all shows in the database, including show names
+- Access control: only user IDs listed in ADMIN_USER_IDS can access this page and API
+
+Set environment variable:
+
+```bash
+ADMIN_USER_IDS=user_id_1,user_id_2
+```
+
+The page runs refresh in batches through:
+
+- POST /api/admin/catalog-refresh
