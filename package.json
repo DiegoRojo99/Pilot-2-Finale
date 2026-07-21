@@ -6,11 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:pull": "prisma db pull",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@neondatabase/auth": "^0.4.2-beta",
+    "@prisma/adapter-pg": "^7.9.0",
+    "@prisma/client": "^7.9.0",
     "@tanstack/react-query": "5.101.2",
+    "dotenv": "^17.4.2",
     "lucide-react": "1.23.0",
     "next": "16.2.10",
     "pg": "^8.22.0",
@@ -25,6 +33,7 @@
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.2.10",
+    "prisma": "^7.9.0",
     "tailwindcss": "^4.3.2",
     "typescript": "^5.9.2"
   }
