@@ -4,6 +4,7 @@ import type {
   EpisodeBatchResponse,
   EpisodeLog,
   ShowStatus,
+  StatsPeriod,
   TMDBSearchResult,
   TMDBSeason,
   TMDBShow,
@@ -169,4 +170,5 @@ export const removeEpisodeLog = (showId: number, season: number, episode: number
     { method: "DELETE" },
   );
 
-export const getStats = () => fetchJson<UserStats>("/api/episodes/stats");
+export const getStats = (period: StatsPeriod = "l30d") =>
+  fetchJson<UserStats>(`/api/episodes/stats?period=${period}`);

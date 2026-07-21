@@ -4,6 +4,7 @@ import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { upsertShowCatalog } from "@/lib/show-catalog";
+import { refreshUserShowProgress } from "@/lib/user-show-status";
 import type { ShowStatus, UserShow } from "@/types";
 
 export const runtime = "nodejs";
@@ -118,6 +119,8 @@ export async function POST(request: Request) {
       `,
       [userId, body.tmdb_id, status],
     );
+
+    await refreshUserShowProgress(userId, body.tmdb_id);
 
     const show = await db.one<UserShow>(
       `${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { reconcileUserShowStatus } from "@/lib/user-show-status";
 
 export const runtime = "nodejs";
 
@@ -87,9 +88,7 @@ export async function DELETE(
     [userId, Number(tmdbShowId), Number(season), Number(episode)],
   );
 
-  if (result.rows.length === 0) {
-    return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
-  }
-
+  if (result.rows.length === 0) return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
+  await reconcileUserShowStatus(userId, Number(tmdbShowId));
   return NextResponse.json({ success: true });
 }

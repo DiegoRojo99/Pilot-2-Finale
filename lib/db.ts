@@ -62,8 +62,10 @@ async function initializeSchema() {
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS vote_average DOUBLE PRECISION DEFAULT 0");
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS number_of_seasons INTEGER DEFAULT 0");
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS number_of_episodes INTEGER DEFAULT 0");
+    await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS total_runtime_minutes INTEGER NOT NULL DEFAULT 0");
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()");
     await client.query("ALTER TABLE shows ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await client.query("UPDATE shows SET total_runtime_minutes = COALESCE(total_runtime_minutes, 0)");
     await client.query("UPDATE shows SET created_at = COALESCE(created_at, now()), updated_at = COALESCE(updated_at, now())");
 
     await client.query(`
@@ -86,9 +88,17 @@ async function initializeSchema() {
     `);
 
     await client.query("ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS user_id TEXT");
+    await client.query("ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS watched_episodes_count INTEGER NOT NULL DEFAULT 0");
+    await client.query("ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS remaining_episodes_count INTEGER NOT NULL DEFAULT 0");
+    await client.query("ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS watched_runtime_minutes INTEGER NOT NULL DEFAULT 0");
+    await client.query("ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS remaining_runtime_minutes INTEGER NOT NULL DEFAULT 0");
     await client.query("ALTER TABLE user_shows ALTER COLUMN name DROP NOT NULL");
     await client.query("UPDATE user_shows SET status = 'watching' WHERE status IS NULL OR status NOT IN ('watching', 'want_to_watch', 'watched', 'dropped', 'on_hold')");
     await client.query("DELETE FROM user_shows WHERE user_id IS NULL");
+    await client.query("UPDATE user_shows SET watched_episodes_count = COALESCE(watched_episodes_count, 0)");
+    await client.query("UPDATE user_shows SET remaining_episodes_count = COALESCE(remaining_episodes_count, 0)");
+    await client.query("UPDATE user_shows SET watched_runtime_minutes = COALESCE(watched_runtime_minutes, 0)");
+    await client.query("UPDATE user_shows SET remaining_runtime_minutes = COALESCE(remaining_runtime_minutes, 0)");
 
     await client.query(`
       INSERT INTO shows (
@@ -192,6 +202,24 @@ async function initializeSchema() {
     await client.query("ALTER TABLE watch_entries ALTER COLUMN watched_at DROP NOT NULL");
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS genres (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS show_genres (
+        show_tmdb_id INTEGER NOT NULL,
+        genre_id INTEGER NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (show_tmdb_id, genre_id)
+      )
+    `);
+
+    await client.query(`
       DO $$
       BEGIN
         IF EXISTS (
@@ -256,6 +284,24 @@ async function initializeSchema() {
         ) THEN
           ALTER TABLE watch_entries DROP CONSTRAINT chk_watch_entries_rating;
         END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'fk_show_genres_show'
+            AND conrelid = 'show_genres'::regclass
+        ) THEN
+          ALTER TABLE show_genres DROP CONSTRAINT fk_show_genres_show;
+        END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'fk_show_genres_genre'
+            AND conrelid = 'show_genres'::regclass
+        ) THEN
+          ALTER TABLE show_genres DROP CONSTRAINT fk_show_genres_genre;
+        END IF;
       END
       $$
     `);
@@ -291,6 +337,14 @@ async function initializeSchema() {
       ALTER TABLE watch_entries
       ADD CONSTRAINT chk_watch_entries_rating CHECK (rating IS NULL OR (rating >= 0 AND rating <= 10))
     `);
+    await client.query(`
+      ALTER TABLE show_genres
+      ADD CONSTRAINT fk_show_genres_show FOREIGN KEY (show_tmdb_id) REFERENCES shows(tmdb_id) ON DELETE CASCADE
+    `);
+    await client.query(`
+      ALTER TABLE show_genres
+      ADD CONSTRAINT fk_show_genres_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+    `);
 
     // ON CONFLICT(user_id, ...) requires a non-partial unique index/constraint.
     await client.query("DROP INDEX IF EXISTS idx_user_shows_user_tmdb_unique");
@@ -298,6 +352,8 @@ async function initializeSchema() {
     await client.query("DROP INDEX IF EXISTS idx_episodes_show_season_episode");
     await client.query("DROP INDEX IF EXISTS idx_watch_entries_user_episode");
     await client.query("DROP INDEX IF EXISTS idx_watch_entries_user_watched_at");
+    await client.query("DROP INDEX IF EXISTS idx_show_genres_genre");
+    await client.query("DROP INDEX IF EXISTS idx_show_genres_show");
     await client.query(
       "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_shows_user_tmdb_unique ON user_shows(user_id, tmdb_id)",
     );
@@ -310,6 +366,79 @@ async function initializeSchema() {
     await client.query("CREATE INDEX IF NOT EXISTS idx_shows_updated_at ON shows(updated_at DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_user_shows_user_status ON user_shows(user_id, status)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_user_shows_status ON user_shows(status)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_show_genres_genre ON show_genres(genre_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_show_genres_show ON show_genres(show_tmdb_id)");
+
+    await client.query(`
+      UPDATE shows s
+      SET total_runtime_minutes = COALESCE(ep.total_runtime_minutes, 0)
+      FROM (
+        SELECT tmdb_show_id, COALESCE(SUM(COALESCE(runtime, 0)), 0)::int AS total_runtime_minutes
+        FROM episodes
+        GROUP BY tmdb_show_id
+      ) ep
+      WHERE s.tmdb_id = ep.tmdb_show_id
+    `);
+
+    await client.query(`
+      UPDATE shows
+      SET total_runtime_minutes = 0
+      WHERE total_runtime_minutes IS NULL
+    `);
+
+    await client.query(`
+      WITH watched AS (
+        SELECT
+          latest.user_id,
+          latest.tmdb_show_id,
+          COUNT(*)::int AS watched_episodes_count,
+          COALESCE(SUM(latest.runtime), 0)::int AS watched_runtime_minutes
+        FROM (
+          SELECT DISTINCT ON (we.user_id, e.tmdb_show_id, we.episode_id)
+            we.user_id,
+            e.tmdb_show_id,
+            COALESCE(e.runtime, 0) AS runtime
+          FROM watch_entries we
+          JOIN episodes e ON e.id = we.episode_id
+          ORDER BY we.user_id, e.tmdb_show_id, we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
+        ) latest
+        GROUP BY latest.user_id, latest.tmdb_show_id
+      )
+      UPDATE user_shows us
+      SET
+        watched_episodes_count = COALESCE((
+          SELECT w.watched_episodes_count
+          FROM watched w
+          WHERE w.user_id = us.user_id
+            AND w.tmdb_show_id = us.tmdb_id
+        ), 0),
+        watched_runtime_minutes = COALESCE((
+          SELECT w.watched_runtime_minutes
+          FROM watched w
+          WHERE w.user_id = us.user_id
+            AND w.tmdb_show_id = us.tmdb_id
+        ), 0),
+        remaining_episodes_count = GREATEST(
+          COALESCE(s.number_of_episodes, 0) - COALESCE((
+            SELECT w.watched_episodes_count
+            FROM watched w
+            WHERE w.user_id = us.user_id
+              AND w.tmdb_show_id = us.tmdb_id
+          ), 0),
+          0
+        ),
+        remaining_runtime_minutes = GREATEST(
+          COALESCE(s.total_runtime_minutes, 0) - COALESCE((
+            SELECT w.watched_runtime_minutes
+            FROM watched w
+            WHERE w.user_id = us.user_id
+              AND w.tmdb_show_id = us.tmdb_id
+          ), 0),
+          0
+        )
+      FROM shows s
+      WHERE us.tmdb_id = s.tmdb_id
+    `);
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
