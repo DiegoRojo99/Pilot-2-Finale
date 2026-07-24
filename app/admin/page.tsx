@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth/server";
 import { isAdminUserId } from "@/lib/auth/admin";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Admin",
   robots: {

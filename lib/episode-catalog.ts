@@ -1,5 +1,6 @@
 import db from "@/lib/db";
 import { tmdbFetch } from "@/lib/tmdb";
+import { refreshAllUsersShowProgress } from "@/lib/user-show-status";
 
 type CatalogSyncResult = {
   tmdbShowId: number;
@@ -18,6 +19,8 @@ type TmdbShowSummary = {
   vote_average?: number;
   number_of_episodes?: number;
   number_of_seasons?: number;
+  episode_run_time?: number[];
+  genres?: Array<{ id: number; name: string }>;
   seasons?: Array<{ season_number: number; episode_count?: number }>;
 };
 
@@ -109,6 +112,8 @@ async function upsertSeasonEpisodes(tmdbShowId: number, seasonNumber: number) {
 export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<CatalogSyncResult> {
   const show = await tmdbFetch<TmdbShowSummary>(`/tv/${tmdbShowId}`);
   const expectedEpisodes = Math.max(0, Number(show.number_of_episodes ?? 0));
+  const fallbackRuntime = (show.episode_run_time ?? []).find((value) => Number.isFinite(value) && value > 0) ?? 0;
+  const estimatedRuntime = fallbackRuntime > 0 && expectedEpisodes > 0 ? Math.round(fallbackRuntime * expectedEpisodes) : 0;
 
   await db.query(
     `
@@ -118,9 +123,14 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
         backdrop_path = COALESCE($3, backdrop_path),
         overview = COALESCE($4, overview),
         first_air_date = COALESCE($5, first_air_date),
-        vote_average = CASE WHEN COALESCE($6, 0) > 0 THEN $6 ELSE vote_average END,
+        vote_average = CASE
+          WHEN COALESCE($6::double precision, 0::double precision) > 0::double precision
+            THEN $6::double precision
+          ELSE vote_average
+        END,
         number_of_episodes = COALESCE($7, number_of_episodes),
         number_of_seasons = COALESCE($8, number_of_seasons),
+        total_runtime_minutes = CASE WHEN COALESCE($9, 0) > 0 THEN $9 ELSE total_runtime_minutes END,
         updated_at = now()
       WHERE tmdb_id = $1
     `,
@@ -133,8 +143,45 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
       show.vote_average ?? null,
       show.number_of_episodes ?? null,
       show.number_of_seasons ?? null,
+      estimatedRuntime,
     ],
   );
+
+  const normalizedGenres = Array.from(
+    new Map(
+      (show.genres ?? [])
+        .filter((genre) => Number.isFinite(genre.id) && typeof genre.name === "string" && genre.name.trim().length > 0)
+        .map((genre) => [genre.id, { id: Number(genre.id), name: genre.name.trim() }]),
+    ).values(),
+  );
+
+  if (Array.isArray(show.genres)) {
+    await db.query("DELETE FROM show_genres WHERE show_tmdb_id = $1", [tmdbShowId]);
+  }
+
+  if (normalizedGenres.length > 0) {
+    await db.query(
+      `
+        INSERT INTO genres (id, name)
+        SELECT genre.id, genre.name
+        FROM jsonb_to_recordset($1::jsonb) AS genre(id INTEGER, name TEXT)
+        ON CONFLICT (id) DO UPDATE SET
+          name = excluded.name,
+          updated_at = now()
+      `,
+      [JSON.stringify(normalizedGenres)],
+    );
+
+    await db.query(
+      `
+        INSERT INTO show_genres (show_tmdb_id, genre_id)
+        SELECT $1, genre.id
+        FROM jsonb_to_recordset($2::jsonb) AS genre(id INTEGER, name TEXT)
+        ON CONFLICT (show_tmdb_id, genre_id) DO NOTHING
+      `,
+      [tmdbShowId, JSON.stringify(normalizedGenres)],
+    );
+  }
 
   const knownEpisodesResult = await db.one<{ known_episodes: number }>(
     "SELECT COUNT(*)::int AS known_episodes FROM episodes WHERE tmdb_show_id = $1",
@@ -144,29 +191,49 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
 
   const shouldSync = expectedEpisodes === 0 || knownEpisodes < expectedEpisodes;
 
+  let finalKnown = knownEpisodes;
+
+  if (shouldSync) {
+    const seasons = (show.seasons ?? [])
+      .filter((season) => season.season_number > 0 && (season.episode_count ?? 0) > 0)
+      .map((season) => season.season_number);
+
+    for (const seasonNumber of seasons) {
+      await upsertSeasonEpisodes(tmdbShowId, seasonNumber);
+    }
+
+    finalKnown =
+      (await db.one<{ known_episodes: number }>(
+        "SELECT COUNT(*)::int AS known_episodes FROM episodes WHERE tmdb_show_id = $1",
+        [tmdbShowId],
+      ))?.known_episodes ?? knownEpisodes;
+  }
+
+  const runtimeTotals = await db.one<{ total_runtime_minutes: number }>(
+    "SELECT COALESCE(SUM(COALESCE(runtime, 0)), 0)::int AS total_runtime_minutes FROM episodes WHERE tmdb_show_id = $1",
+    [tmdbShowId],
+  );
+
+  await db.query(
+    `
+      UPDATE shows
+      SET total_runtime_minutes = $2, updated_at = now()
+      WHERE tmdb_id = $1
+    `,
+    [tmdbShowId, runtimeTotals?.total_runtime_minutes ?? 0],
+  );
+
+  await refreshAllUsersShowProgress(tmdbShowId);
+
   if (!shouldSync) {
     return {
       tmdbShowId,
       synced: false,
       reason: "up_to_date",
       expectedEpisodes,
-      knownEpisodes,
+      knownEpisodes: finalKnown,
     };
   }
-
-  const seasons = (show.seasons ?? [])
-    .filter((season) => season.season_number > 0 && (season.episode_count ?? 0) > 0)
-    .map((season) => season.season_number);
-
-  for (const seasonNumber of seasons) {
-    await upsertSeasonEpisodes(tmdbShowId, seasonNumber);
-  }
-
-  const finalKnown =
-    (await db.one<{ known_episodes: number }>(
-      "SELECT COUNT(*)::int AS known_episodes FROM episodes WHERE tmdb_show_id = $1",
-      [tmdbShowId],
-    ))?.known_episodes ?? knownEpisodes;
 
   return {
     tmdbShowId,

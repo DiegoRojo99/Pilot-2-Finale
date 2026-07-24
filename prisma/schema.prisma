@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ShowStatus {
+  watching
+  want_to_watch
+  watched
+  dropped
+  on_hold
+}
+
+model Show {
+  tmdbId              Int         @id @map("tmdb_id")
+  name                String
+  posterPath          String?     @map("poster_path")
+  backdropPath        String?     @map("backdrop_path")
+  overview            String?
+  firstAirDate        String?     @map("first_air_date")
+  voteAverage         Float       @default(0) @map("vote_average") @db.DoublePrecision
+  numberOfSeasons     Int         @default(0) @map("number_of_seasons")
+  numberOfEpisodes    Int         @default(0) @map("number_of_episodes")
+  totalRuntimeMinutes Int         @default(0) @map("total_runtime_minutes")
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+  episodes            Episode[]
+  showGenres          ShowGenre[]
+  userShows           UserShow[]
+
+  @@index([updatedAt], map: "idx_shows_updated_at")
+  @@map("shows")
+}
+
+model UserShow {
+  id                     Int        @id @default(autoincrement())
+  userId                 String     @map("user_id")
+  tmdbId                 Int        @map("tmdb_id")
+  name                   String?
+  posterPath             String?    @map("poster_path")
+  backdropPath           String?    @map("backdrop_path")
+  overview               String?
+  firstAirDate           String?    @map("first_air_date")
+  status                 ShowStatus @default(watching)
+  voteAverage            Float      @default(0) @map("vote_average") @db.DoublePrecision
+  numberOfSeasons        Int        @default(0) @map("number_of_seasons")
+  numberOfEpisodes       Int        @default(0) @map("number_of_episodes")
+  watchedEpisodesCount   Int        @default(0) @map("watched_episodes_count")
+  remainingEpisodesCount Int        @default(0) @map("remaining_episodes_count")
+  watchedRuntimeMinutes  Int        @default(0) @map("watched_runtime_minutes")
+  remainingRuntimeMinutes Int       @default(0) @map("remaining_runtime_minutes")
+  addedAt                DateTime   @default(now()) @map("added_at") @db.Timestamptz(6)
+  updatedAt              DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  show                   Show       @relation(fields: [tmdbId], references: [tmdbId], onDelete: Restrict)
+
+  @@unique([userId, tmdbId], map: "idx_user_shows_user_tmdb_unique")
+  @@index([userId, status], map: "idx_user_shows_user_status")
+  @@index([status], map: "idx_user_shows_status")
+  @@map("user_shows")
+}
+
+model Episode {
+  id           Int          @id @default(autoincrement())
+  tmdbEpisodeId Int?        @map("tmdb_episode_id")
+  tmdbShowId   Int          @map("tmdb_show_id")
+  seasonNumber Int          @map("season_number")
+  episodeNumber Int         @map("episode_number")
+  name         String?
+  overview     String?
+  airDate      String?      @map("air_date")
+  stillPath    String?      @map("still_path")
+  voteAverage  Float        @default(0) @map("vote_average") @db.DoublePrecision
+  runtime      Int?
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  show         Show         @relation(fields: [tmdbShowId], references: [tmdbId], onDelete: Cascade)
+  watchEntries WatchEntry[]
+
+  @@unique([tmdbShowId, seasonNumber, episodeNumber], map: "uq_episodes_show_season_episode")
+  @@index([tmdbShowId, seasonNumber, episodeNumber], map: "idx_episodes_show_season_episode")
+  @@map("episodes")
+}
+
+model WatchEntry {
+  id        Int       @id @default(autoincrement())
+  userId    String    @map("user_id")
+  episodeId Int       @map("episode_id")
+  watchedAt DateTime? @map("watched_at") @db.Timestamptz(6)
+  rating    Float?    @db.DoublePrecision
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  episode   Episode   @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, episodeId], map: "idx_watch_entries_user_episode")
+  @@index([userId, watchedAt], map: "idx_watch_entries_user_watched_at")
+  @@map("watch_entries")
+}
+
+model Genre {
+  id         Int         @id
+  name       String      @unique
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+  showGenres ShowGenre[]
+
+  @@map("genres")
+}
+
+model ShowGenre {
+  showTmdbId Int      @map("show_tmdb_id")
+  genreId    Int      @map("genre_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  genre      Genre    @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  show       Show     @relation(fields: [showTmdbId], references: [tmdbId], onDelete: Cascade)
+
+  @@id([showTmdbId, genreId])
+  @@index([genreId], map: "idx_show_genres_genre")
+  @@index([showTmdbId], map: "idx_show_genres_show")
+  @@map("show_genres")
+}

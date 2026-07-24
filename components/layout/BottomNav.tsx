@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckSquare, Search, Tv, UserCircle2 } from "lucide-react";
+import { BarChart3, CheckSquare, Search, Tv } from "lucide-react";
 
 const navItems = [
   { href: "/search", icon: Search, label: "Search" },
   { href: "/watching", icon: Tv, label: "Watching" },
   { href: "/history", icon: CheckSquare, label: "History" },
-  { href: "/profile", icon: UserCircle2, label: "Profile" },
+  { href: "/stats", icon: BarChart3, label: "Stats" },
 ];
 
 export function BottomNav() {

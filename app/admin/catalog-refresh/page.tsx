@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth/server";
 import { isAdminUserId } from "@/lib/auth/admin";
 import AdminCatalogRefreshPage from "@/components/pages/AdminCatalogRefreshPage";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Admin Catalog Refresh",
   robots: {

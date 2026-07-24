@@ -99,7 +99,37 @@ The project enforces user-level ownership in both read and write queries.
 - Tailwind CSS v4
 - TanStack Query
 - Neon Postgres (pg)
+- Prisma ORM
 - Neon Auth
+
+## Prisma setup
+
+Prisma is now configured in this repo for schema management and migrations.
+
+Environment variables Prisma expects:
+
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
+```
+
+Recommended Neon usage:
+
+- `DATABASE_URL`: direct Neon Postgres connection string for Prisma migrations and Prisma Client
+- `NEON_CONNECTION_STRING`: optional fallback for the existing `pg` layer while the app is still mixed
+
+Useful commands:
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate:deploy
+npm run prisma:studio
+```
+
+Current transition note:
+
+- The existing `pg` query layer is still in place.
+- Prisma has been added as the migration/schema system first.
+- Once migrations are the only source of truth, the runtime schema bootstrap in `lib/db.ts` should be removed.
 
 ## Current state and next steps
 
