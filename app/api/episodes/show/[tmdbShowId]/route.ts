@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { fetchLatestEpisodeLogsForShow } from "@/lib/data/episode-logs";
 import { defaultRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -17,32 +17,7 @@ export async function GET(
 
   const { userId } = authResult.context;
   const { tmdbShowId } = await params;
-  const { rows: logs } = await db.query(
-    `
-      SELECT *
-      FROM (
-        SELECT DISTINCT ON (we.episode_id)
-          we.id,
-          e.id AS episode_id,
-          e.tmdb_episode_id,
-          e.tmdb_show_id,
-          e.season_number,
-          e.episode_number,
-          e.name AS episode_name,
-          we.rating,
-          we.notes,
-          we.watched_at,
-          we.created_at,
-          we.updated_at
-        FROM watch_entries we
-        JOIN episodes e ON e.id = we.episode_id
-        WHERE we.user_id = $1 AND e.tmdb_show_id = $2
-        ORDER BY we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
-      ) latest
-      ORDER BY latest.season_number ASC, latest.episode_number ASC
-    `,
-    [userId, Number(tmdbShowId)],
-  );
+  const logs = await fetchLatestEpisodeLogsForShow(userId, Number(tmdbShowId));
 
   return NextResponse.json(logs);
 }
