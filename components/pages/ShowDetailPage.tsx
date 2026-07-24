@@ -15,6 +15,7 @@ import {
   logEpisode,
   logEpisodesBulk,
   removeShow,
+  syncShowEpisodeCatalogBatch,
   updateShowStatus,
 } from "@/lib/api";
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
@@ -353,18 +354,33 @@ export default function ShowDetailPage() {
     staleTime: 30 * 60_000,
   });
 
-  const { data: userShow } = useQuery({
+  const { data: userShow, isLoading: userShowLoading } = useQuery({
     queryKey: ["my-show", showId],
     queryFn: () => getMyShow(showId),
     enabled: Number.isFinite(showId),
     staleTime: 30_000,
   });
 
-  const { data: episodeLogs = [] } = useQuery({
+  const { data: episodeLogs = [], isLoading: episodeLogsLoading } = useQuery({
     queryKey: ["episode-logs", showId],
     queryFn: () => getShowEpisodeLogs(showId),
     enabled: Number.isFinite(showId),
     staleTime: 30_000,
+  });
+
+  useQuery({
+    queryKey: ["catalog-sync-on-open", showId, userShow?.id],
+    queryFn: async () => {
+      await syncShowEpisodeCatalogBatch([showId]);
+      await queryClient.invalidateQueries({ queryKey: ["my-show", showId] });
+      await queryClient.invalidateQueries({ queryKey: ["my-shows"] });
+      await queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
+      return true;
+    },
+    enabled: Number.isFinite(showId) && Boolean(userShow),
+    staleTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const watchedSet = useMemo(() => {
@@ -521,6 +537,7 @@ export default function ShowDetailPage() {
   const isBulkAddingEpisodes = bulkLogEpisodesMutation.isPending;
   const isCreatingEpisodeLog = createEpisodeLogMutation.isPending;
   const isStatusUpdating = statusMutation.isPending || removeMutation.isPending;
+  const isEpisodeProgressReady = !userShowLoading && (!userShow || !episodeLogsLoading);
 
   if (!Number.isFinite(showId)) {
     return (
@@ -619,92 +636,98 @@ export default function ShowDetailPage() {
               <Plus className="h-4 w-4 text-blue-400" />
               Track Episodes
             </h2>
-            {!userShow ? <p className="mb-3 text-xs text-slate-500">Add this show to your list to mark episodes as watched.</p> : null}
-            {visibleSeasons.map((season) => (
-              <SeasonAccordion
-                key={season.season_number}
-                showId={showId}
-                seasonNumber={season.season_number}
-                episodeCount={season.episode_count}
-                watchedCount={watchedCountBySeason.get(season.season_number) ?? 0}
-                seasonName={season.name}
-                watchedSet={watchedSet}
-                disabled={!userShow || isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
-                onMarkSeasonAll={async (seasonNumber) => {
-                  if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
+            {!isEpisodeProgressReady ? (
+              <div className="mb-3 rounded-xl bg-slate-800/50 p-4 text-xs text-slate-500">Loading your episode progress...</div>
+            ) : (
+              <>
+                {!userShow ? <p className="mb-3 text-xs text-slate-500">Add this show to your list to mark episodes as watched.</p> : null}
+                {visibleSeasons.map((season) => (
+                  <SeasonAccordion
+                    key={season.season_number}
+                    showId={showId}
+                    seasonNumber={season.season_number}
+                    episodeCount={season.episode_count}
+                    watchedCount={watchedCountBySeason.get(season.season_number) ?? 0}
+                    seasonName={season.name}
+                    watchedSet={watchedSet}
+                    disabled={!userShow || isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
+                    onMarkSeasonAll={async (seasonNumber) => {
+                      if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
 
-                  let seasonData: TMDBSeason;
+                      let seasonData: TMDBSeason;
 
-                  try {
-                    seasonData = await getCachedSeasonDetails(seasonNumber);
-                  } catch {
-                    return;
-                  }
+                      try {
+                        seasonData = await getCachedSeasonDetails(seasonNumber);
+                      } catch {
+                        return;
+                      }
 
-                  if (!seasonData?.episodes?.length) return;
+                      if (!seasonData?.episodes?.length) return;
 
-                  const episodesToLog = seasonData.episodes
-                    .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
-                    .map((episode) => ({
-                      episode: episode.episode_number,
-                      name: episode.name,
-                      tmdbEpisodeId: episode.id,
-                    }));
+                      const episodesToLog = seasonData.episodes
+                        .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
+                        .map((episode) => ({
+                          episode: episode.episode_number,
+                          name: episode.name,
+                          tmdbEpisodeId: episode.id,
+                        }));
 
-                  if (episodesToLog.length === 0) return;
+                      if (episodesToLog.length === 0) return;
 
-                  bulkLogEpisodesMutation.mutate({
-                    season: seasonNumber,
-                    episodes: episodesToLog,
-                  });
-                }}
-                onToggleEpisode={async (seasonNumber, episodeNumber, name, tmdbEpisodeId) => {
-                  if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
+                      bulkLogEpisodesMutation.mutate({
+                        season: seasonNumber,
+                        episodes: episodesToLog,
+                      });
+                    }}
+                    onToggleEpisode={async (seasonNumber, episodeNumber, name, tmdbEpisodeId) => {
+                      if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
 
-                  // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
-                  let seasonData: TMDBSeason;
+                      // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
+                      let seasonData: TMDBSeason;
 
-                  try {
-                    seasonData = await getCachedSeasonDetails(seasonNumber);
-                  } catch {
-                    setSelectedEpisodeForDiary({
-                      seasonNumber,
-                      episodeNumber,
-                      episodeName: name,
-                      tmdbEpisodeId,
-                    });
-                    setIsEpisodeDiaryModalOpen(true);
-                    return;
-                  }
+                      try {
+                        seasonData = await getCachedSeasonDetails(seasonNumber);
+                      } catch {
+                        setSelectedEpisodeForDiary({
+                          seasonNumber,
+                          episodeNumber,
+                          episodeName: name,
+                          tmdbEpisodeId,
+                        });
+                        setIsEpisodeDiaryModalOpen(true);
+                        return;
+                      }
 
-                  if (!seasonData) return;
-                  const episodes = seasonData.episodes || [];
-                  const unwatchedBefore = episodes.filter(
-                    (ep) =>
-                      ep.episode_number < episodeNumber &&
-                      !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
-                  );
+                      if (!seasonData) return;
+                      const episodes = seasonData.episodes || [];
+                      const unwatchedBefore = episodes.filter(
+                        (ep) =>
+                          ep.episode_number < episodeNumber &&
+                          !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+                      );
 
-                  if (unwatchedBefore.length > 0) {
-                    setMarkAllConfirm({
-                      season: seasonNumber,
-                      episode: episodeNumber,
-                      tmdbEpisodeId,
-                      episodeName: name,
-                      unwatchedCount: unwatchedBefore.length,
-                    });
-                  } else {
-                    setSelectedEpisodeForDiary({
-                      seasonNumber,
-                      episodeNumber,
-                      episodeName: name,
-                      tmdbEpisodeId,
-                    });
-                    setIsEpisodeDiaryModalOpen(true);
-                  }
-                }}
-              />
-            ))}
+                      if (unwatchedBefore.length > 0) {
+                        setMarkAllConfirm({
+                          season: seasonNumber,
+                          episode: episodeNumber,
+                          tmdbEpisodeId,
+                          episodeName: name,
+                          unwatchedCount: unwatchedBefore.length,
+                        });
+                      } else {
+                        setSelectedEpisodeForDiary({
+                          seasonNumber,
+                          episodeNumber,
+                          episodeName: name,
+                          tmdbEpisodeId,
+                        });
+                        setIsEpisodeDiaryModalOpen(true);
+                      }
+                    }}
+                  />
+                ))}
+              </>
+            )}
           </div>
         )}
 

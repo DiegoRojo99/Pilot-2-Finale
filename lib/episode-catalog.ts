@@ -123,7 +123,11 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
         backdrop_path = COALESCE($3, backdrop_path),
         overview = COALESCE($4, overview),
         first_air_date = COALESCE($5, first_air_date),
-        vote_average = CASE WHEN COALESCE($6, 0) > 0 THEN $6 ELSE vote_average END,
+        vote_average = CASE
+          WHEN COALESCE($6::double precision, 0::double precision) > 0::double precision
+            THEN $6::double precision
+          ELSE vote_average
+        END,
         number_of_episodes = COALESCE($7, number_of_episodes),
         number_of_seasons = COALESCE($8, number_of_seasons),
         total_runtime_minutes = CASE WHEN COALESCE($9, 0) > 0 THEN $9 ELSE total_runtime_minutes END,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Tv } from "lucide-react";
 import { getMyShows, getShowEpisodeLogsBatch, syncShowEpisodeCatalogBatch } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
@@ -13,6 +13,7 @@ import { STATUS_LABELS, type ShowStatus } from "@/types";
 const STATUS_OPTIONS: ShowStatus[] = ["watching", "want_to_watch", "watched", "on_hold", "dropped"];
 
 export default function WatchingPage() {
+  const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState<ShowStatus>("watching");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -35,7 +36,10 @@ export default function WatchingPage() {
 
     const showsMissingNextEpisode = showIds.filter((showId) => {
       const progress = logsBatch.progressByShowId?.[showId];
-      return progress && !progress.next_episode && progress.watched_unique_count < progress.number_of_episodes;
+      if (!progress || progress.next_episode) return false;
+
+      // Sync when totals are unknown or when there are unwatched episodes but no next-episode resolution.
+      return progress.number_of_episodes <= 0 || progress.watched_unique_count < progress.number_of_episodes;
     });
 
     if (showsMissingNextEpisode.length === 0) return;
@@ -43,12 +47,13 @@ export default function WatchingPage() {
     const idsToSync = showsMissingNextEpisode.slice(0, 10);
     void syncShowEpisodeCatalogBatch(idsToSync)
       .then(() => {
+        void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
         void refetch();
       })
       .catch((error) => {
         console.error("[WatchingPage] catalog sync failed", error);
       });
-  }, [logsBatch, showIds, refetch]);
+  }, [logsBatch, showIds, refetch, queryClient]);
 
   const statusMessages: Record<ShowStatus, string> = {
     watching: "No shows being watched. Search and add some!",
