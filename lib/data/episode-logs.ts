@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { EpisodeLog } from "@/types";
 
@@ -52,10 +53,170 @@ const EPISODE_LOG_SELECT = {
   },
 } as const;
 
-export async function fetchLatestEpisodeLogsForShow(userId: string, tmdbShowId: number): Promise<EpisodeLog[]> {
+const EPISODE_LOG_WITH_SHOW_SELECT = {
+  id: true,
+  episodeId: true,
+  watchedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  rating: true,
+  notes: true,
+  episode: {
+    select: {
+      tmdbEpisodeId: true,
+      tmdbShowId: true,
+      seasonNumber: true,
+      episodeNumber: true,
+      name: true,
+      show: {
+        select: {
+          name: true,
+          posterPath: true,
+        },
+      },
+    },
+  },
+} as const;
+
+function mapEpisodeLogWithShow(row: {
+  id: number;
+  episodeId: number;
+  watchedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  rating: number | null;
+  notes: string | null;
+  episode: {
+    tmdbEpisodeId: number | null;
+    tmdbShowId: number;
+    seasonNumber: number;
+    episodeNumber: number;
+    name: string | null;
+    show: {
+      name: string;
+      posterPath: string | null;
+    };
+  };
+}): EpisodeLog {
+  return {
+    ...mapEpisodeLog(row),
+    show_name: row.episode.show.name,
+    poster_path: row.episode.show.posterPath,
+  };
+}
+
+type EpisodeListOptions = {
+  withWatchDate?: boolean;
+  limit?: number;
+  offset?: number;
+};
+
+type EpisodeUpsertInput = {
+  tmdbShowId: number;
+  tmdbEpisodeId?: number | null;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeName?: string | null;
+};
+
+type EpisodeLogCreateInput = {
+  tmdbShowId: number;
+  tmdbEpisodeId?: number | null;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeName?: string | null;
+  rating: number | null;
+  notes?: string | null;
+  watchedAt?: string | null;
+};
+
+type EpisodeLogBulkCreateInput = {
+  tmdbEpisodeId?: number | null;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeName?: string | null;
+  rating: number | null;
+  notes?: string | null;
+  watchedAt?: string | null;
+};
+
+function parseWatchedAt(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("Invalid watched_at timestamp");
+  }
+
+  return parsed;
+}
+
+async function ensureEpisodeRecord(
+  tx: Prisma.TransactionClient,
+  input: EpisodeUpsertInput,
+): Promise<number> {
+  const uniqueWhere = {
+    tmdbShowId_seasonNumber_episodeNumber: {
+      tmdbShowId: input.tmdbShowId,
+      seasonNumber: input.seasonNumber,
+      episodeNumber: input.episodeNumber,
+    },
+  };
+
+  const existing = await tx.episode.findUnique({
+    where: uniqueWhere,
+    select: {
+      id: true,
+      tmdbEpisodeId: true,
+      name: true,
+    },
+  });
+
+  if (!existing) {
+    const created = await tx.episode.create({
+      data: {
+        tmdbShowId: input.tmdbShowId,
+        tmdbEpisodeId: input.tmdbEpisodeId ?? null,
+        seasonNumber: input.seasonNumber,
+        episodeNumber: input.episodeNumber,
+        name: input.episodeName ?? null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return created.id;
+  }
+
+  const updated = await tx.episode.update({
+    where: {
+      id: existing.id,
+    },
+    data: {
+      tmdbEpisodeId: input.tmdbEpisodeId ?? existing.tmdbEpisodeId,
+      name: input.episodeName ?? existing.name,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return updated.id;
+}
+
+export async function fetchLatestEpisodeLogsForShow(
+  userId: string,
+  tmdbShowId: number,
+  options?: EpisodeListOptions,
+): Promise<EpisodeLog[]> {
+  const withWatchDate = options?.withWatchDate ?? false;
+  const limit = options?.limit;
+  const offset = options?.offset ?? 0;
+
   const rows = await prisma.watchEntry.findMany({
     where: {
       userId,
+      ...(withWatchDate ? { watchedAt: { not: null } } : {}),
       episode: {
         tmdbShowId,
       },
@@ -76,7 +237,7 @@ export async function fetchLatestEpisodeLogsForShow(userId: string, tmdbShowId: 
     }
   }
 
-  return Array.from(latestByEpisodeId.values())
+  const latestLogs = Array.from(latestByEpisodeId.values())
     .sort((a, b) => {
       if (a.episode.seasonNumber !== b.episode.seasonNumber) {
         return a.episode.seasonNumber - b.episode.seasonNumber;
@@ -85,6 +246,113 @@ export async function fetchLatestEpisodeLogsForShow(userId: string, tmdbShowId: 
       return a.episode.episodeNumber - b.episode.episodeNumber;
     })
     .map(mapEpisodeLog);
+
+  const start = Math.max(offset, 0);
+  if (typeof limit === "number") {
+    return latestLogs.slice(start, start + Math.max(limit, 0));
+  }
+
+  return latestLogs.slice(start);
+}
+
+export async function fetchEpisodeLogsForUser(userId: string, options?: EpisodeListOptions): Promise<EpisodeLog[]> {
+  const withWatchDate = options?.withWatchDate ?? false;
+  const limit = Math.max(options?.limit ?? 50, 0);
+  const offset = Math.max(options?.offset ?? 0, 0);
+
+  const rows = await prisma.watchEntry.findMany({
+    where: {
+      userId,
+      ...(withWatchDate ? { watchedAt: { not: null } } : {}),
+    },
+    select: EPISODE_LOG_WITH_SHOW_SELECT,
+    orderBy: [
+      { watchedAt: { sort: "desc", nulls: "last" } },
+      { createdAt: "desc" },
+      { id: "desc" },
+    ],
+    take: limit,
+    skip: offset,
+  });
+
+  return rows.map(mapEpisodeLogWithShow);
+}
+
+export async function userHasShowInList(userId: string, tmdbShowId: number): Promise<boolean> {
+  const count = await prisma.userShow.count({
+    where: {
+      userId,
+      tmdbId: tmdbShowId,
+    },
+  });
+
+  return count > 0;
+}
+
+export async function createEpisodeLogForUser(userId: string, input: EpisodeLogCreateInput): Promise<EpisodeLog> {
+  return prisma.$transaction(async (tx) => {
+    const episodeId = await ensureEpisodeRecord(tx, {
+      tmdbShowId: input.tmdbShowId,
+      tmdbEpisodeId: input.tmdbEpisodeId,
+      seasonNumber: input.seasonNumber,
+      episodeNumber: input.episodeNumber,
+      episodeName: input.episodeName,
+    });
+
+    const created = await tx.watchEntry.create({
+      data: {
+        userId,
+        episodeId,
+        rating: input.rating,
+        notes: input.notes ?? null,
+        watchedAt: parseWatchedAt(input.watchedAt),
+      },
+      select: EPISODE_LOG_WITH_SHOW_SELECT,
+    });
+
+    return mapEpisodeLogWithShow(created);
+  });
+}
+
+export async function createEpisodeLogsBulkForUser(
+  userId: string,
+  tmdbShowId: number,
+  episodes: EpisodeLogBulkCreateInput[],
+): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    const entries: Array<{
+      userId: string;
+      episodeId: number;
+      rating: number | null;
+      notes: string | null;
+      watchedAt: Date | null;
+    }> = [];
+
+    for (const episode of episodes) {
+      const episodeId = await ensureEpisodeRecord(tx, {
+        tmdbShowId,
+        tmdbEpisodeId: episode.tmdbEpisodeId,
+        seasonNumber: episode.seasonNumber,
+        episodeNumber: episode.episodeNumber,
+        episodeName: episode.episodeName,
+      });
+
+      entries.push({
+        userId,
+        episodeId,
+        rating: episode.rating,
+        notes: episode.notes ?? null,
+        watchedAt: parseWatchedAt(episode.watchedAt),
+      });
+    }
+
+    if (entries.length === 0) return 0;
+    const inserted = await tx.watchEntry.createMany({
+      data: entries,
+    });
+
+    return inserted.count;
+  });
 }
 
 export async function fetchEpisodeLogsForShowSeasonEpisode(

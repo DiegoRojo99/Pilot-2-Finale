@@ -1,4 +1,5 @@
-import db from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { upsertShowCatalog } from "@/lib/show-catalog";
 import { tmdbFetch } from "@/lib/tmdb";
 import { refreshAllUsersShowProgress } from "@/lib/user-show-status";
 
@@ -58,55 +59,54 @@ async function upsertSeasonEpisodes(tmdbShowId: number, seasonNumber: number) {
 
   if (payload.length === 0) return;
 
-  await db.query(
-    `
-      INSERT INTO episodes (
-        tmdb_episode_id,
-        tmdb_show_id,
-        season_number,
-        episode_number,
-        name,
-        overview,
-        air_date,
-        still_path,
-        vote_average,
-        runtime
-      )
-      SELECT
-        episode.tmdb_episode_id,
-        episode.tmdb_show_id,
-        episode.season_number,
-        episode.episode_number,
-        episode.name,
-        episode.overview,
-        episode.air_date,
-        episode.still_path,
-        episode.vote_average,
-        episode.runtime
-      FROM jsonb_to_recordset($1::jsonb) AS episode(
-        tmdb_episode_id INTEGER,
-        tmdb_show_id INTEGER,
-        season_number INTEGER,
-        episode_number INTEGER,
-        name TEXT,
-        overview TEXT,
-        air_date TEXT,
-        still_path TEXT,
-        vote_average DOUBLE PRECISION,
-        runtime INTEGER
-      )
-      ON CONFLICT (tmdb_show_id, season_number, episode_number) DO UPDATE SET
-        tmdb_episode_id = COALESCE(excluded.tmdb_episode_id, episodes.tmdb_episode_id),
-        name = COALESCE(excluded.name, episodes.name),
-        overview = COALESCE(excluded.overview, episodes.overview),
-        air_date = COALESCE(excluded.air_date, episodes.air_date),
-        still_path = COALESCE(excluded.still_path, episodes.still_path),
-        vote_average = CASE WHEN excluded.vote_average > 0 THEN excluded.vote_average ELSE episodes.vote_average END,
-        runtime = COALESCE(excluded.runtime, episodes.runtime),
-        updated_at = now()
-    `,
-    [JSON.stringify(payload)],
-  );
+  await prisma.$transaction(async (tx) => {
+    for (const episode of payload) {
+      const existing = await tx.episode.findUnique({
+        where: {
+          tmdbShowId_seasonNumber_episodeNumber: {
+            tmdbShowId: episode.tmdb_show_id,
+            seasonNumber: episode.season_number,
+            episodeNumber: episode.episode_number,
+          },
+        },
+      });
+
+      if (!existing) {
+        await tx.episode.create({
+          data: {
+            tmdbEpisodeId: episode.tmdb_episode_id,
+            tmdbShowId: episode.tmdb_show_id,
+            seasonNumber: episode.season_number,
+            episodeNumber: episode.episode_number,
+            name: episode.name,
+            overview: episode.overview,
+            airDate: episode.air_date,
+            stillPath: episode.still_path,
+            voteAverage: episode.vote_average,
+            runtime: episode.runtime,
+          },
+        });
+
+        continue;
+      }
+
+      await tx.episode.update({
+        where: {
+          id: existing.id,
+        },
+        data: {
+          tmdbEpisodeId: episode.tmdb_episode_id ?? existing.tmdbEpisodeId,
+          name: episode.name ?? existing.name,
+          overview: episode.overview ?? existing.overview,
+          airDate: episode.air_date ?? existing.airDate,
+          stillPath: episode.still_path ?? existing.stillPath,
+          voteAverage: episode.vote_average > 0 ? episode.vote_average : existing.voteAverage,
+          runtime: episode.runtime ?? existing.runtime,
+          updatedAt: new Date(),
+        },
+      });
+    }
+  });
 }
 
 export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<CatalogSyncResult> {
@@ -115,79 +115,25 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
   const fallbackRuntime = (show.episode_run_time ?? []).find((value) => Number.isFinite(value) && value > 0) ?? 0;
   const estimatedRuntime = fallbackRuntime > 0 && expectedEpisodes > 0 ? Math.round(fallbackRuntime * expectedEpisodes) : 0;
 
-  await db.query(
-    `
-      UPDATE shows
-      SET
-        poster_path = COALESCE($2, poster_path),
-        backdrop_path = COALESCE($3, backdrop_path),
-        overview = COALESCE($4, overview),
-        first_air_date = COALESCE($5, first_air_date),
-        vote_average = CASE
-          WHEN COALESCE($6::double precision, 0::double precision) > 0::double precision
-            THEN $6::double precision
-          ELSE vote_average
-        END,
-        number_of_episodes = COALESCE($7, number_of_episodes),
-        number_of_seasons = COALESCE($8, number_of_seasons),
-        total_runtime_minutes = CASE WHEN COALESCE($9, 0) > 0 THEN $9 ELSE total_runtime_minutes END,
-        updated_at = now()
-      WHERE tmdb_id = $1
-    `,
-    [
+  await upsertShowCatalog({
+    tmdb_id: tmdbShowId,
+    name: show.name,
+    poster_path: show.poster_path,
+    backdrop_path: show.backdrop_path,
+    overview: show.overview,
+    first_air_date: show.first_air_date,
+    vote_average: show.vote_average,
+    number_of_episodes: show.number_of_episodes,
+    number_of_seasons: show.number_of_seasons,
+    total_runtime_minutes: estimatedRuntime,
+    genres: show.genres,
+  });
+
+  const knownEpisodes = await prisma.episode.count({
+    where: {
       tmdbShowId,
-      show.poster_path ?? null,
-      show.backdrop_path ?? null,
-      show.overview ?? null,
-      show.first_air_date ?? null,
-      show.vote_average ?? null,
-      show.number_of_episodes ?? null,
-      show.number_of_seasons ?? null,
-      estimatedRuntime,
-    ],
-  );
-
-  const normalizedGenres = Array.from(
-    new Map(
-      (show.genres ?? [])
-        .filter((genre) => Number.isFinite(genre.id) && typeof genre.name === "string" && genre.name.trim().length > 0)
-        .map((genre) => [genre.id, { id: Number(genre.id), name: genre.name.trim() }]),
-    ).values(),
-  );
-
-  if (Array.isArray(show.genres)) {
-    await db.query("DELETE FROM show_genres WHERE show_tmdb_id = $1", [tmdbShowId]);
-  }
-
-  if (normalizedGenres.length > 0) {
-    await db.query(
-      `
-        INSERT INTO genres (id, name)
-        SELECT genre.id, genre.name
-        FROM jsonb_to_recordset($1::jsonb) AS genre(id INTEGER, name TEXT)
-        ON CONFLICT (id) DO UPDATE SET
-          name = excluded.name,
-          updated_at = now()
-      `,
-      [JSON.stringify(normalizedGenres)],
-    );
-
-    await db.query(
-      `
-        INSERT INTO show_genres (show_tmdb_id, genre_id)
-        SELECT $1, genre.id
-        FROM jsonb_to_recordset($2::jsonb) AS genre(id INTEGER, name TEXT)
-        ON CONFLICT (show_tmdb_id, genre_id) DO NOTHING
-      `,
-      [tmdbShowId, JSON.stringify(normalizedGenres)],
-    );
-  }
-
-  const knownEpisodesResult = await db.one<{ known_episodes: number }>(
-    "SELECT COUNT(*)::int AS known_episodes FROM episodes WHERE tmdb_show_id = $1",
-    [tmdbShowId],
-  );
-  const knownEpisodes = knownEpisodesResult?.known_episodes ?? 0;
+    },
+  });
 
   const shouldSync = expectedEpisodes === 0 || knownEpisodes < expectedEpisodes;
 
@@ -202,26 +148,31 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
       await upsertSeasonEpisodes(tmdbShowId, seasonNumber);
     }
 
-    finalKnown =
-      (await db.one<{ known_episodes: number }>(
-        "SELECT COUNT(*)::int AS known_episodes FROM episodes WHERE tmdb_show_id = $1",
-        [tmdbShowId],
-      ))?.known_episodes ?? knownEpisodes;
+    finalKnown = await prisma.episode.count({
+      where: {
+        tmdbShowId,
+      },
+    });
   }
 
-  const runtimeTotals = await db.one<{ total_runtime_minutes: number }>(
-    "SELECT COALESCE(SUM(COALESCE(runtime, 0)), 0)::int AS total_runtime_minutes FROM episodes WHERE tmdb_show_id = $1",
-    [tmdbShowId],
-  );
+  const runtimeTotals = await prisma.episode.aggregate({
+    where: {
+      tmdbShowId,
+    },
+    _sum: {
+      runtime: true,
+    },
+  });
 
-  await db.query(
-    `
-      UPDATE shows
-      SET total_runtime_minutes = $2, updated_at = now()
-      WHERE tmdb_id = $1
-    `,
-    [tmdbShowId, runtimeTotals?.total_runtime_minutes ?? 0],
-  );
+  await prisma.show.updateMany({
+    where: {
+      tmdbId: tmdbShowId,
+    },
+    data: {
+      totalRuntimeMinutes: runtimeTotals._sum.runtime ?? 0,
+      updatedAt: new Date(),
+    },
+  });
 
   await refreshAllUsersShowProgress(tmdbShowId);
 

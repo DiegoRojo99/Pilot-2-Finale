@@ -1,184 +1,143 @@
-import db from "@/lib/db";
+import type { ShowStatus } from "@/types";
+import { prisma } from "@/lib/prisma";
+
+type ProgressSnapshot = {
+  totalEpisodes: number;
+  watchedEpisodesCount: number;
+};
 
 export async function refreshUserShowProgress(userId: string, tmdbShowId: number) {
-  const row = await db.one<{
-    total_episodes: number;
-    total_runtime_minutes: number;
-    watched_episodes_count: number;
-    watched_runtime_minutes: number;
-  }>(
-    `
-      WITH watched AS (
-        SELECT
-          latest.user_id,
-          latest.tmdb_show_id,
-          COUNT(*)::int AS watched_episodes_count,
-          COALESCE(SUM(latest.runtime), 0)::int AS watched_runtime_minutes
-        FROM (
-          SELECT DISTINCT ON (we.user_id, e.tmdb_show_id, we.episode_id)
-            we.user_id,
-            e.tmdb_show_id,
-            COALESCE(e.runtime, 0) AS runtime
-          FROM watch_entries we
-          JOIN episodes e ON e.id = we.episode_id
-          WHERE we.user_id = $1
-            AND e.tmdb_show_id = $2
-          ORDER BY we.user_id, e.tmdb_show_id, we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
-        ) latest
-        GROUP BY latest.user_id, latest.tmdb_show_id
-      )
-      SELECT
-        COALESCE(s.number_of_episodes, 0)::int AS total_episodes,
-        COALESCE(s.total_runtime_minutes, 0)::int AS total_runtime_minutes,
-        COALESCE(w.watched_episodes_count, 0)::int AS watched_episodes_count,
-        COALESCE(w.watched_runtime_minutes, 0)::int AS watched_runtime_minutes
-      FROM user_shows us
-      JOIN shows s ON s.tmdb_id = us.tmdb_id
-      LEFT JOIN watched w ON w.user_id = us.user_id AND w.tmdb_show_id = us.tmdb_id
-      WHERE us.user_id = $1
-        AND us.tmdb_id = $2
-      LIMIT 1
-    `,
-    [userId, tmdbShowId],
-  );
+  const userShow = await prisma.userShow.findUnique({
+    where: {
+      userId_tmdbId: {
+        userId,
+        tmdbId: tmdbShowId,
+      },
+    },
+    select: {
+      show: {
+        select: {
+          numberOfEpisodes: true,
+          totalRuntimeMinutes: true,
+        },
+      },
+    },
+  });
 
-  if (!row) return;
+  if (!userShow) return;
 
-  const remainingEpisodes = Math.max(0, row.total_episodes - row.watched_episodes_count);
-  const remainingRuntime = Math.max(0, row.total_runtime_minutes - row.watched_runtime_minutes);
+  const watchedEntries = await prisma.watchEntry.findMany({
+    where: {
+      userId,
+      episode: {
+        tmdbShowId,
+      },
+    },
+    distinct: ["episodeId"],
+    select: {
+      episode: {
+        select: {
+          runtime: true,
+        },
+      },
+    },
+  });
 
-  await db.query(
-    `
-      UPDATE user_shows
-      SET
-        watched_episodes_count = $3,
-        watched_runtime_minutes = $4,
-        remaining_episodes_count = $5,
-        remaining_runtime_minutes = $6,
-        updated_at = now()
-      WHERE user_id = $1
-        AND tmdb_id = $2
-    `,
-    [userId, tmdbShowId, row.watched_episodes_count, row.watched_runtime_minutes, remainingEpisodes, remainingRuntime],
-  );
+  const watchedEpisodesCount = watchedEntries.length;
+  const watchedRuntimeMinutes = watchedEntries.reduce((sum, row) => sum + (row.episode.runtime ?? 0), 0);
+  const totalEpisodes = userShow.show.numberOfEpisodes ?? 0;
+  const totalRuntimeMinutes = userShow.show.totalRuntimeMinutes ?? 0;
+  const remainingEpisodes = Math.max(0, totalEpisodes - watchedEpisodesCount);
+  const remainingRuntime = Math.max(0, totalRuntimeMinutes - watchedRuntimeMinutes);
+
+  await prisma.userShow.updateMany({
+    where: {
+      userId,
+      tmdbId: tmdbShowId,
+    },
+    data: {
+      watchedEpisodesCount,
+      watchedRuntimeMinutes,
+      remainingEpisodesCount: remainingEpisodes,
+      remainingRuntimeMinutes: remainingRuntime,
+      updatedAt: new Date(),
+    },
+  });
 
   return {
-    totalEpisodes: row.total_episodes,
-    watchedEpisodesCount: row.watched_episodes_count,
-  };
+    totalEpisodes,
+    watchedEpisodesCount,
+  } satisfies ProgressSnapshot;
 }
 
 export async function refreshAllUsersShowProgress(tmdbShowId: number) {
-  await db.query(
-    `
-      WITH watched AS (
-        SELECT
-          latest.user_id,
-          latest.tmdb_show_id,
-          COUNT(*)::int AS watched_episodes_count,
-          COALESCE(SUM(latest.runtime), 0)::int AS watched_runtime_minutes
-        FROM (
-          SELECT DISTINCT ON (we.user_id, e.tmdb_show_id, we.episode_id)
-            we.user_id,
-            e.tmdb_show_id,
-            COALESCE(e.runtime, 0) AS runtime
-          FROM watch_entries we
-          JOIN episodes e ON e.id = we.episode_id
-          WHERE e.tmdb_show_id = $1
-          ORDER BY we.user_id, e.tmdb_show_id, we.episode_id, we.watched_at DESC NULLS LAST, we.created_at DESC, we.id DESC
-        ) latest
-        GROUP BY latest.user_id, latest.tmdb_show_id
-      )
-      UPDATE user_shows us
-      SET
-        watched_episodes_count = COALESCE((
-          SELECT w.watched_episodes_count
-          FROM watched w
-          WHERE w.user_id = us.user_id
-            AND w.tmdb_show_id = us.tmdb_id
-        ), 0),
-        watched_runtime_minutes = COALESCE((
-          SELECT w.watched_runtime_minutes
-          FROM watched w
-          WHERE w.user_id = us.user_id
-            AND w.tmdb_show_id = us.tmdb_id
-        ), 0),
-        remaining_episodes_count = GREATEST(
-          COALESCE(s.number_of_episodes, 0) - COALESCE((
-            SELECT w.watched_episodes_count
-            FROM watched w
-            WHERE w.user_id = us.user_id
-              AND w.tmdb_show_id = us.tmdb_id
-          ), 0),
-          0
-        ),
-        remaining_runtime_minutes = GREATEST(
-          COALESCE(s.total_runtime_minutes, 0) - COALESCE((
-            SELECT w.watched_runtime_minutes
-            FROM watched w
-            WHERE w.user_id = us.user_id
-              AND w.tmdb_show_id = us.tmdb_id
-          ), 0),
-          0
-        ),
-        updated_at = now()
-      FROM shows s
-      WHERE us.tmdb_id = $1
-        AND s.tmdb_id = us.tmdb_id
-    `,
-    [tmdbShowId],
-  );
+  const userShows = await prisma.userShow.findMany({
+    where: {
+      tmdbId: tmdbShowId,
+    },
+    select: {
+      userId: true,
+    },
+    distinct: ["userId"],
+  });
+
+  for (const userShow of userShows) {
+    await refreshUserShowProgress(userShow.userId, tmdbShowId);
+  }
 }
 
 export async function reconcileUserShowStatus(userId: string, tmdbShowId: number) {
   const progress = await refreshUserShowProgress(userId, tmdbShowId);
 
-  const row = await db.one<{
-    status: string;
-    total_episodes: number;
-    watched_unique_count: number;
-  }>(
-    `
-      SELECT
-        us.status,
-        COALESCE(s.number_of_episodes, 0)::int AS total_episodes,
-        COALESCE(us.watched_episodes_count, 0)::int AS watched_unique_count
-      FROM user_shows us
-      JOIN shows s ON s.tmdb_id = us.tmdb_id
-      WHERE us.user_id = $1
-        AND us.tmdb_id = $2
-      LIMIT 1
-    `,
-    [userId, tmdbShowId],
-  );
+  const row = await prisma.userShow.findUnique({
+    where: {
+      userId_tmdbId: {
+        userId,
+        tmdbId: tmdbShowId,
+      },
+    },
+    select: {
+      status: true,
+      watchedEpisodesCount: true,
+      show: {
+        select: {
+          numberOfEpisodes: true,
+        },
+      },
+    },
+  });
 
   if (!row) return;
-  const totalEpisodes = progress?.totalEpisodes ?? row.total_episodes;
-  const watchedUniqueCount = progress?.watchedEpisodesCount ?? row.watched_unique_count;
+
+  const totalEpisodes = progress?.totalEpisodes ?? (row.show.numberOfEpisodes ?? 0);
+  const watchedUniqueCount = progress?.watchedEpisodesCount ?? row.watchedEpisodesCount;
   const isComplete = totalEpisodes > 0 && watchedUniqueCount >= totalEpisodes;
   const markedAsWatched = row.status === "watched";
+
   if (isComplete && !markedAsWatched) {
-    await db.query(
-      `
-        UPDATE user_shows
-        SET status = 'watched', updated_at = now()
-        WHERE user_id = $1
-          AND tmdb_id = $2
-      `,
-      [userId, tmdbShowId],
-    );
+    await prisma.userShow.updateMany({
+      where: {
+        userId,
+        tmdbId: tmdbShowId,
+      },
+      data: {
+        status: "watched",
+        updatedAt: new Date(),
+      },
+    });
     return;
   }
 
   if (!isComplete && markedAsWatched) {
-    await db.query(
-      `
-        UPDATE user_shows
-        SET status = 'watching', updated_at = now()
-        WHERE user_id = $1
-          AND tmdb_id = $2
-      `,
-      [userId, tmdbShowId],
-    );
+    await prisma.userShow.updateMany({
+      where: {
+        userId,
+        tmdbId: tmdbShowId,
+      },
+      data: {
+        status: "watching" satisfies ShowStatus,
+        updatedAt: new Date(),
+      },
+    });
   }
 }
