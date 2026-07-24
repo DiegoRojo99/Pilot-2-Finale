@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { defaultRateLimit, enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { tmdbFetch } from "@/lib/tmdb";
 
 export const runtime = "nodejs";
@@ -7,16 +7,8 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const address = getClientAddress(request);
 
-  const apiRateLimit = enforceRateLimit({
-    key: `api:${address}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
-
-  if (apiRateLimit) {
-    return apiRateLimit;
-  }
+  const apiRateLimit = defaultRateLimit(request);
+  if (apiRateLimit) return apiRateLimit;
 
   const searchRateLimit = enforceRateLimit({
     key: `search:${address}`,
@@ -25,9 +17,7 @@ export async function GET(request: Request) {
     message: "Too many search requests, please slow down.",
   });
 
-  if (searchRateLimit) {
-    return searchRateLimit;
-  }
+  if (searchRateLimit) return searchRateLimit;
 
   try {
     const { searchParams } = new URL(request.url);

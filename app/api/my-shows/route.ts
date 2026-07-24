@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
 import { fetchUserShowByTmdbId, fetchUserShowsByUserId } from "@/lib/data/user-shows";
-import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { defaultRateLimit } from "@/lib/rate-limit";
 import { upsertShowCatalog } from "@/lib/show-catalog";
 import { refreshUserShowProgress } from "@/lib/user-show-status";
 import type { ShowStatus } from "@/types";
@@ -26,14 +26,9 @@ type CreateShowPayload = {
 };
 
 export async function GET(request: Request) {
-  const rateLimited = enforceRateLimit({
-    key: `api:${getClientAddress(request)}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
-
+  const rateLimited = defaultRateLimit(request);
   if (rateLimited) return rateLimited;
+  
   const authResult = await requireAuthenticatedUser();
   if ("response" in authResult) return authResult.response;
 
@@ -50,12 +45,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit({
-    key: `api:${getClientAddress(request)}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
+  const rateLimited = defaultRateLimit(request);
 
   if (rateLimited) return rateLimited;
   const authResult = await requireAuthenticatedUser();

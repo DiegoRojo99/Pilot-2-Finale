@@ -54,3 +54,12 @@ export function enforceRateLimit({ key, windowMs, max, message }: RateLimitOptio
   rateLimitStore.set(key, existing);
   return null;
 }
+
+export function defaultRateLimit(request: Request) {
+  return enforceRateLimit({
+    key: `api:${getClientAddress(request)}`,
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    message: "Too many requests, please try again later.",
+  });
+}

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { isNumericId, readJson } from "@/lib/http";
 import { fetchUserShowByTmdbId } from "@/lib/data/user-shows";
-import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { defaultRateLimit } from "@/lib/rate-limit";
 import { repairShowCatalogIfNeeded } from "@/lib/show-catalog";
 import type { ShowStatus } from "@/types";
 
@@ -15,13 +15,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ tmdbId: string }> },
 ) {
-  const rateLimited = enforceRateLimit({
-    key: `api:${getClientAddress(request)}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
-
+  const rateLimited = defaultRateLimit(request);
   if (rateLimited) return rateLimited;
 
   const authResult = await requireAuthenticatedUser();
@@ -47,12 +41,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ tmdbId: string }> },
 ) {
-  const rateLimited = enforceRateLimit({
-    key: `api:${getClientAddress(request)}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
+  const rateLimited = defaultRateLimit(request);
 
   if (rateLimited) return rateLimited;
   const authResult = await requireAuthenticatedUser();
@@ -88,12 +77,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ tmdbId: string }> },
 ) {
-  const rateLimited = enforceRateLimit({
-    key: `api:${getClientAddress(request)}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
+  const rateLimited = defaultRateLimit(request);
 
   if (rateLimited) return rateLimited;
   const authResult = await requireAuthenticatedUser();

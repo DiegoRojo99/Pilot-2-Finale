@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { fetchEpisodeBatchForUser } from "@/lib/data/episode-batch";
 import { readJson } from "@/lib/http";
-import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { defaultRateLimit } from "@/lib/rate-limit";
 import type { EpisodeBatchResponse } from "@/types";
 
 export const runtime = "nodejs";
@@ -12,13 +12,7 @@ type BatchEpisodeLogsPayload = {
 };
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit({
-    key: `api:${getClientAddress(request)}`,
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: "Too many requests, please try again later.",
-  });
-
+  const rateLimited = defaultRateLimit(request);
   if (rateLimited) return rateLimited;
 
   const authResult = await requireAuthenticatedUser();
