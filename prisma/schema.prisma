@@ -6,14 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum ShowStatus {
-  watching
-  want_to_watch
-  watched
-  dropped
-  on_hold
-}
-
 model Show {
   tmdbId              Int         @id @map("tmdb_id")
   name                String
@@ -44,7 +36,7 @@ model UserShow {
   backdropPath           String?    @map("backdrop_path")
   overview               String?
   firstAirDate           String?    @map("first_air_date")
-  status                 ShowStatus @default(watching)
+  status                 String     @default("watching")
   voteAverage            Float      @default(0) @map("vote_average") @db.DoublePrecision
   numberOfSeasons        Int        @default(0) @map("number_of_seasons")
   numberOfEpisodes       Int        @default(0) @map("number_of_episodes")

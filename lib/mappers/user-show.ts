@@ -1,4 +1,10 @@
-import type { UserShow, UserShowWithShowRow } from "@/types";
+import type { ShowStatus, UserShow, UserShowWithShowRow } from "@/types";
+
+const VALID_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "dropped", "on_hold"];
+
+function normalizeShowStatus(status: string): ShowStatus {
+  return VALID_STATUSES.includes(status as ShowStatus) ? (status as ShowStatus) : "watching";
+}
 
 export function mapUserShow(
   row: UserShowWithShowRow,
@@ -20,7 +26,7 @@ export function mapUserShow(
     backdrop_path: row.show.backdropPath,
     overview: row.show.overview,
     first_air_date: row.show.firstAirDate,
-    status: row.status,
+    status: normalizeShowStatus(row.status),
     vote_average: row.show.voteAverage,
     number_of_seasons: row.show.numberOfSeasons,
     number_of_episodes: row.show.numberOfEpisodes,

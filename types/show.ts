@@ -35,7 +35,7 @@ export interface UserShowWithShowRow {
   id: number;
   tmdbId: number;
   name?: string | null;
-  status: ShowStatus;
+  status: ShowStatus | string;
   addedAt: Date;
   updatedAt: Date;
   show: {
