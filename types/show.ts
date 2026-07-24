@@ -31,6 +31,25 @@ export interface UserShow {
   updated_at: string;
 }
 
+export interface UserShowWithShowRow {
+  id: number;
+  tmdbId: number;
+  name?: string | null;
+  status: ShowStatus;
+  addedAt: Date;
+  updatedAt: Date;
+  show: {
+    name: string;
+    posterPath: string | null;
+    backdropPath: string | null;
+    overview: string | null;
+    firstAirDate: string | null;
+    voteAverage: number;
+    numberOfSeasons: number;
+    numberOfEpisodes: number;
+  };
+}
+
 export interface ShowNextEpisode {
   tmdb_episode_id: number | null;
   season_number: number;

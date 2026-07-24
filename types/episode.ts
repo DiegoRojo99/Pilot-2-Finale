@@ -14,3 +14,17 @@ export interface EpisodeLog {
   show_name?: string;
   poster_path?: string | null;
 }
+
+export type EpisodeStatsPeriod = "l7d" | "l30d" | "ly";
+
+export interface EpisodeStatsResponse {
+  period: EpisodeStatsPeriod;
+  totalEpisodes: number;
+  totalShows: number;
+  watchingShows: number;
+  watchedShows: number;
+  wantToWatch: number;
+  timeSpentMinutes: number;
+  pendingEpisodesWatching: number;
+  pendingRuntimeMinutesWatching: number;
+}

@@ -1,4 +1,4 @@
-import db from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { tmdbFetch } from "@/lib/tmdb";
 import type { ShowRecord, TMDBShow } from "@/types";
 
@@ -52,6 +52,11 @@ function normalizeShowCatalogInput(input: ShowCatalogInput): Required<ShowCatalo
   };
 }
 
+function resolveCatalogName(inputName: string | null | undefined, tmdbId: number) {
+  const trimmed = inputName?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : `${PLACEHOLDER_SHOW_NAME_PREFIX}${tmdbId}`;
+}
+
 async function syncShowGenres(showTmdbId: number, genres: Array<{ id: number; name: string }>) {
   const uniqueGenres = Array.from(
     new Map(
@@ -61,81 +66,98 @@ async function syncShowGenres(showTmdbId: number, genres: Array<{ id: number; na
     ).values(),
   );
 
-  await db.query("DELETE FROM show_genres WHERE show_tmdb_id = $1", [showTmdbId]);
+  await prisma.showGenre.deleteMany({
+    where: {
+      showTmdbId,
+    },
+  });
+
   if (uniqueGenres.length === 0) return;
 
-  await db.query(
-    `
-      INSERT INTO genres (id, name)
-      SELECT genre.id, genre.name
-      FROM jsonb_to_recordset($1::jsonb) AS genre(id INTEGER, name TEXT)
-      ON CONFLICT (id) DO UPDATE SET
-        name = excluded.name,
-        updated_at = now()
-    `,
-    [JSON.stringify(uniqueGenres)],
-  );
+  await prisma.$transaction(async (tx) => {
+    for (const genre of uniqueGenres) {
+      await tx.genre.upsert({
+        where: {
+          id: genre.id,
+        },
+        create: {
+          id: genre.id,
+          name: genre.name,
+        },
+        update: {
+          name: genre.name,
+          updatedAt: new Date(),
+        },
+      });
+    }
 
-  await db.query(
-    `
-      INSERT INTO show_genres (show_tmdb_id, genre_id)
-      SELECT $1, genre.id
-      FROM jsonb_to_recordset($2::jsonb) AS genre(id INTEGER, name TEXT)
-      ON CONFLICT (show_tmdb_id, genre_id) DO NOTHING
-    `,
-    [showTmdbId, JSON.stringify(uniqueGenres)],
-  );
+    await tx.showGenre.createMany({
+      data: uniqueGenres.map((genre) => ({
+        showTmdbId,
+        genreId: genre.id,
+      })),
+      skipDuplicates: true,
+    });
+  });
 }
 
 export async function upsertShowCatalog(input: ShowCatalogInput, options: UpsertShowCatalogOptions = {}) {
   const normalized = normalizeShowCatalogInput(input);
   const shouldUpdateName = options.allowNameUpdate ?? false;
+  const catalogName = resolveCatalogName(normalized.name, normalized.tmdb_id);
+  const normalizedVoteAverage = normalized.vote_average ?? 0;
+  const normalizedNumberOfSeasons = normalized.number_of_seasons ?? 0;
+  const normalizedNumberOfEpisodes = normalized.number_of_episodes ?? 0;
+  const normalizedTotalRuntimeMinutes = normalized.total_runtime_minutes ?? 0;
 
-  await db.query(
-    `
-    INSERT INTO shows (
-      tmdb_id,
-      name,
-      poster_path,
-      backdrop_path,
-      overview,
-      first_air_date,
-      vote_average,
-      number_of_seasons,
-      number_of_episodes,
-      total_runtime_minutes
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    ON CONFLICT(tmdb_id) DO UPDATE SET
-      name = CASE
-        WHEN $11::boolean IS NOT TRUE THEN shows.name
-        WHEN excluded.name LIKE 'TMDB Show %' AND shows.name IS NOT NULL AND shows.name NOT LIKE 'TMDB Show %' THEN shows.name
-        ELSE excluded.name
-      END,
-      poster_path = COALESCE(excluded.poster_path, shows.poster_path),
-      backdrop_path = COALESCE(excluded.backdrop_path, shows.backdrop_path),
-      overview = COALESCE(excluded.overview, shows.overview),
-      first_air_date = COALESCE(excluded.first_air_date, shows.first_air_date),
-      vote_average = CASE WHEN excluded.vote_average > 0 THEN excluded.vote_average ELSE shows.vote_average END,
-      number_of_seasons = CASE WHEN excluded.number_of_seasons > 0 THEN excluded.number_of_seasons ELSE shows.number_of_seasons END,
-      number_of_episodes = CASE WHEN excluded.number_of_episodes > 0 THEN excluded.number_of_episodes ELSE shows.number_of_episodes END,
-      total_runtime_minutes = CASE WHEN excluded.total_runtime_minutes > 0 THEN excluded.total_runtime_minutes ELSE shows.total_runtime_minutes END,
-      updated_at = now()
-    `,
-    [
-      normalized.tmdb_id,
-      normalized.name,
-      normalized.poster_path,
-      normalized.backdrop_path,
-      normalized.overview,
-      normalized.first_air_date,
-      normalized.vote_average,
-      normalized.number_of_seasons,
-      normalized.number_of_episodes,
-      normalized.total_runtime_minutes,
-      shouldUpdateName,
-    ],
-  );
+  const existing = await prisma.show.findUnique({
+    where: {
+      tmdbId: normalized.tmdb_id,
+    },
+  });
+
+  if (!existing) {
+    await prisma.show.create({
+      data: {
+        tmdbId: normalized.tmdb_id,
+        name: catalogName,
+        posterPath: normalized.poster_path,
+        backdropPath: normalized.backdrop_path,
+        overview: normalized.overview,
+        firstAirDate: normalized.first_air_date,
+        voteAverage: normalizedVoteAverage,
+        numberOfSeasons: normalizedNumberOfSeasons,
+        numberOfEpisodes: normalizedNumberOfEpisodes,
+        totalRuntimeMinutes: normalizedTotalRuntimeMinutes,
+      },
+    });
+  } else {
+    const resolvedName: string =
+      !shouldUpdateName
+        ? existing.name
+        : isPlaceholderName(catalogName) && !isPlaceholderName(existing.name)
+          ? existing.name
+          : catalogName;
+
+    await prisma.show.update({
+      where: {
+        tmdbId: normalized.tmdb_id,
+      },
+      data: {
+        name: resolvedName,
+        posterPath: normalized.poster_path ?? existing.posterPath,
+        backdropPath: normalized.backdrop_path ?? existing.backdropPath,
+        overview: normalized.overview ?? existing.overview,
+        firstAirDate: normalized.first_air_date ?? existing.firstAirDate,
+        voteAverage: normalizedVoteAverage > 0 ? normalizedVoteAverage : existing.voteAverage,
+        numberOfSeasons: normalizedNumberOfSeasons > 0 ? normalizedNumberOfSeasons : existing.numberOfSeasons,
+        numberOfEpisodes: normalizedNumberOfEpisodes > 0 ? normalizedNumberOfEpisodes : existing.numberOfEpisodes,
+        totalRuntimeMinutes:
+          normalizedTotalRuntimeMinutes > 0 ? normalizedTotalRuntimeMinutes : existing.totalRuntimeMinutes,
+        updatedAt: new Date(),
+      },
+    });
+  }
 
   const genres = normalized.genres ?? [];
   if (genres.length === 0) return;

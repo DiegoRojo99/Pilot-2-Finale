@@ -6,10 +6,12 @@ node_modules/
 out/
 
 # Database
-data/
 *.db
 *.db-wal
 *.db-shm
+data/*.db
+data/*.db-wal
+data/*.db-shm
 
 # Environment files
 .env
