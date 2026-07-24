@@ -1,35 +1,14 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { readJson } from "@/lib/http";
+import { fetchUserShowByTmdbId, fetchUserShowsByUserId } from "@/lib/data/user-shows";
 import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { upsertShowCatalog } from "@/lib/show-catalog";
 import { refreshUserShowProgress } from "@/lib/user-show-status";
-import type { ShowStatus, UserShow } from "@/types";
+import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";
-
-const USER_SHOW_SELECT = `
-  SELECT
-    us.id,
-    us.tmdb_id,
-    CASE
-      WHEN s.name LIKE 'TMDB Show %' AND us.name IS NOT NULL AND us.name <> '' THEN us.name
-      ELSE s.name
-    END AS name,
-    s.poster_path,
-    s.backdrop_path,
-    s.overview,
-    s.first_air_date,
-    us.status,
-    s.vote_average,
-    s.number_of_seasons,
-    s.number_of_episodes,
-    us.added_at,
-    us.updated_at
-  FROM user_shows us
-  JOIN shows s ON s.tmdb_id = us.tmdb_id
-`;
 
 const VALID_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "dropped", "on_hold"];
 
@@ -61,14 +40,11 @@ export async function GET(request: Request) {
   const { userId } = authResult.context;
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
+  if (status && !VALID_STATUSES.includes(status as ShowStatus)) return NextResponse.json([]);
 
-  const query = status
-    ? `${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.status = $2 ORDER BY us.updated_at DESC`
-    : `${USER_SHOW_SELECT} WHERE us.user_id = $1 ORDER BY us.updated_at DESC`;
-  
-  const { rows: shows } = status
-    ? await db.query<UserShow>(query, [userId, status])
-    : await db.query<UserShow>(query, [userId]);
+  const shows = await fetchUserShowsByUserId(userId, status ? (status as ShowStatus) : undefined, {
+    preferUserNameWhenShowIsPlaceholder: true,
+  });
 
   return NextResponse.json(shows);
 }
@@ -105,27 +81,31 @@ export async function POST(request: Request) {
       number_of_episodes: body.number_of_episodes ?? 0,
     });
     
-    await db.query(
-      `
-      INSERT INTO user_shows (
-        user_id,
-        tmdb_id,
-        status
-      )
-      VALUES ($1, $2, $3)
-      ON CONFLICT(user_id, tmdb_id) DO UPDATE SET
-        status = excluded.status,
-        updated_at = now()
-      `,
-      [userId, body.tmdb_id, status],
-    );
+    await prisma.userShow.upsert({
+      where: {
+        userId_tmdbId: {
+          userId,
+          tmdbId: body.tmdb_id,
+        },
+      },
+      create: {
+        userId,
+        tmdbId: body.tmdb_id,
+        status,
+      },
+      update: {
+        status,
+        updatedAt: new Date(),
+      },
+    });
 
     await refreshUserShowProgress(userId, body.tmdb_id);
 
-    const show = await db.one<UserShow>(
-      `${USER_SHOW_SELECT} WHERE us.user_id = $1 AND us.tmdb_id = $2`,
-      [userId, body.tmdb_id],
-    );
+    const show = await fetchUserShowByTmdbId(userId, body.tmdb_id, {
+      preferUserNameWhenShowIsPlaceholder: true,
+    });
+
+    if (!show) return NextResponse.json({ error: "Failed to add show" }, { status: 500 });
     return NextResponse.json(show, { status: 201 });
   } catch (error) {
     console.error("Error adding show:", error);
