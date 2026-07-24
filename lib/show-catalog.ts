@@ -137,7 +137,9 @@ export async function upsertShowCatalog(input: ShowCatalogInput, options: Upsert
     ],
   );
 
-  if (normalized?.genres?.length > 0) await syncShowGenres(normalized.tmdb_id, normalized.genres);
+  const genres = normalized.genres ?? [];
+  if (genres.length === 0) return;
+  await syncShowGenres(normalized.tmdb_id, genres);
 }
 
 export async function fetchAndStoreShowCatalog(tmdbId: number, options: UpsertShowCatalogOptions = {}) {
