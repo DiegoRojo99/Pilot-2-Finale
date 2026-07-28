@@ -92,6 +92,64 @@ model WatchEntry {
   @@map("watch_entries")
 }
 
+model Achievement {
+  id          Int                        @id @default(autoincrement())
+  key         String                     @unique
+  title       String
+  description String
+  category    String
+  metricType  String                     @map("metric_type")
+  active      Boolean                    @default(true)
+  icon        String?
+  iconKind    String                     @default("name") @map("icon_kind")
+  sortOrder   Int                        @default(0) @map("sort_order")
+  createdAt   DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  tiers       AchievementTier[]
+  progress    UserAchievementProgress[]
+
+  @@index([active], map: "idx_achievements_active")
+  @@index([category, sortOrder], map: "idx_achievements_category_sort")
+  @@map("achievements")
+}
+
+model AchievementTier {
+  id            Int                       @id @default(autoincrement())
+  achievementId Int                       @map("achievement_id")
+  name          String
+  level         Int
+  requiredCount Int                       @map("required_count")
+  colorToken    String?                   @map("color_token")
+  createdAt     DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  achievement   Achievement               @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  userProgress  UserAchievementProgress[]
+
+  @@unique([achievementId, level], map: "uq_achievement_tiers_achievement_level")
+  @@index([achievementId, requiredCount], map: "idx_achievement_tiers_threshold")
+  @@map("achievement_tiers")
+}
+
+model UserAchievementProgress {
+  id               Int             @id @default(autoincrement())
+  userId           String          @map("user_id")
+  achievementId    Int             @map("achievement_id")
+  currentTierId    Int?            @map("current_tier_id")
+  currentCount     Int             @default(0) @map("current_count")
+  progressPercent  Int             @default(0) @map("progress_percent")
+  highestTierLevel Int             @default(0) @map("highest_tier_level")
+  unlockedAt       DateTime?       @map("unlocked_at") @db.Timestamptz(6)
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  achievement      Achievement     @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  currentTier      AchievementTier? @relation(fields: [currentTierId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, achievementId], map: "uq_user_achievement_progress_user_achievement")
+  @@index([userId], map: "idx_user_achievement_progress_user")
+  @@index([achievementId], map: "idx_user_achievement_progress_achievement")
+  @@map("user_achievement_progress")
+}
+
 model Genre {
   id         Int         @id
   name       String      @unique

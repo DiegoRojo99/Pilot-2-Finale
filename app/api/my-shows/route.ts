@@ -6,6 +6,7 @@ import { fetchUserShowByTmdbId, fetchUserShowsByUserId } from "@/lib/data/user-s
 import { defaultRateLimit } from "@/lib/rate-limit";
 import { upsertShowCatalog } from "@/lib/show-catalog";
 import { refreshUserShowProgress } from "@/lib/user-show-status";
+import { recomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
     });
 
     await refreshUserShowProgress(userId, body.tmdb_id);
+    await recomputeAchievementProgressForUser(userId);
 
     const show = await fetchUserShowByTmdbId(userId, body.tmdb_id, {
       preferUserNameWhenShowIsPlaceholder: true,

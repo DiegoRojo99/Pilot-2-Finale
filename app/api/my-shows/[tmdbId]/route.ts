@@ -5,6 +5,10 @@ import { isNumericId, readJson } from "@/lib/http";
 import { fetchUserShowByTmdbId } from "@/lib/data/user-shows";
 import { defaultRateLimit } from "@/lib/rate-limit";
 import { repairShowCatalogIfNeeded } from "@/lib/show-catalog";
+import {
+  safeIncrementWatchlistToWatchedProgress,
+  safeRecomputeAchievementProgressForUser,
+} from "@/lib/achievements/progress";
 import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";
@@ -56,6 +60,20 @@ export async function PATCH(
   if (!status || !VALID_STATUSES.includes(status)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
 
   const numericTmdbId = Number(tmdbId);
+  const existing = await prisma.userShow.findUnique({
+    where: {
+      userId_tmdbId: {
+        userId,
+        tmdbId: numericTmdbId,
+      },
+    },
+    select: {
+      status: true,
+    },
+  });
+
+  if (!existing) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
+
   const updateResult = await prisma.userShow.updateMany({
     where: {
       userId,
@@ -68,6 +86,13 @@ export async function PATCH(
   });
 
   if (updateResult.count === 0) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
+
+  if (existing.status === "want_to_watch" && status === "watched") {
+    await safeIncrementWatchlistToWatchedProgress(userId, 1);
+  }
+
+  await safeRecomputeAchievementProgressForUser(userId);
+
   const show = await fetchUserShowByTmdbId(userId, numericTmdbId);
   if (!show) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
   return NextResponse.json(show);
@@ -93,5 +118,8 @@ export async function DELETE(
   });
 
   if (deleteResult.count === 0) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
+
+  await safeRecomputeAchievementProgressForUser(userId);
+
   return NextResponse.json({ success: true });
 }
