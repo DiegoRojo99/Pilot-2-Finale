@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  UserAchievementProgressView,
   EpisodeBatchResponse,
   EpisodeLog,
   ShowStatus,
@@ -172,3 +173,6 @@ export const removeEpisodeLog = (showId: number, season: number, episode: number
 
 export const getStats = (period: StatsPeriod = "l30d") =>
   fetchJson<UserStats>(`/api/episodes/stats?period=${period}`);
+
+export const getAchievements = () =>
+  fetchJson<UserAchievementProgressView[]>("/api/achievements");
