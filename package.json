@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:achievements": "node --import tsx prisma/migrations/20260724_add_achievements/migration.ts",
     "prisma:pull": "prisma db pull",
     "prisma:studio": "prisma studio"
   },
@@ -35,6 +36,7 @@
     "eslint-config-next": "16.2.10",
     "prisma": "^7.9.0",
     "tailwindcss": "^4.3.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.2"
   }
 }
