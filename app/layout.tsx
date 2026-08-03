@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Providers } from "@/components/Providers";
+import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({
               <BottomNav />
             </div>
           </div>
+          <VercelAnalytics />
         </Providers>
       </body>
     </html>

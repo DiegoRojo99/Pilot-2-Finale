@@ -156,6 +156,14 @@ Set environment variable:
 ADMIN_USER_IDS=user_id_1,user_id_2
 ```
 
+Optional analytics exclusion (client-side):
+
+```bash
+NEXT_PUBLIC_ANALYTICS_EXCLUDED_USER_IDS=user_id_1,user_id_2
+```
+
+When a signed-in user ID is in `NEXT_PUBLIC_ANALYTICS_EXCLUDED_USER_IDS`, Vercel page analytics is not mounted for that session.
+
 The page runs refresh in batches through:
 
 - POST /api/admin/catalog-refresh
