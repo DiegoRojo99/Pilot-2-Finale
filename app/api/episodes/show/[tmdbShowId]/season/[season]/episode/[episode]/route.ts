@@ -4,6 +4,7 @@ import {
   deleteEpisodeLogsForShowSeasonEpisode,
   fetchEpisodeLogsForShowSeasonEpisode,
 } from "@/lib/data/episode-logs";
+import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 import { defaultRateLimit } from "@/lib/rate-limit";
 import { reconcileUserShowStatus } from "@/lib/user-show-status";
 
@@ -57,5 +58,6 @@ export async function DELETE(
 
   if (deletedCount === 0) return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
   await reconcileUserShowStatus(userId, numericTmdbShowId);
+  await safeRecomputeAchievementProgressForUser(userId);
   return NextResponse.json({ success: true });
 }

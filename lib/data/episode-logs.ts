@@ -408,6 +408,49 @@ export async function deleteEpisodeLogById(userId: string, logId: number): Promi
   return existing.episode.tmdbShowId;
 }
 
+type EpisodeLogUpdateInput = {
+  watchedAt?: string | null;
+  rating?: number | null;
+  notes?: string | null;
+};
+
+export async function updateEpisodeLogById(
+  userId: string,
+  logId: number,
+  input: EpisodeLogUpdateInput,
+): Promise<EpisodeLog | null> {
+  const existing = await prisma.watchEntry.findFirst({
+    where: {
+      id: logId,
+      userId,
+    },
+    select: {
+      id: true,
+      episode: {
+        select: {
+          tmdbShowId: true,
+        },
+      },
+    },
+  });
+
+  if (!existing) return null;
+
+  const updated = await prisma.watchEntry.update({
+    where: {
+      id: existing.id,
+    },
+    data: {
+      watchedAt: input.watchedAt === undefined ? undefined : parseWatchedAt(input.watchedAt),
+      rating: input.rating === undefined ? undefined : input.rating,
+      notes: input.notes === undefined ? undefined : input.notes,
+    },
+    select: EPISODE_LOG_WITH_SHOW_SELECT,
+  });
+
+  return mapEpisodeLogWithShow(updated);
+}
+
 export async function deleteEpisodeLogsForShowSeasonEpisode(
   userId: string,
   tmdbShowId: number,

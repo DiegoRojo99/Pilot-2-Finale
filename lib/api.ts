@@ -165,6 +165,24 @@ export const logEpisodesBulk = (data: {
     body: JSON.stringify(data),
   });
 
+export const updateEpisodeLog = (
+  logId: number,
+  data: {
+    watched_at?: string | null;
+    rating?: number | null;
+    notes?: string | null;
+  },
+) =>
+  fetchJson<EpisodeLog>(`/api/episodes/${logId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+export const removeEpisodeLogById = (logId: number) =>
+  fetchJson<{ success: boolean }>(`/api/episodes/${logId}`, {
+    method: "DELETE",
+  });
+
 export const removeEpisodeLog = (showId: number, season: number, episode: number) =>
   fetchJson<{ success: boolean }>(
     `/api/episodes/show/${showId}/season/${season}/episode/${episode}`,

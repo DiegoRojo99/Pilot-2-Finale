@@ -3,40 +3,108 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Calendar, Clock3, Star } from "lucide-react";
-import { getEpisodeLogsForEpisode, getSeasonDetails, getShowDetails } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Calendar, Clock3, PencilLine, Star, Trash2 } from "lucide-react";
+import { getEpisodeLogsForEpisode, getSeasonDetails, getShowDetails, removeEpisodeLogById, updateEpisodeLog } from "@/lib/api";
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { RatingBadge } from "@/components/ui/RatingBadge";
+import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import { EpisodeLog } from "@/types/episode";
 
-function EpisodeWatchLog({ log, classes }: { log: EpisodeLog; classes?: string }) {
+function EpisodeWatchLog({
+  log,
+  classes,
+  onEdit,
+  onDelete,
+  isDeleting,
+}: {
+  log: EpisodeLog;
+  classes?: string;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
+}) {
   return (
-    <div className={`mt-2 space-y-1.5 text-sm text-slate-300 ${classes}`}>
-      <p className="flex items-center gap-1">
-        <Clock3 className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
-        <span className="text-slate-100">{log.watched_at ? formatDate(log.watched_at) : "No date"}</span>
-      </p>
-      <p className="flex items-center gap-1">
-        <Star className="mr-1 inline h-3.5 w-3.5 text-amber-400" />
-        <span className="text-amber-400">{log.rating !== null && log.rating !== undefined ? `${log.rating}/10` : "Not rated"}</span>
-      </p>
+    <div className={`mt-2 rounded-xl border border-slate-700/80 bg-slate-900/60 p-3 text-sm text-slate-300 ${classes}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5">
+          <p className="flex items-center gap-1">
+            <Clock3 className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
+            <span className="text-slate-100">{log.watched_at ? formatDate(log.watched_at) : "No date"}</span>
+          </p>
+          <p className="flex items-center gap-1">
+            <Star className="mr-1 inline h-3.5 w-3.5 text-amber-400" />
+            <span className="text-amber-400">{log.rating !== null && log.rating !== undefined ? `${log.rating}/10` : "Not rated"}</span>
+          </p>
+        </div>
+        {(onEdit || onDelete) && (
+          <div className="flex shrink-0 items-center gap-2">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="inline-flex items-center gap-1 rounded-lg bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-200 active:bg-slate-600"
+              >
+                <PencilLine className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1 rounded-lg bg-red-500/15 px-2.5 py-1.5 text-xs font-medium text-red-300 active:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isDeleting ? "Deleting" : "Delete"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function EpisodeWatchLogs({ logs }: { logs: EpisodeLog[] }) {
+function EpisodeWatchLogs({
+  logs,
+  onEdit,
+  onDelete,
+  deletingLogId,
+}: {
+  logs: EpisodeLog[];
+  onEdit: (log: EpisodeLog) => void;
+  onDelete: (log: EpisodeLog) => void;
+  deletingLogId: number | null;
+}) {
   const numberOfLogs = logs.length;
   if (numberOfLogs === 0) return <p className="mt-2 text-sm text-slate-500">You have not logged this episode yet.</p>;
-  if (numberOfLogs === 1) return <EpisodeWatchLog log={logs[0]} />;
+  if (numberOfLogs === 1) {
+    return (
+      <EpisodeWatchLog
+        log={logs[0]}
+        onEdit={() => onEdit(logs[0])}
+        onDelete={() => onDelete(logs[0])}
+        isDeleting={deletingLogId === logs[0].id}
+      />
+    );
+  }
   return (
     <div className="mt-2 space-y-1.5 text-sm text-slate-300">
-        {logs.map((log, index) => (
-          <EpisodeWatchLog key={index} log={log} classes="border-b border-slate-700 pb-1 last:border-b-0 last:pb-0" />
+        {logs.map((log) => (
+          <EpisodeWatchLog
+            key={log.id}
+            log={log}
+            classes="mt-0"
+            onEdit={() => onEdit(log)}
+            onDelete={() => onDelete(log)}
+            isDeleting={deletingLogId === log.id}
+          />
         ))}
     </div>
   );
@@ -47,7 +115,10 @@ export default function EpisodeDetailPage() {
   const showId = Number(params.id);
   const seasonNumber = Number(params.seasonNumber);
   const episodeNumber = Number(params.episodeNumber);
+  const queryClient = useQueryClient();
   const hasValidParams = Number.isFinite(showId) && Number.isFinite(seasonNumber) && Number.isFinite(episodeNumber);
+  const [editingLog, setEditingLog] = useState<EpisodeLog | null>(null);
+  const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
 
   const { data: show, isLoading: isShowLoading, error: showError } = useQuery({
     queryKey: ["show", showId],
@@ -68,6 +139,46 @@ export default function EpisodeDetailPage() {
     queryFn: () => getEpisodeLogsForEpisode(showId, seasonNumber, episodeNumber),
     enabled: hasValidParams,
     staleTime: 30_000,
+  });
+
+  const updateEpisodeLogMutation = useMutation({
+    mutationFn: async ({
+      logId,
+      watchedAt,
+      rating,
+    }: {
+      logId: number;
+      watchedAt: string | null;
+      rating: number | null;
+    }) =>
+      updateEpisodeLog(logId, {
+        watched_at: watchedAt,
+        rating,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs", showId, seasonNumber, episodeNumber] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs", showId] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-show", showId] });
+      void queryClient.invalidateQueries({ queryKey: ["stats"] });
+      setEditingLog(null);
+    },
+  });
+
+  const deleteEpisodeLogMutation = useMutation({
+    mutationFn: async (logId: number) => removeEpisodeLogById(logId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs", showId, seasonNumber, episodeNumber] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs", showId] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-show", showId] });
+      void queryClient.invalidateQueries({ queryKey: ["stats"] });
+    },
+    onSettled: () => setDeletingLogId(null),
   });
 
   const episode = useMemo(
@@ -162,7 +273,19 @@ export default function EpisodeDetailPage() {
 
             <div className="mt-5 rounded-xl border border-slate-700 bg-slate-800/70 p-3">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Your Watch Log</p>
-              <EpisodeWatchLogs logs={watchLogs} />
+              <EpisodeWatchLogs
+                logs={watchLogs}
+                deletingLogId={deletingLogId}
+                onEdit={(log) => setEditingLog(log)}
+                onDelete={(log) => {
+                  if (deleteEpisodeLogMutation.isPending) return;
+                  const shouldDelete = window.confirm("Delete this watch log?");
+                  if (!shouldDelete) return;
+
+                  setDeletingLogId(log.id);
+                  deleteEpisodeLogMutation.mutate(log.id);
+                }}
+              />
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-3">
@@ -176,6 +299,26 @@ export default function EpisodeDetailPage() {
           </div>
         </div>
       </div>
+
+      <EpisodeDiaryModal
+        isOpen={!!editingLog}
+        episodeLabel={editingLog ? `${episodeKey(editingLog.season_number, editingLog.episode_number)} - ${editingLog.episode_name ?? `Episode ${editingLog.episode_number}`}` : ""}
+        title="Edit Watch Log"
+        submitLabel="Update"
+        defaultWatchedAt={editingLog?.watched_at ?? null}
+        defaultRating={editingLog?.rating ?? null}
+        isPending={updateEpisodeLogMutation.isPending}
+        onSubmit={({ watchedAt, rating }) => {
+          if (!editingLog) return;
+
+          updateEpisodeLogMutation.mutate({
+            logId: editingLog.id,
+            watchedAt,
+            rating,
+          });
+        }}
+        onCancel={() => setEditingLog(null)}
+      />
     </PageShell>
   );
 }
