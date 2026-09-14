@@ -1,4 +1,16 @@
-const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+const DEFAULT_API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+
+type ExpoExtra = {
+  apiBaseUrl?: string;
+};
+
+export type HealthResponse = {
+  status: string;
+  timestamp: string;
+};
 
 export class ApiError extends Error {
   constructor(
@@ -10,10 +22,20 @@ export class ApiError extends Error {
   }
 }
 
-export function getApiBaseUrl() {
-  const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+export function getApiConfig() {
+  const extra = Constants.expoConfig?.extra as ExpoExtra | undefined;
+  const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || extra?.apiBaseUrl?.trim();
   const baseUrl = configuredBaseUrl && configuredBaseUrl.length > 0 ? configuredBaseUrl : DEFAULT_API_BASE_URL;
-  return baseUrl.replace(/\/+$/, '');
+  const hasConfiguredBaseUrl = baseUrl === configuredBaseUrl;
+
+  return {
+    baseUrl: baseUrl.replace(/\/+$/, ''),
+    source: hasConfiguredBaseUrl ? 'app config' : 'platform default',
+  };
+}
+
+export function getApiBaseUrl() {
+  return getApiConfig().baseUrl;
 }
 
 export function createApiUrl(path: string) {
@@ -33,4 +55,8 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
   if (!response.ok) throw new ApiError(`Request failed with status ${response.status}`, response.status);
   if (response.status === 204) return undefined as ResponseBody;
   return (await response.json()) as ResponseBody;
+}
+
+export function getHealth() {
+  return apiRequest<HealthResponse>('/api/health');
 }

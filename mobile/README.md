@@ -25,13 +25,17 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Set `EXPO_PUBLIC_API_BASE_URL` to the Next.js app URL that the mobile app should call.
+Set `EXPO_PUBLIC_API_BASE_URL` to the Next.js app URL that the mobile app should call. If this value changes while Expo is running, restart Expo so the new public environment value is bundled into the app.
 
 Common local values:
 
 - Android emulator: `http://10.0.2.2:3000`
 - iOS simulator: `http://localhost:3000`
 - Physical phone: `http://YOUR_COMPUTER_LAN_IP:3000`
+
+If you are testing on both an Android emulator and a physical phone at the same time, prefer your computer's LAN IP, for example `http://192.168.10.111:3000`. The phone cannot use `10.0.2.2`, because that address only has special meaning inside the Android emulator.
+
+The Android package/application ID configured for Play Console is `com.pilot2finale.app`.
 
 ## Running The App
 
