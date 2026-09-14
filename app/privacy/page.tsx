@@ -70,8 +70,9 @@ export default function PrivacyPolicyPage() {
           <h2 className="text-xl font-semibold text-white">Data Retention</h2>
           <p className="leading-7 text-slate-300">
             We keep your account and tracking data for as long as your account is active or as needed
-            to provide the service. You may request deletion of your account or personal tracking data
-            by contacting us.
+            to provide the service. You can request account deletion from the Profile page. Backup
+            copies may remain for up to 30 days, and deletion request records may be retained for up
+            to 1 year.
           </p>
         </section>
 
@@ -88,18 +89,25 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc space-y-2 pl-5 leading-7 text-slate-300">
             <li>You can update or remove shows and episode logs in the app.</li>
             <li>You can sign out of your account from the app.</li>
-            <li>You can request access, correction, or deletion of your personal data.</li>
+            <li>
+              You can request access, correction, or deletion of your personal data through the
+              <a className="ml-1 text-blue-300 underline underline-offset-4" href="/account-deletion">
+                Account Deletion page
+              </a>
+              .
+            </li>
           </ul>
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-semibold text-white">Contact</h2>
+          <h2 className="text-xl font-semibold text-white">Account Deletion</h2>
           <p className="leading-7 text-slate-300">
-            For privacy questions or data requests, contact the Pilot 2 Finale team at
-            <a className="ml-1 text-blue-300 underline underline-offset-4" href="mailto:privacy@pilot2finale.com">
-              privacy@pilot2finale.com
+            You can request deletion of your Pilot 2 Finale account and associated data in the app
+            from the Profile page. See the
+            <a className="ml-1 text-blue-300 underline underline-offset-4" href="/account-deletion">
+              Account Deletion page
             </a>
-            .
+            for steps and details.
           </p>
         </section>
       </article>

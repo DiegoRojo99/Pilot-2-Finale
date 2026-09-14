@@ -150,6 +150,20 @@ model UserAchievementProgress {
   @@map("user_achievement_progress")
 }
 
+model AccountDeletionRequest {
+  id          Int       @id @default(autoincrement())
+  userId      String    @map("user_id")
+  status      String    @default("pending")
+  requestedAt DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
+  processedAt DateTime? @map("processed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_account_deletion_requests_user")
+  @@index([status, requestedAt], map: "idx_account_deletion_requests_status_requested")
+  @@map("account_deletion_requests")
+}
+
 model Genre {
   id         Int         @id
   name       String      @unique
