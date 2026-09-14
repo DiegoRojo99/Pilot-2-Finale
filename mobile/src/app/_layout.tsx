@@ -13,7 +13,15 @@ export default function TabLayout() {
       <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="show/[id]" />
+        <Stack.Screen
+          name="show/[id]"
+          options={{
+            headerShown: true,
+            headerTransparent: true,
+            headerTitle: '',
+            headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+          }}
+        />
       </Stack>
     </ThemeProvider>
   );

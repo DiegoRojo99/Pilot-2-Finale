@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -15,7 +16,6 @@ import type { TMDBShow } from '@/types/api';
 type DetailStatus = 'loading' | 'success' | 'error';
 
 export default function ShowDetailScreen() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [status, setStatus] = useState<DetailStatus>('loading');
   const [show, setShow] = useState<TMDBShow | null>(null);
@@ -56,13 +56,19 @@ export default function ShowDetailScreen() {
     <ScrollView
       style={[styles.scrollView, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.scrollContent}>
-      <SafeAreaView style={styles.safeArea}>
-        <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-          <ThemedText type="smallBold" themeColor="accent">
-            Back
-          </ThemedText>
-        </Pressable>
+      {status === 'success' && show && backdropUrl ? (
+        <ThemedView style={styles.backdropFrame}>
+          <Image source={{ uri: backdropUrl }} style={styles.backdrop} contentFit="cover" contentPosition="top center" />
+          <LinearGradient
+            pointerEvents="none"
+            colors={['transparent', theme.background]}
+            locations={[0, 1]}
+            style={styles.backdropFade}
+          />
+        </ThemedView>
+      ) : null}
 
+      <SafeAreaView style={styles.safeArea}>
         {status === 'loading' ? (
           <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
             <ActivityIndicator color={theme.accent} />
@@ -83,8 +89,6 @@ export default function ShowDetailScreen() {
 
         {status === 'success' && show ? (
           <>
-            {backdropUrl ? <Image source={{ uri: backdropUrl }} style={styles.backdrop} contentFit="cover" /> : null}
-
             <ThemedView type="backgroundElement" style={[styles.heroCard, { borderColor: theme.border }]}> 
               {posterUrl ? (
                 <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
@@ -125,6 +129,29 @@ export default function ShowDetailScreen() {
                 {show.overview || 'No overview available yet.'}
               </ThemedText>
             </ThemedView>
+
+            {show.seasons && show.seasons.length > 0 ? (
+              <ThemedView type="backgroundElement" style={[styles.seasonsCard, { borderColor: theme.border }]}> 
+                <ThemedText type="subtitle">Seasons</ThemedText>
+                {show.seasons
+                  .filter((season) => season.season_number > 0)
+                  .map((season) => (
+                    <ThemedView key={season.season_number} type="backgroundElement" style={styles.seasonRow}>
+                      <ThemedView type="backgroundSelected" style={styles.seasonNumberBadge}>
+                        <ThemedText type="smallBold">S{season.season_number}</ThemedText>
+                      </ThemedView>
+                      <ThemedView type="backgroundElement" style={styles.seasonText}>
+                        <ThemedText type="smallBold" numberOfLines={1}>
+                          {season.name}
+                        </ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {season.episode_count} episode{season.episode_count === 1 ? '' : 's'}
+                        </ThemedText>
+                      </ThemedView>
+                    </ThemedView>
+                  ))}
+              </ThemedView>
+            ) : null}
           </>
         ) : null}
       </SafeAreaView>
@@ -145,15 +172,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
+    paddingTop: 0,
     paddingBottom: Spacing.four,
-    gap: Spacing.four,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-  },
-  pressed: {
-    opacity: 0.75,
+    gap: Spacing.three,
   },
   stateCard: {
     alignSelf: 'stretch',
@@ -162,10 +183,22 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     borderWidth: 1,
   },
-  backdrop: {
+  backdropFrame: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: Spacing.three,
+    aspectRatio: 16 / 13,
+    overflow: 'hidden',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
+  backdropFade: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    height: 96,
   },
   heroCard: {
     alignSelf: 'stretch',
@@ -175,6 +208,7 @@ const styles = StyleSheet.create({
     padding: Spacing.two,
     borderRadius: Spacing.four,
     borderWidth: 1,
+    marginTop: -Spacing.six,
   },
   poster: {
     width: 110,
@@ -213,5 +247,28 @@ const styles = StyleSheet.create({
   },
   overviewText: {
     lineHeight: 24,
+  },
+  seasonsCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.three,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    borderWidth: 1,
+  },
+  seasonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  seasonNumberBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seasonText: {
+    flex: 1,
+    gap: Spacing.half,
   },
 });

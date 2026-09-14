@@ -15,7 +15,16 @@ export type TMDBShow = {
   genres?: Array<{ id: number; name: string }>;
   number_of_seasons?: number;
   number_of_episodes?: number;
+  seasons?: TMDBSeasonSummary[];
   status?: string;
+};
+
+export type TMDBSeasonSummary = {
+  season_number: number;
+  episode_count: number;
+  name: string;
+  air_date?: string | null;
+  poster_path?: string | null;
 };
 
 export type TMDBSearchResult = {
