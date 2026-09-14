@@ -29,6 +29,7 @@ export function FormField({ label, style, ...props }: FormFieldProps) {
 const styles = StyleSheet.create({
   field: {
     gap: Spacing.one,
+    backgroundColor: 'transparent',
   },
   input: {
     minHeight: 44,
