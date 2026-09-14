@@ -15,7 +15,7 @@ import { ThemedView } from './themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 const tabs: Array<{ name: string; href: Href; label: string; icon: string }> = [
-  { name: 'discover', href: '/', label: 'Discover', icon: 'S' },
+  { name: 'discover', href: '/index', label: 'Discover', icon: 'S' },
   { name: 'my-shows', href: '/my-shows', label: 'My Shows', icon: 'TV' },
   { name: 'history', href: '/history', label: 'History', icon: 'H' },
   { name: 'stats', href: '/stats', label: 'Stats', icon: 'B' },
