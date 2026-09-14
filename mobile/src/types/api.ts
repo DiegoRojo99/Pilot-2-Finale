@@ -12,6 +12,10 @@ export type TMDBShow = {
   first_air_date: string;
   vote_average: number;
   vote_count: number;
+  genres?: Array<{ id: number; name: string }>;
+  number_of_seasons?: number;
+  number_of_episodes?: number;
+  status?: string;
 };
 
 export type TMDBSearchResult = {

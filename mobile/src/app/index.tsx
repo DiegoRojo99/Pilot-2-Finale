@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { PosterRail } from '@/components/show/poster-rail';
 import { ShowResultCard } from '@/components/show/show-result-card';
@@ -15,6 +16,7 @@ type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
 type SuggestionsStatus = 'loading' | 'success' | 'error';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
   const [searchResults, setSearchResults] = useState<TMDBShow[]>([]);
@@ -23,6 +25,10 @@ export default function HomeScreen() {
   const [trendingShows, setTrendingShows] = useState<TMDBShow[]>([]);
   const [topRatedShows, setTopRatedShows] = useState<TMDBShow[]>([]);
   const theme = useTheme();
+
+  function openShow(show: TMDBShow) {
+    router.push({ pathname: '/show/[id]', params: { id: String(show.id) } });
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -139,7 +145,7 @@ export default function HomeScreen() {
         {searchResults.length > 0 ? (
           <ThemedView style={styles.resultsList}>
             {searchResults.slice(0, 12).map((show) => (
-              <ShowResultCard key={show.id} show={show} />
+              <ShowResultCard key={show.id} show={show} onPress={openShow} />
             ))}
           </ThemedView>
         ) : null}
@@ -170,11 +176,13 @@ export default function HomeScreen() {
                   title="Trending This Week"
                   icon={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' }}
                   shows={trendingShows}
+                  onShowPress={openShow}
                 />
                 <PosterRail
                   title="Top Rated"
                   icon={{ ios: 'star.fill', android: 'star', web: 'star' }}
                   shows={topRatedShows}
+                  onShowPress={openShow}
                 />
               </>
             ) : null}

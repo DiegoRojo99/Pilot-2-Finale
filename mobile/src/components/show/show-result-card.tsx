@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,40 +8,53 @@ import { useTheme } from '@/hooks/use-theme';
 import { getPosterUrl, getYear } from '@/lib/tmdb-images';
 import type { TMDBShow } from '@/types/api';
 
-export function ShowResultCard({ show }: { show: TMDBShow }) {
+type ShowResultCardProps = {
+  show: TMDBShow;
+  onPress?: (show: TMDBShow) => void;
+};
+
+export function ShowResultCard({ show, onPress }: ShowResultCardProps) {
   const theme = useTheme();
   const posterUrl = getPosterUrl(show.poster_path);
 
   return (
-    <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}> 
-      {posterUrl ? (
-        <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
-      ) : (
-        <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
-          <ThemedText type="small" themeColor="textSecondary">
-            No poster
-          </ThemedText>
-        </ThemedView>
-      )}
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => onPress?.(show)}
+      style={({ pressed }) => pressed && styles.pressed}>
+      <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}> 
+        {posterUrl ? (
+          <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
+        ) : (
+          <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
+            <ThemedText type="small" themeColor="textSecondary">
+              No poster
+            </ThemedText>
+          </ThemedView>
+        )}
 
-      <ThemedView type="backgroundElement" style={styles.infoPanel}>
-        <ThemedView type="backgroundElement" style={styles.titleStack}>
-          <ThemedText type="smallBold" numberOfLines={2}>
-            {show.name}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)} / 10
+        <ThemedView type="backgroundElement" style={styles.infoPanel}>
+          <ThemedView type="backgroundElement" style={styles.titleStack}>
+            <ThemedText type="smallBold" numberOfLines={2}>
+              {show.name}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)} / 10
+            </ThemedText>
+          </ThemedView>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>
+            {show.overview || 'No overview available yet.'}
           </ThemedText>
         </ThemedView>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>
-          {show.overview || 'No overview available yet.'}
-        </ThemedText>
       </ThemedView>
-    </ThemedView>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  pressed: {
+    opacity: 0.75,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
