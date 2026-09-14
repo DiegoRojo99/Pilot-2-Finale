@@ -16,6 +16,49 @@ import type { TMDBEpisode, TMDBShow } from '@/types/api';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
+function SkeletonBlock({ style }: { style?: object }) {
+  return <ThemedView type="backgroundSelected" style={[styles.skeletonBlock, style]} />;
+}
+
+function ShowDetailSkeleton() {
+  return (
+    <>
+      <ThemedView type="backgroundElement" style={styles.skeletonBackdrop}>
+        <SkeletonBlock style={styles.skeletonBackdropFill} />
+      </ThemedView>
+
+      <ThemedView type="backgroundElement" style={styles.skeletonHeroCard}>
+        <SkeletonBlock style={styles.skeletonPoster} />
+        <ThemedView type="backgroundElement" style={styles.skeletonHeroText}>
+          <SkeletonBlock style={styles.skeletonTitle} />
+          <SkeletonBlock style={styles.skeletonMeta} />
+          <SkeletonBlock style={styles.skeletonMetaShort} />
+        </ThemedView>
+      </ThemedView>
+
+      <ThemedView style={styles.skeletonGenreRow}>
+        <SkeletonBlock style={styles.skeletonGenrePill} />
+        <SkeletonBlock style={styles.skeletonGenrePill} />
+        <SkeletonBlock style={styles.skeletonGenrePillShort} />
+      </ThemedView>
+
+      <ThemedView type="backgroundElement" style={styles.skeletonContentCard}>
+        <SkeletonBlock style={styles.skeletonSectionTitle} />
+        <SkeletonBlock style={styles.skeletonLine} />
+        <SkeletonBlock style={styles.skeletonLine} />
+        <SkeletonBlock style={styles.skeletonLineShort} />
+      </ThemedView>
+
+      <ThemedView type="backgroundElement" style={styles.skeletonContentCard}>
+        <SkeletonBlock style={styles.skeletonSectionTitle} />
+        <SkeletonBlock style={styles.skeletonSeasonRow} />
+        <SkeletonBlock style={styles.skeletonSeasonRow} />
+        <SkeletonBlock style={styles.skeletonSeasonRow} />
+      </ThemedView>
+    </>
+  );
+}
+
 export default function ShowDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -81,14 +124,7 @@ export default function ShowDetailScreen() {
       ) : null}
 
       <SafeAreaView style={styles.safeArea}>
-        {status === 'loading' ? (
-          <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
-            <ActivityIndicator color={theme.accent} />
-            <ThemedText type="small" themeColor="textSecondary">
-              Loading show details...
-            </ThemedText>
-          </ThemedView>
-        ) : null}
+        {status === 'loading' ? <ShowDetailSkeleton /> : null}
 
         {status === 'error' ? (
           <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
@@ -192,6 +228,92 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Spacing.four,
     borderWidth: 1,
+  },
+  skeletonBlock: {
+    opacity: 0.65,
+  },
+  skeletonBackdrop: {
+    alignSelf: 'stretch',
+    aspectRatio: 16 / 13,
+    marginHorizontal: -Spacing.four,
+    overflow: 'hidden',
+  },
+  skeletonBackdropFill: {
+    width: '100%',
+    height: '100%',
+  },
+  skeletonHeroCard: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.two,
+    borderRadius: Spacing.four,
+    marginTop: -Spacing.six,
+  },
+  skeletonPoster: {
+    width: 110,
+    height: 165,
+    borderRadius: Spacing.two,
+  },
+  skeletonHeroText: {
+    flex: 1,
+    gap: Spacing.two,
+  },
+  skeletonTitle: {
+    width: '90%',
+    height: 32,
+    borderRadius: Spacing.two,
+  },
+  skeletonMeta: {
+    width: '72%',
+    height: 16,
+    borderRadius: Spacing.two,
+  },
+  skeletonMetaShort: {
+    width: '56%',
+    height: 16,
+    borderRadius: Spacing.two,
+  },
+  skeletonGenreRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  skeletonGenrePill: {
+    width: 84,
+    height: 28,
+    borderRadius: Spacing.five,
+  },
+  skeletonGenrePillShort: {
+    width: 64,
+    height: 28,
+    borderRadius: Spacing.five,
+  },
+  skeletonContentCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+  },
+  skeletonSectionTitle: {
+    width: 140,
+    height: 24,
+    borderRadius: Spacing.two,
+  },
+  skeletonLine: {
+    width: '100%',
+    height: 14,
+    borderRadius: Spacing.two,
+  },
+  skeletonLineShort: {
+    width: '68%',
+    height: 14,
+    borderRadius: Spacing.two,
+  },
+  skeletonSeasonRow: {
+    width: '100%',
+    height: 58,
+    borderRadius: Spacing.three,
   },
   backdropFrame: {
     width: '100%',

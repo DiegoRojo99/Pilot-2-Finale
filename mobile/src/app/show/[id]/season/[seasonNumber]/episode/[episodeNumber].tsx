@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,6 +14,33 @@ import { formatAirDate, getStillUrl } from '@/lib/tmdb-images';
 import type { TMDBEpisode } from '@/types/api';
 
 type EpisodeStatus = 'loading' | 'success' | 'error';
+
+function SkeletonBlock({ style }: { style?: object }) {
+  return <ThemedView type="backgroundSelected" style={[styles.skeletonBlock, style]} />;
+}
+
+function EpisodeDetailSkeleton() {
+  return (
+    <>
+      <ThemedView type="backgroundElement" style={styles.skeletonStillFrame}>
+        <SkeletonBlock style={styles.skeletonStill} />
+      </ThemedView>
+
+      <ThemedView type="backgroundElement" style={styles.skeletonHeaderCard}>
+        <SkeletonBlock style={styles.skeletonMeta} />
+        <SkeletonBlock style={styles.skeletonTitle} />
+        <SkeletonBlock style={styles.skeletonMetaShort} />
+      </ThemedView>
+
+      <ThemedView type="backgroundElement" style={styles.skeletonOverviewCard}>
+        <SkeletonBlock style={styles.skeletonSectionTitle} />
+        <SkeletonBlock style={styles.skeletonLine} />
+        <SkeletonBlock style={styles.skeletonLine} />
+        <SkeletonBlock style={styles.skeletonLineShort} />
+      </ThemedView>
+    </>
+  );
+}
 
 export default function EpisodeDetailScreen() {
   const { id, seasonNumber, episodeNumber } = useLocalSearchParams<{
@@ -75,14 +102,7 @@ export default function EpisodeDetailScreen() {
       ) : null}
 
       <SafeAreaView style={styles.safeArea}>
-        {status === 'loading' ? (
-          <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
-            <ActivityIndicator color={theme.accent} />
-            <ThemedText type="small" themeColor="textSecondary">
-              Loading episode...
-            </ThemedText>
-          </ThemedView>
-        ) : null}
+        {status === 'loading' ? <EpisodeDetailSkeleton /> : null}
 
         {status === 'error' ? (
           <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
@@ -157,6 +177,62 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Spacing.four,
     borderWidth: 1,
+  },
+  skeletonBlock: {
+    opacity: 0.65,
+  },
+  skeletonStillFrame: {
+    alignSelf: 'stretch',
+    aspectRatio: 16 / 10,
+    marginHorizontal: -Spacing.four,
+    overflow: 'hidden',
+  },
+  skeletonStill: {
+    width: '100%',
+    height: '100%',
+  },
+  skeletonHeaderCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    marginTop: -Spacing.four,
+  },
+  skeletonMeta: {
+    width: 160,
+    height: 16,
+    borderRadius: Spacing.two,
+  },
+  skeletonTitle: {
+    width: '88%',
+    height: 36,
+    borderRadius: Spacing.two,
+  },
+  skeletonMetaShort: {
+    width: 140,
+    height: 16,
+    borderRadius: Spacing.two,
+  },
+  skeletonOverviewCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+  },
+  skeletonSectionTitle: {
+    width: 120,
+    height: 24,
+    borderRadius: Spacing.two,
+  },
+  skeletonLine: {
+    width: '100%',
+    height: 14,
+    borderRadius: Spacing.two,
+  },
+  skeletonLineShort: {
+    width: '64%',
+    height: 14,
+    borderRadius: Spacing.two,
   },
   headerCard: {
     alignSelf: 'stretch',
