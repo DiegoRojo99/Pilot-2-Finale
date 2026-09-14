@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import type { HealthResponse, TMDBSearchResult } from '@/types/api';
+import type { HealthResponse } from '@/types/api';
 
 const DEFAULT_API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
@@ -55,10 +55,4 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
 
 export function getHealth() {
   return apiRequest<HealthResponse>('/api/health');
-}
-
-export function searchShows(query: string, page = 1) {
-  const params = new URLSearchParams({ query, page: String(page) });
-
-  return apiRequest<TMDBSearchResult>(`/api/shows/search?${params.toString()}`);
 }

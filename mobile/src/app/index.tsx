@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 
@@ -7,10 +7,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { searchShows } from '@/lib/api';
+import { getTopRatedShows, getTrendingShows, searchShows } from '@/lib/shows';
 import type { TMDBShow } from '@/types/api';
 
 type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
+type SuggestionsStatus = 'loading' | 'success' | 'error';
 
 function getPosterUrl(path: string | null) {
   return path ? `https://image.tmdb.org/t/p/w342${path}` : null;
@@ -36,17 +37,56 @@ function ShowResultCard({ show }: { show: TMDBShow }) {
         </ThemedView>
       )}
 
-      <ThemedView type="backgroundElement" style={styles.resultContent}>
-        <ThemedText type="smallBold" numberOfLines={2}>
-          {show.name}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)} / 10
-        </ThemedText>
+      <ThemedView type="backgroundElement" style={styles.resultInfoPanel}>
+        <ThemedView type="backgroundElement" style={styles.titleStack}>
+          <ThemedText type="smallBold" numberOfLines={2}>
+            {show.name}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)} / 10
+          </ThemedText>
+        </ThemedView>
         <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>
           {show.overview || 'No overview available yet.'}
         </ThemedText>
       </ThemedView>
+    </ThemedView>
+  );
+}
+
+function PosterRail({ title, shows }: { title: string; shows: TMDBShow[] }) {
+  const theme = useTheme();
+
+  return (
+    <ThemedView style={styles.railSection}>
+      <ThemedText type="subtitle">{title}</ThemedText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railContent}>
+        {shows.slice(0, 15).map((show) => {
+          const posterUrl = getPosterUrl(show.poster_path);
+
+          return (
+            <ThemedView key={show.id} type="backgroundElement" style={[styles.posterCard, { borderColor: theme.border }]}> 
+              {posterUrl ? (
+                <Image source={{ uri: posterUrl }} style={styles.railPoster} contentFit="cover" />
+              ) : (
+                <ThemedView type="backgroundSelected" style={styles.railPosterPlaceholder}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    No poster
+                  </ThemedText>
+                </ThemedView>
+              )}
+              <ThemedView type="backgroundElement" style={styles.posterInfoPanel}>
+                <ThemedText type="smallBold" numberOfLines={2}>
+                  {show.name}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
+                </ThemedText>
+              </ThemedView>
+            </ThemedView>
+          );
+        })}
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -56,7 +96,30 @@ export default function HomeScreen() {
   const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
   const [searchResults, setSearchResults] = useState<TMDBShow[]>([]);
   const [resultCount, setResultCount] = useState(0);
+  const [suggestionsStatus, setSuggestionsStatus] = useState<SuggestionsStatus>('loading');
+  const [trendingShows, setTrendingShows] = useState<TMDBShow[]>([]);
+  const [topRatedShows, setTopRatedShows] = useState<TMDBShow[]>([]);
   const theme = useTheme();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void Promise.all([getTrendingShows(), getTopRatedShows()])
+      .then(([trendingData, topRatedData]) => {
+        if (!isMounted) return;
+        setTrendingShows(trendingData.results);
+        setTopRatedShows(topRatedData.results);
+        setSuggestionsStatus('success');
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSuggestionsStatus('error');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -159,11 +222,31 @@ export default function HomeScreen() {
         ) : null}
 
         {searchStatus === 'idle' ? (
-          <ThemedView type="backgroundElement" style={[styles.emptyCard, { borderColor: theme.border }]}> 
-            <ThemedText type="subtitle">Start with a title</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Try searching for a show you are currently watching or one you have been meaning to start.
-            </ThemedText>
+          <ThemedView style={styles.suggestions}>
+            {suggestionsStatus === 'loading' ? (
+              <ThemedView type="backgroundElement" style={[styles.emptyCard, { borderColor: theme.border }]}> 
+                <ActivityIndicator color={theme.accent} />
+                <ThemedText type="small" themeColor="textSecondary">
+                  Loading suggestions...
+                </ThemedText>
+              </ThemedView>
+            ) : null}
+
+            {suggestionsStatus === 'error' ? (
+              <ThemedView type="backgroundElement" style={[styles.emptyCard, { borderColor: theme.border }]}> 
+                <ThemedText type="subtitle">Start with a title</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Suggestions are unavailable right now, but search is ready when you know what to watch next.
+                </ThemedText>
+              </ThemedView>
+            ) : null}
+
+            {suggestionsStatus === 'success' ? (
+              <>
+                <PosterRail title="Trending This Week" shows={trendingShows} />
+                <PosterRail title="Top Rated" shows={topRatedShows} />
+              </>
+            ) : null}
           </ThemedView>
         ) : null}
       </SafeAreaView>
@@ -221,30 +304,72 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: Spacing.three,
   },
-  resultCard: {
-    flexDirection: 'row',
+  suggestions: {
+    alignSelf: 'stretch',
+    gap: Spacing.four,
+  },
+  railSection: {
     gap: Spacing.three,
-    padding: Spacing.two,
+  },
+  railContent: {
+    gap: Spacing.three,
+    paddingRight: Spacing.four,
+  },
+  posterCard: {
+    width: 132,
+    padding: Spacing.one,
     borderRadius: Spacing.three,
     borderWidth: 1,
   },
-  poster: {
-    width: 76,
-    height: 114,
+  posterInfoPanel: {
+    gap: Spacing.half,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    borderBottomLeftRadius: Spacing.two,
+    borderBottomRightRadius: Spacing.two,
+  },
+  railPoster: {
+    width: '100%',
+    aspectRatio: 2 / 3,
     borderRadius: Spacing.two,
   },
-  posterPlaceholder: {
-    width: 76,
-    height: 114,
+  railPosterPlaceholder: {
+    width: '100%',
+    aspectRatio: 2 / 3,
     borderRadius: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.one,
   },
-  resultContent: {
+  resultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.two,
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+  },
+  poster: {
+    width: 100,
+    height: 150,
+    borderRadius: Spacing.two,
+  },
+  posterPlaceholder: {
+    width: 100,
+    height: 150,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.one,
+  },
+  resultInfoPanel: {
     flex: 1,
-    gap: Spacing.one,
-    paddingVertical: Spacing.one,
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderTopRightRadius: Spacing.two,
+    borderBottomRightRadius: Spacing.two,
+  },
+  titleStack: {
+    gap: Spacing.half,
   },
   emptyCard: {
     alignSelf: 'stretch',
