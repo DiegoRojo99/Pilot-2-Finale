@@ -27,6 +27,24 @@ export type TMDBSeasonSummary = {
   poster_path?: string | null;
 };
 
+export type TMDBEpisode = {
+  id: number;
+  name: string;
+  overview: string;
+  episode_number: number;
+  season_number: number;
+  air_date: string;
+  still_path: string | null;
+  vote_average: number;
+  runtime: number | null;
+};
+
+export type TMDBSeason = TMDBSeasonSummary & {
+  id: number;
+  overview: string;
+  episodes?: TMDBEpisode[];
+};
+
 export type TMDBSearchResult = {
   page: number;
   results: TMDBShow[];

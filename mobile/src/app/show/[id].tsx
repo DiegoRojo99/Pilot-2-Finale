@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 
+import { SeasonSummaryRow } from '@/components/show/season-summary-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -20,10 +21,9 @@ export default function ShowDetailScreen() {
   const [status, setStatus] = useState<DetailStatus>('loading');
   const [show, setShow] = useState<TMDBShow | null>(null);
   const theme = useTheme();
+  const showId = Number(id);
 
   useEffect(() => {
-    const showId = Number(id);
-
     if (!Number.isFinite(showId)) {
       setStatus('error');
       return;
@@ -47,7 +47,7 @@ export default function ShowDetailScreen() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [showId]);
 
   const posterUrl = getPosterUrl(show?.poster_path ?? null);
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
@@ -132,24 +132,15 @@ export default function ShowDetailScreen() {
 
             {show.seasons && show.seasons.length > 0 ? (
               <ThemedView type="backgroundElement" style={[styles.seasonsCard, { borderColor: theme.border }]}> 
-                <ThemedText type="subtitle">Seasons</ThemedText>
+                <ThemedView type="backgroundElement" style={styles.seasonsHeader}>
+                  <ThemedText type="subtitle">Track Episodes</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Add this show to your list later to start marking episodes as watched.
+                  </ThemedText>
+                </ThemedView>
                 {show.seasons
                   .filter((season) => season.season_number > 0)
-                  .map((season) => (
-                    <ThemedView key={season.season_number} type="backgroundElement" style={styles.seasonRow}>
-                      <ThemedView type="backgroundSelected" style={styles.seasonNumberBadge}>
-                        <ThemedText type="smallBold">S{season.season_number}</ThemedText>
-                      </ThemedView>
-                      <ThemedView type="backgroundElement" style={styles.seasonText}>
-                        <ThemedText type="smallBold" numberOfLines={1}>
-                          {season.name}
-                        </ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {season.episode_count} episode{season.episode_count === 1 ? '' : 's'}
-                        </ThemedText>
-                      </ThemedView>
-                    </ThemedView>
-                  ))}
+                  .map((season) => <SeasonSummaryRow key={season.season_number} season={season} showId={showId} />)}
               </ThemedView>
             ) : null}
           </>
@@ -250,25 +241,14 @@ const styles = StyleSheet.create({
   },
   seasonsCard: {
     alignSelf: 'stretch',
-    gap: Spacing.three,
-    padding: Spacing.four,
+    gap: Spacing.two,
+    padding: Spacing.three,
     borderRadius: Spacing.four,
     borderWidth: 1,
   },
-  seasonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  seasonNumberBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  seasonText: {
-    flex: 1,
-    gap: Spacing.half,
+  seasonsHeader: {
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.one,
+    paddingBottom: Spacing.one,
   },
 });
