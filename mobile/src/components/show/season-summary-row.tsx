@@ -16,36 +16,39 @@ type SeasonStatus = 'idle' | 'loading' | 'success' | 'error';
 type SeasonSummaryRowProps = {
   season: TMDBSeasonSummary;
   showId: number;
+  onEpisodePress?: (episode: TMDBEpisode) => void;
 };
 
-function EpisodeSummaryRow({ episode }: { episode: TMDBEpisode }) {
+function EpisodeSummaryRow({ episode, onPress }: { episode: TMDBEpisode; onPress?: (episode: TMDBEpisode) => void }) {
   const stillUrl = getStillUrl(episode.still_path);
 
   return (
-    <ThemedView type="backgroundSelected" style={styles.episodeRow}>
-      {stillUrl ? (
-        <Image source={{ uri: stillUrl }} style={styles.episodeStill} contentFit="cover" />
-      ) : (
-        <ThemedView type="backgroundElement" style={styles.episodeStillPlaceholder}>
-          <ThemedText type="code" themeColor="textSecondary">
-            {String(episode.episode_number).padStart(2, '0')}
+    <Pressable accessibilityRole="button" onPress={() => onPress?.(episode)} style={({ pressed }) => pressed && styles.pressed}>
+      <ThemedView type="backgroundSelected" style={styles.episodeRow}>
+        {stillUrl ? (
+          <Image source={{ uri: stillUrl }} style={styles.episodeStill} contentFit="cover" />
+        ) : (
+          <ThemedView type="backgroundElement" style={styles.episodeStillPlaceholder}>
+            <ThemedText type="code" themeColor="textSecondary">
+              {String(episode.episode_number).padStart(2, '0')}
+            </ThemedText>
+          </ThemedView>
+        )}
+
+        <ThemedView type="backgroundSelected" style={styles.episodeText}>
+          <ThemedText type="smallBold" numberOfLines={1}>
+            {episode.episode_number}. {episode.name || `Episode ${episode.episode_number}`}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {formatAirDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime}m` : ''}
           </ThemedText>
         </ThemedView>
-      )}
-
-      <ThemedView type="backgroundSelected" style={styles.episodeText}>
-        <ThemedText type="smallBold" numberOfLines={1}>
-          {episode.episode_number}. {episode.name || `Episode ${episode.episode_number}`}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {formatAirDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime}m` : ''}
-        </ThemedText>
       </ThemedView>
-    </ThemedView>
+    </Pressable>
   );
 }
 
-export function SeasonSummaryRow({ season, showId }: SeasonSummaryRowProps) {
+export function SeasonSummaryRow({ season, showId, onEpisodePress }: SeasonSummaryRowProps) {
   const theme = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
   const [status, setStatus] = useState<SeasonStatus>('idle');
@@ -117,7 +120,9 @@ export function SeasonSummaryRow({ season, showId }: SeasonSummaryRowProps) {
             </ThemedText>
           ) : null}
 
-          {seasonDetails?.episodes?.map((episode) => <EpisodeSummaryRow key={episode.id} episode={episode} />)}
+          {seasonDetails?.episodes?.map((episode) => (
+            <EpisodeSummaryRow key={episode.id} episode={episode} onPress={onEpisodePress} />
+          ))}
         </ThemedView>
       ) : null}
     </ThemedView>

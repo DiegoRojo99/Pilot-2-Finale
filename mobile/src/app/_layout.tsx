@@ -22,6 +22,15 @@ export default function TabLayout() {
             headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
           }}
         />
+        <Stack.Screen
+          name="show/[id]/season/[seasonNumber]/episode/[episodeNumber]"
+          options={{
+            headerShown: true,
+            headerTransparent: true,
+            headerTitle: '',
+            headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+          }}
+        />
       </Stack>
     </ThemeProvider>
   );

@@ -3,7 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { SeasonSummaryRow } from '@/components/show/season-summary-row';
 import { ThemedText } from '@/components/themed-text';
@@ -12,11 +12,12 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getShowDetails } from '@/lib/shows';
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
-import type { TMDBShow } from '@/types/api';
+import type { TMDBEpisode, TMDBShow } from '@/types/api';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
 export default function ShowDetailScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [status, setStatus] = useState<DetailStatus>('loading');
   const [show, setShow] = useState<TMDBShow | null>(null);
@@ -51,6 +52,17 @@ export default function ShowDetailScreen() {
 
   const posterUrl = getPosterUrl(show?.poster_path ?? null);
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
+
+  function openEpisode(episode: TMDBEpisode) {
+    router.push({
+      pathname: '/show/[id]/season/[seasonNumber]/episode/[episodeNumber]',
+      params: {
+        id: String(showId),
+        seasonNumber: String(episode.season_number),
+        episodeNumber: String(episode.episode_number),
+      },
+    });
+  }
 
   return (
     <ScrollView
@@ -140,7 +152,14 @@ export default function ShowDetailScreen() {
                 </ThemedView>
                 {show.seasons
                   .filter((season) => season.season_number > 0)
-                  .map((season) => <SeasonSummaryRow key={season.season_number} season={season} showId={showId} />)}
+                  .map((season) => (
+                    <SeasonSummaryRow
+                      key={season.season_number}
+                      season={season}
+                      showId={showId}
+                      onEpisodePress={openEpisode}
+                    />
+                  ))}
               </ThemedView>
             ) : null}
           </>
