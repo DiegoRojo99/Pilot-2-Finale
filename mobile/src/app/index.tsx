@@ -6,7 +6,7 @@ import { PosterRail } from '@/components/show/poster-rail';
 import { ShowResultCard } from '@/components/show/show-result-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getTopRatedShows, getTrendingShows, searchShows } from '@/lib/shows';
 import type { TMDBShow } from '@/types/api';
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     gap: Spacing.four,
     paddingTop: Spacing.five,
-    paddingBottom: BottomTabInset + Spacing.four,
+    paddingBottom: Spacing.two,
   },
   header: {
     gap: Spacing.two,
