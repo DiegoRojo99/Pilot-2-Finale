@@ -38,7 +38,7 @@ Acceptance Checks:
 
 ## Phase 1: Mobile App Skeleton
 
-Status: in progress
+Status: complete
 
 Purpose: replace starter screens with the real product structure.
 
@@ -80,32 +80,33 @@ Acceptance Checks:
 
 ## Phase 2: Authentication And Session Handling
 
-Status: not started
+Status: in progress
 
 Purpose: make the mobile app usable with real user accounts.
 
 Tasks:
 
-- [ ] Confirm mobile-compatible Neon Auth flow.
-- [ ] Decide whether auth uses web redirects, API proxy calls, or a mobile-specific flow.
-- [ ] Implement sign in screen matching the existing auth model.
-- [ ] Implement registration screen matching the existing auth model.
-- [ ] Persist session state securely on device.
-- [ ] Add session bootstrap on app launch.
-- [ ] Protect authenticated routes.
-- [ ] Redirect unauthenticated users to auth screens.
-- [ ] Add sign out from the profile screen.
-- [ ] Handle expired sessions gracefully.
-- [ ] Handle failed refreshes gracefully.
-- [ ] Handle offline startup gracefully.
-- [ ] Verify API requests send the required auth state for user-scoped endpoints.
-- [ ] Add mobile account deletion request UI after auth is connected.
+- [x] Confirm mobile-compatible Neon Auth flow on emulator and physical phone.
+- [x] Decide whether auth uses web redirects, API proxy calls, or a mobile-specific flow.
+- [x] Implement sign in screen matching the existing auth model.
+- [x] Implement registration screen matching the existing auth model.
+- [x] Persist session state securely on device.
+- [x] Add session bootstrap on app launch.
+- [x] Protect authenticated routes.
+- [x] Redirect unauthenticated users to auth screens.
+- [x] Add sign out from the profile screen.
+- [x] Handle expired sessions gracefully.
+- [x] Handle failed refreshes gracefully.
+- [x] Handle offline startup gracefully.
+- [x] Add auth cookies to mobile API requests for user-scoped endpoints.
+- [ ] Verify API requests send the required auth state for user-scoped endpoints on device.
+- [x] Add mobile account deletion request UI after auth is connected.
 
 Acceptance Checks:
 
-- [ ] A user can register, sign in, close the app, reopen it, and remain signed in.
+- [x] A user can register, sign in, close the app, reopen it, and remain signed in on device.
 - [ ] Authenticated API routes return only the signed-in user's data.
-- [ ] Signing out clears local session state and protected data from the UI.
+- [x] Signing out clears local session state and protected data from the UI.
 
 ## Phase 3: Discover And Add Shows
 

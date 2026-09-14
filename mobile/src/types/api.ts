@@ -3,6 +3,34 @@ export type HealthResponse = {
   timestamp: string;
 };
 
+export type AuthUser = {
+  id: string;
+  email: string;
+  name?: string | null;
+  image?: string | null;
+  emailVerified?: boolean;
+};
+
+export type AuthSession = {
+  id: string;
+  userId: string;
+  expiresAt: string;
+  token?: string;
+};
+
+export type AuthSessionResponse = {
+  session: AuthSession;
+  user: AuthUser;
+} | null;
+
+export type AuthEmailResponse = {
+  token?: string | null;
+  user?: AuthUser;
+  error?: {
+    message?: string;
+  };
+};
+
 export type TMDBShow = {
   id: number;
   name: string;

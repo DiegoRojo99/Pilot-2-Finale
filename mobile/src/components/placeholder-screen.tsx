@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet } from 'react-native';
+import type { ReactNode } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,9 +12,28 @@ type PlaceholderScreenProps = {
   eyebrow: string;
   description: string;
   tasks: string[];
+  children?: ReactNode;
 };
 
-export function PlaceholderScreen({ title, eyebrow, description, tasks }: PlaceholderScreenProps) {
+function PlaceholderTasks({ tasks }: { tasks: string[] }) {
+  if (tasks.length === 0) return null;
+
+  return (
+    <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedText type="subtitle">Next tasks</ThemedText>
+      {tasks.map((task) => (
+        <ThemedView key={task} style={styles.taskRow}>
+          <ThemedView type="backgroundSelected" style={styles.taskDot} />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.taskText}>
+            {task}
+          </ThemedText>
+        </ThemedView>
+      ))}
+    </ThemedView>
+  );
+}
+
+export function PlaceholderScreen({ title, eyebrow, description, tasks, children }: PlaceholderScreenProps) {
   const theme = useTheme();
 
   return (
@@ -31,21 +51,13 @@ export function PlaceholderScreen({ title, eyebrow, description, tasks }: Placeh
           </ThemedText>
         </ThemedView>
 
-        <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText type="subtitle">Next tasks</ThemedText>
-          {tasks.map((task) => (
-            <ThemedView key={task} style={styles.taskRow}>
-              <ThemedView type="backgroundSelected" style={styles.taskDot} />
-              <ThemedText type="small" themeColor="textSecondary" style={styles.taskText}>
-                {task}
-              </ThemedText>
-            </ThemedView>
-          ))}
-        </ThemedView>
+        {children ?? <PlaceholderTasks tasks={tasks} />}
       </SafeAreaView>
     </ScrollView>
   );
 }
+
+PlaceholderScreen.Tasks = PlaceholderTasks;
 
 const styles = StyleSheet.create({
   scrollView: {

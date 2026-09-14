@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { getStoredAuthCookieHeader } from '@/lib/auth-storage';
 import type { HealthResponse } from '@/types/api';
 
 const DEFAULT_API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
@@ -40,12 +41,20 @@ export function createApiUrl(path: string) {
 }
 
 export async function apiRequest<ResponseBody>(path: string, options: RequestInit = {}) {
+  const cookieHeader = await getStoredAuthCookieHeader();
+  const headers = new Headers({
+    Accept: 'application/json',
+    ...options.headers,
+  });
+
+  if (cookieHeader && Platform.OS !== 'web') {
+    headers.set('Cookie', cookieHeader);
+  }
+
   const response = await fetch(createApiUrl(path), {
     ...options,
-    headers: {
-      Accept: 'application/json',
-      ...options.headers,
-    },
+    credentials: 'include',
+    headers,
   });
 
   if (!response.ok) throw new ApiError(`Request failed with status ${response.status}`, response.status);
