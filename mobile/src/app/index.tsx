@@ -67,7 +67,7 @@ export default function HomeScreen() {
           </ThemedText>
         </ThemedView>
 
-        <ThemedView type="backgroundElement" style={styles.card}>
+        <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
           <ThemedText type="subtitle">Backend connection</ThemedText>
           <ThemedText themeColor="textSecondary">{getApiBaseUrl()}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
@@ -102,8 +102,12 @@ export default function HomeScreen() {
             </ThemedView>
           )}
 
-          <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={checkConnection}>
-            <ThemedText type="smallBold">Check again</ThemedText>
+          <Pressable
+            style={({ pressed }) => [styles.button, { backgroundColor: theme.accent }, pressed && styles.buttonPressed]}
+            onPress={checkConnection}>
+            <ThemedText type="smallBold" style={{ color: theme.accentText }}>
+              Check again
+            </ThemedText>
           </Pressable>
         </ThemedView>
 
@@ -144,6 +148,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.four,
     borderRadius: Spacing.four,
+    borderWidth: 1,
   },
   statusBlock: {
     gap: Spacing.one,
@@ -152,7 +157,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     borderRadius: Spacing.three,
-    borderWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
