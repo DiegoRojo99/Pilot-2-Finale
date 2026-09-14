@@ -1,17 +1,15 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from 'react-native';
 
-import exploreIcon from '@/assets/images/tabIcons/explore.png';
-import homeIcon from '@/assets/images/tabIcons/home.png';
 import { Colors } from '@/constants/theme';
 
 const tabs = [
-  { name: 'index', label: 'Discover', icon: homeIcon },
-  { name: 'my-shows', label: 'My Shows', icon: exploreIcon },
-  { name: 'history', label: 'History', icon: exploreIcon },
-  { name: 'stats', label: 'Stats', icon: exploreIcon },
-  { name: 'profile', label: 'Profile', icon: homeIcon },
-];
+  { name: 'index', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
+  { name: 'my-shows', label: 'My Shows', sf: 'tv', md: 'live_tv' },
+  { name: 'history', label: 'History', sf: 'clock.arrow.circlepath', md: 'history' },
+  { name: 'stats', label: 'Stats', sf: 'chart.bar', md: 'bar_chart' },
+  { name: 'profile', label: 'Profile', sf: 'person.crop.circle', md: 'account_circle' },
+] as const;
 
 export default function AppTabs() {
   const scheme = useColorScheme();
@@ -25,7 +23,7 @@ export default function AppTabs() {
       {tabs.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon src={tab.icon} renderingMode="template" />
+          <NativeTabs.Trigger.Icon sf={tab.sf} md={tab.md} selectedColor={colors.accent} />
         </NativeTabs.Trigger>
       ))}
     </NativeTabs>

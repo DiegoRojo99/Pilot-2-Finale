@@ -14,12 +14,12 @@ import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
-const tabs: Array<{ name: string; href: Href; label: string }> = [
-  { name: 'discover', href: '/', label: 'Discover' },
-  { name: 'my-shows', href: '/my-shows', label: 'My Shows' },
-  { name: 'history', href: '/history', label: 'History' },
-  { name: 'stats', href: '/stats', label: 'Stats' },
-  { name: 'profile', href: '/profile', label: 'Profile' },
+const tabs: Array<{ name: string; href: Href; label: string; icon: string }> = [
+  { name: 'discover', href: '/', label: 'Discover', icon: 'S' },
+  { name: 'my-shows', href: '/my-shows', label: 'My Shows', icon: 'TV' },
+  { name: 'history', href: '/history', label: 'History', icon: 'H' },
+  { name: 'stats', href: '/stats', label: 'Stats', icon: 'B' },
+  { name: 'profile', href: '/profile', label: 'Profile', icon: 'P' },
 ];
 
 export default function AppTabs() {
@@ -30,7 +30,7 @@ export default function AppTabs() {
         <CustomTabList>
           {tabs.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton>{tab.label}</TabButton>
+              <TabButton icon={tab.icon}>{tab.label}</TabButton>
             </TabTrigger>
           ))}
         </CustomTabList>
@@ -39,12 +39,21 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+type TabButtonProps = TabTriggerSlotProps & {
+  icon: string;
+};
+
+export function TabButton({ children, icon, isFocused, ...props }: TabButtonProps) {
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
+        <ThemedView type={isFocused ? 'accent' : 'backgroundSelected'} style={styles.iconBadge}>
+          <ThemedText type="code" themeColor={isFocused ? 'accentText' : 'textSecondary'}>
+            {icon}
+          </ThemedText>
+        </ThemedView>
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
         </ThemedText>
@@ -95,8 +104,19 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   tabButtonView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
     borderRadius: Spacing.three,
+  },
+  iconBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.one,
   },
 });
