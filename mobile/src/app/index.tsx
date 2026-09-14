@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 
+import { PosterRail } from '@/components/show/poster-rail';
+import { ShowResultCard } from '@/components/show/show-result-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -12,84 +13,6 @@ import type { TMDBShow } from '@/types/api';
 
 type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
 type SuggestionsStatus = 'loading' | 'success' | 'error';
-
-function getPosterUrl(path: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w342${path}` : null;
-}
-
-function getYear(firstAirDate: string) {
-  return firstAirDate ? firstAirDate.slice(0, 4) : 'Unknown year';
-}
-
-function ShowResultCard({ show }: { show: TMDBShow }) {
-  const theme = useTheme();
-  const posterUrl = getPosterUrl(show.poster_path);
-
-  return (
-    <ThemedView type="backgroundElement" style={[styles.resultCard, { borderColor: theme.border }]}> 
-      {posterUrl ? (
-        <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
-      ) : (
-        <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
-          <ThemedText type="small" themeColor="textSecondary">
-            No poster
-          </ThemedText>
-        </ThemedView>
-      )}
-
-      <ThemedView type="backgroundElement" style={styles.resultInfoPanel}>
-        <ThemedView type="backgroundElement" style={styles.titleStack}>
-          <ThemedText type="smallBold" numberOfLines={2}>
-            {show.name}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)} / 10
-          </ThemedText>
-        </ThemedView>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>
-          {show.overview || 'No overview available yet.'}
-        </ThemedText>
-      </ThemedView>
-    </ThemedView>
-  );
-}
-
-function PosterRail({ title, shows }: { title: string; shows: TMDBShow[] }) {
-  const theme = useTheme();
-
-  return (
-    <ThemedView style={styles.railSection}>
-      <ThemedText type="subtitle">{title}</ThemedText>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railContent}>
-        {shows.slice(0, 15).map((show) => {
-          const posterUrl = getPosterUrl(show.poster_path);
-
-          return (
-            <ThemedView key={show.id} type="backgroundElement" style={[styles.posterCard, { borderColor: theme.border }]}> 
-              {posterUrl ? (
-                <Image source={{ uri: posterUrl }} style={styles.railPoster} contentFit="cover" />
-              ) : (
-                <ThemedView type="backgroundSelected" style={styles.railPosterPlaceholder}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    No poster
-                  </ThemedText>
-                </ThemedView>
-              )}
-              <ThemedView type="backgroundElement" style={styles.posterInfoPanel}>
-                <ThemedText type="smallBold" numberOfLines={2}>
-                  {show.name}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
-                </ThemedText>
-              </ThemedView>
-            </ThemedView>
-          );
-        })}
-      </ScrollView>
-    </ThemedView>
-  );
-}
 
 export default function HomeScreen() {
   const [query, setQuery] = useState('');
@@ -307,69 +230,6 @@ const styles = StyleSheet.create({
   suggestions: {
     alignSelf: 'stretch',
     gap: Spacing.four,
-  },
-  railSection: {
-    gap: Spacing.three,
-  },
-  railContent: {
-    gap: Spacing.three,
-    paddingRight: Spacing.four,
-  },
-  posterCard: {
-    width: 132,
-    padding: Spacing.one,
-    borderRadius: Spacing.three,
-    borderWidth: 1,
-  },
-  posterInfoPanel: {
-    gap: Spacing.half,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-    borderBottomLeftRadius: Spacing.two,
-    borderBottomRightRadius: Spacing.two,
-  },
-  railPoster: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: Spacing.two,
-  },
-  railPosterPlaceholder: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: Spacing.two,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.one,
-  },
-  resultCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.two,
-    borderRadius: Spacing.three,
-    borderWidth: 1,
-  },
-  poster: {
-    width: 100,
-    height: 150,
-    borderRadius: Spacing.two,
-  },
-  posterPlaceholder: {
-    width: 100,
-    height: 150,
-    borderRadius: Spacing.two,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.one,
-  },
-  resultInfoPanel: {
-    flex: 1,
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderTopRightRadius: Spacing.two,
-    borderBottomRightRadius: Spacing.two,
-  },
-  titleStack: {
-    gap: Spacing.half,
   },
   emptyCard: {
     alignSelf: 'stretch',
