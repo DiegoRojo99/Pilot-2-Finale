@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getApiBaseUrl, getApiConfig, getHealth, type HealthResponse } from '@/lib/api';
 
 type ConnectionStatus = 'loading' | 'success' | 'error';
@@ -13,6 +14,7 @@ export default function HomeScreen() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('loading');
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const apiConfig = getApiConfig();
+  const theme = useTheme();
 
   async function checkConnection() {
     setConnectionStatus('loading');
@@ -52,7 +54,9 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.scrollContent}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.header}>
           <ThemedText type="small" themeColor="textSecondary">
@@ -108,23 +112,26 @@ export default function HomeScreen() {
           backend before we build auth, search, and tracking screens.
         </ThemedText>
       </SafeAreaView>
-    </ThemedView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    justifyContent: 'center',
-    gap: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.three,
+    width: '100%',
     maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.four,
+    paddingTop: Spacing.five,
+    paddingBottom: BottomTabInset + Spacing.four,
   },
   header: {
     gap: Spacing.two,
