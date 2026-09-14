@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,15 +11,23 @@ import type { TMDBShow } from '@/types/api';
 
 type PosterRailProps = {
   title: string;
+  icon: {
+    ios: string;
+    android: string;
+    web: string;
+  };
   shows: TMDBShow[];
 };
 
-export function PosterRail({ title, shows }: PosterRailProps) {
+export function PosterRail({ title, icon, shows }: PosterRailProps) {
   const theme = useTheme();
 
   return (
     <ThemedView style={styles.section}>
-      <ThemedText type="subtitle">{title}</ThemedText>
+      <ThemedView style={styles.heading}>
+        <SymbolView name={icon} size={18} tintColor={theme.accent} />
+        <ThemedText type="subtitle">{title}</ThemedText>
+      </ThemedView>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.content}>
         {shows.slice(0, 15).map((show) => {
           const posterUrl = getPosterUrl(show.poster_path);
@@ -53,6 +62,11 @@ export function PosterRail({ title, shows }: PosterRailProps) {
 const styles = StyleSheet.create({
   section: {
     gap: Spacing.three,
+  },
+  heading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   content: {
     gap: Spacing.three,

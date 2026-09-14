@@ -166,8 +166,16 @@ export default function HomeScreen() {
 
             {suggestionsStatus === 'success' ? (
               <>
-                <PosterRail title="Trending This Week" shows={trendingShows} />
-                <PosterRail title="Top Rated" shows={topRatedShows} />
+                <PosterRail
+                  title="Trending This Week"
+                  icon={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' }}
+                  shows={trendingShows}
+                />
+                <PosterRail
+                  title="Top Rated"
+                  icon={{ ios: 'star.fill', android: 'star', web: 'star' }}
+                  shows={topRatedShows}
+                />
               </>
             ) : null}
           </ThemedView>
