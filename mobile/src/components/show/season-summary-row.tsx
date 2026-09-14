@@ -26,7 +26,7 @@ function EpisodeSummaryRow({ episode, onPress }: { episode: TMDBEpisode; onPress
     <Pressable accessibilityRole="button" onPress={() => onPress?.(episode)} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView type="backgroundSelected" style={styles.episodeRow}>
         {stillUrl ? (
-          <Image source={{ uri: stillUrl }} style={styles.episodeStill} contentFit="cover" />
+          <Image source={{ uri: stillUrl }} style={styles.episodeStill} contentFit="cover" alt={episode.name} />
         ) : (
           <ThemedView type="backgroundElement" style={styles.episodeStillPlaceholder}>
             <ThemedText type="code" themeColor="textSecondary">

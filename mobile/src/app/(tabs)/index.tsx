@@ -26,6 +26,16 @@ export default function HomeScreen() {
   const [topRatedShows, setTopRatedShows] = useState<TMDBShow[]>([]);
   const theme = useTheme();
 
+  function handleQueryChange(value: string) {
+    setQuery(value);
+
+    if (value.trim().length < 2) {
+      setSearchStatus('idle');
+      setSearchResults([]);
+      setResultCount(0);
+    }
+  }
+
   function openShow(show: TMDBShow) {
     router.push({ pathname: '/show/[id]', params: { id: String(show.id) } });
   }
@@ -53,12 +63,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const trimmedQuery = query.trim();
 
-    if (trimmedQuery.length < 2) {
-      setSearchStatus('idle');
-      setSearchResults([]);
-      setResultCount(0);
-      return;
-    }
+    if (trimmedQuery.length < 2) return;
 
     let isMounted = true;
     const timeoutId = setTimeout(() => {
@@ -105,7 +110,7 @@ export default function HomeScreen() {
         <ThemedView type="backgroundElement" style={[styles.searchCard, { borderColor: theme.border }]}> 
           <TextInput
             value={query}
-            onChangeText={setQuery}
+            onChangeText={handleQueryChange}
             placeholder="Search TV shows"
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"

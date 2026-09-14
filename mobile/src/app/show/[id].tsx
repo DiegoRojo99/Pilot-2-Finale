@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SeasonSummaryRow } from '@/components/show/season-summary-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getShowDetails } from '@/lib/shows';
@@ -16,44 +17,40 @@ import type { TMDBEpisode, TMDBShow } from '@/types/api';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
-function SkeletonBlock({ style }: { style?: object }) {
-  return <ThemedView type="backgroundSelected" style={[styles.skeletonBlock, style]} />;
-}
-
 function ShowDetailSkeleton() {
   return (
     <>
       <ThemedView type="backgroundElement" style={styles.skeletonBackdrop}>
-        <SkeletonBlock style={styles.skeletonBackdropFill} />
+        <Skeleton style={styles.skeletonBackdropFill} />
       </ThemedView>
 
       <ThemedView type="backgroundElement" style={styles.skeletonHeroCard}>
-        <SkeletonBlock style={styles.skeletonPoster} />
+        <Skeleton style={styles.skeletonPoster} />
         <ThemedView type="backgroundElement" style={styles.skeletonHeroText}>
-          <SkeletonBlock style={styles.skeletonTitle} />
-          <SkeletonBlock style={styles.skeletonMeta} />
-          <SkeletonBlock style={styles.skeletonMetaShort} />
+          <Skeleton style={styles.skeletonTitle} />
+          <Skeleton style={styles.skeletonMeta} />
+          <Skeleton style={styles.skeletonMetaShort} />
         </ThemedView>
       </ThemedView>
 
       <ThemedView style={styles.skeletonGenreRow}>
-        <SkeletonBlock style={styles.skeletonGenrePill} />
-        <SkeletonBlock style={styles.skeletonGenrePill} />
-        <SkeletonBlock style={styles.skeletonGenrePillShort} />
+        <Skeleton style={styles.skeletonGenrePill} />
+        <Skeleton style={styles.skeletonGenrePill} />
+        <Skeleton style={styles.skeletonGenrePillShort} />
       </ThemedView>
 
       <ThemedView type="backgroundElement" style={styles.skeletonContentCard}>
-        <SkeletonBlock style={styles.skeletonSectionTitle} />
-        <SkeletonBlock style={styles.skeletonLine} />
-        <SkeletonBlock style={styles.skeletonLine} />
-        <SkeletonBlock style={styles.skeletonLineShort} />
+        <Skeleton style={styles.skeletonSectionTitle} />
+        <Skeleton style={styles.skeletonLine} />
+        <Skeleton style={styles.skeletonLine} />
+        <Skeleton style={styles.skeletonLineShort} />
       </ThemedView>
 
       <ThemedView type="backgroundElement" style={styles.skeletonContentCard}>
-        <SkeletonBlock style={styles.skeletonSectionTitle} />
-        <SkeletonBlock style={styles.skeletonSeasonRow} />
-        <SkeletonBlock style={styles.skeletonSeasonRow} />
-        <SkeletonBlock style={styles.skeletonSeasonRow} />
+        <Skeleton style={styles.skeletonSectionTitle} />
+        <Skeleton style={styles.skeletonSeasonRow} />
+        <Skeleton style={styles.skeletonSeasonRow} />
+        <Skeleton style={styles.skeletonSeasonRow} />
       </ThemedView>
     </>
   );
@@ -64,34 +61,35 @@ export default function ShowDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [status, setStatus] = useState<DetailStatus>('loading');
   const [show, setShow] = useState<TMDBShow | null>(null);
+  const [loadedShowId, setLoadedShowId] = useState<number | null>(null);
   const theme = useTheme();
   const showId = Number(id);
+  const hasValidShowId = Number.isFinite(showId);
+  const isCurrentShowLoaded = loadedShowId === showId;
 
   useEffect(() => {
-    if (!Number.isFinite(showId)) {
-      setStatus('error');
-      return;
-    }
+    if (!hasValidShowId) return;
 
     let isMounted = true;
-    setStatus('loading');
 
     void getShowDetails(showId)
       .then((showDetails) => {
         if (!isMounted) return;
         setShow(showDetails);
+        setLoadedShowId(showId);
         setStatus('success');
       })
       .catch(() => {
         if (!isMounted) return;
         setShow(null);
+        setLoadedShowId(null);
         setStatus('error');
       });
 
     return () => {
       isMounted = false;
     };
-  }, [showId]);
+  }, [hasValidShowId, showId]);
 
   const posterUrl = getPosterUrl(show?.poster_path ?? null);
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
@@ -113,7 +111,13 @@ export default function ShowDetailScreen() {
       contentContainerStyle={styles.scrollContent}>
       {status === 'success' && show && backdropUrl ? (
         <ThemedView style={styles.backdropFrame}>
-          <Image source={{ uri: backdropUrl }} style={styles.backdrop} contentFit="cover" contentPosition="top center" />
+          <Image
+            source={{ uri: backdropUrl }}
+            style={styles.backdrop}
+            contentFit="cover"
+            contentPosition="top center"
+            alt={`${show.name} backdrop`}
+          />
           <LinearGradient
             pointerEvents="none"
             colors={['transparent', theme.background]}
@@ -124,9 +128,9 @@ export default function ShowDetailScreen() {
       ) : null}
 
       <SafeAreaView style={styles.safeArea}>
-        {status === 'loading' ? <ShowDetailSkeleton /> : null}
+        {hasValidShowId && (status === 'loading' || !isCurrentShowLoaded) ? <ShowDetailSkeleton /> : null}
 
-        {status === 'error' ? (
+        {!hasValidShowId || status === 'error' ? (
           <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
             <ThemedText type="subtitle">Show unavailable</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -135,11 +139,11 @@ export default function ShowDetailScreen() {
           </ThemedView>
         ) : null}
 
-        {status === 'success' && show ? (
+        {status === 'success' && show && isCurrentShowLoaded ? (
           <>
             <ThemedView type="backgroundElement" style={[styles.heroCard, { borderColor: theme.border }]}> 
               {posterUrl ? (
-                <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
+                <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" alt={`${show.name} poster`} />
               ) : (
                 <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
                   <ThemedText type="small" themeColor="textSecondary">
@@ -228,9 +232,6 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Spacing.four,
     borderWidth: 1,
-  },
-  skeletonBlock: {
-    opacity: 0.65,
   },
   skeletonBackdrop: {
     alignSelf: 'stretch',

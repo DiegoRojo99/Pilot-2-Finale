@@ -7,6 +7,7 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getSeasonDetails } from '@/lib/shows';
@@ -15,28 +16,24 @@ import type { TMDBEpisode } from '@/types/api';
 
 type EpisodeStatus = 'loading' | 'success' | 'error';
 
-function SkeletonBlock({ style }: { style?: object }) {
-  return <ThemedView type="backgroundSelected" style={[styles.skeletonBlock, style]} />;
-}
-
 function EpisodeDetailSkeleton() {
   return (
     <>
       <ThemedView type="backgroundElement" style={styles.skeletonStillFrame}>
-        <SkeletonBlock style={styles.skeletonStill} />
+        <Skeleton style={styles.skeletonStill} />
       </ThemedView>
 
       <ThemedView type="backgroundElement" style={styles.skeletonHeaderCard}>
-        <SkeletonBlock style={styles.skeletonMeta} />
-        <SkeletonBlock style={styles.skeletonTitle} />
-        <SkeletonBlock style={styles.skeletonMetaShort} />
+        <Skeleton style={styles.skeletonMeta} />
+        <Skeleton style={styles.skeletonTitle} />
+        <Skeleton style={styles.skeletonMetaShort} />
       </ThemedView>
 
       <ThemedView type="backgroundElement" style={styles.skeletonOverviewCard}>
-        <SkeletonBlock style={styles.skeletonSectionTitle} />
-        <SkeletonBlock style={styles.skeletonLine} />
-        <SkeletonBlock style={styles.skeletonLine} />
-        <SkeletonBlock style={styles.skeletonLineShort} />
+        <Skeleton style={styles.skeletonSectionTitle} />
+        <Skeleton style={styles.skeletonLine} />
+        <Skeleton style={styles.skeletonLine} />
+        <Skeleton style={styles.skeletonLineShort} />
       </ThemedView>
     </>
   );
@@ -50,38 +47,40 @@ export default function EpisodeDetailScreen() {
   }>();
   const [status, setStatus] = useState<EpisodeStatus>('loading');
   const [episode, setEpisode] = useState<TMDBEpisode | null>(null);
+  const [loadedEpisodeKey, setLoadedEpisodeKey] = useState<string | null>(null);
   const theme = useTheme();
+  const showId = Number(id);
+  const selectedSeasonNumber = Number(seasonNumber);
+  const selectedEpisodeNumber = Number(episodeNumber);
+  const episodeKey = `${showId}-${selectedSeasonNumber}-${selectedEpisodeNumber}`;
+  const hasValidParams =
+    Number.isFinite(showId) && Number.isFinite(selectedSeasonNumber) && Number.isFinite(selectedEpisodeNumber);
+  const isCurrentEpisodeLoaded = loadedEpisodeKey === episodeKey;
 
   useEffect(() => {
-    const showId = Number(id);
-    const selectedSeasonNumber = Number(seasonNumber);
-    const selectedEpisodeNumber = Number(episodeNumber);
-
-    if (!Number.isFinite(showId) || !Number.isFinite(selectedSeasonNumber) || !Number.isFinite(selectedEpisodeNumber)) {
-      setStatus('error');
-      return;
-    }
+    if (!hasValidParams) return;
 
     let isMounted = true;
-    setStatus('loading');
 
     void getSeasonDetails(showId, selectedSeasonNumber)
       .then((season) => {
         if (!isMounted) return;
         const foundEpisode = season.episodes?.find((item) => item.episode_number === selectedEpisodeNumber) ?? null;
         setEpisode(foundEpisode);
+        setLoadedEpisodeKey(foundEpisode ? episodeKey : null);
         setStatus(foundEpisode ? 'success' : 'error');
       })
       .catch(() => {
         if (!isMounted) return;
         setEpisode(null);
+        setLoadedEpisodeKey(null);
         setStatus('error');
       });
 
     return () => {
       isMounted = false;
     };
-  }, [episodeNumber, id, seasonNumber]);
+  }, [episodeKey, hasValidParams, selectedEpisodeNumber, selectedSeasonNumber, showId]);
 
   const stillUrl = getStillUrl(episode?.still_path ?? null);
 
@@ -91,7 +90,7 @@ export default function EpisodeDetailScreen() {
       contentContainerStyle={styles.scrollContent}>
       {status === 'success' && episode && stillUrl ? (
         <ThemedView style={styles.stillFrame}>
-          <Image source={{ uri: stillUrl }} style={styles.still} contentFit="cover" />
+          <Image source={{ uri: stillUrl }} style={styles.still} contentFit="cover" alt={episode.name} />
           <LinearGradient
             pointerEvents="none"
             colors={['transparent', theme.background]}
@@ -102,9 +101,9 @@ export default function EpisodeDetailScreen() {
       ) : null}
 
       <SafeAreaView style={styles.safeArea}>
-        {status === 'loading' ? <EpisodeDetailSkeleton /> : null}
+        {hasValidParams && (status === 'loading' || !isCurrentEpisodeLoaded) ? <EpisodeDetailSkeleton /> : null}
 
-        {status === 'error' ? (
+        {!hasValidParams || status === 'error' ? (
           <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
             <ThemedText type="subtitle">Episode unavailable</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -113,7 +112,7 @@ export default function EpisodeDetailScreen() {
           </ThemedView>
         ) : null}
 
-        {status === 'success' && episode ? (
+        {status === 'success' && episode && isCurrentEpisodeLoaded ? (
           <>
             <ThemedView type="backgroundElement" style={[styles.headerCard, { borderColor: theme.border }]}> 
               <ThemedText type="small" themeColor="textSecondary">
@@ -177,9 +176,6 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Spacing.four,
     borderWidth: 1,
-  },
-  skeletonBlock: {
-    opacity: 0.65,
   },
   skeletonStillFrame: {
     alignSelf: 'stretch',

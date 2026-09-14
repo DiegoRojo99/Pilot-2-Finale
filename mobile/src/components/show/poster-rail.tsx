@@ -38,7 +38,7 @@ export function PosterRail({ title, icon, shows, onShowPress }: PosterRailProps)
               style={({ pressed }) => pressed && styles.pressed}>
               <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}> 
                 {posterUrl ? (
-                  <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
+                  <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" alt={`${show.name} poster`} />
                 ) : (
                   <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
                     <ThemedText type="small" themeColor="textSecondary">

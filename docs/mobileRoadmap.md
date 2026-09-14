@@ -12,7 +12,7 @@ Pilot 2 Finale already has a mobile-first web experience and a fresh Expo app un
 
 ## Phase 0: Foundation And Decisions
 
-Status: in progress
+Status: complete
 
 Purpose: confirm the app architecture before feature work begins.
 
@@ -63,19 +63,19 @@ Tasks:
 - [x] Move API response types into `mobile/src/types`.
 - [x] Split feature API calls out of the common API client.
 - [x] Add placeholder screens for unfinished tabs.
-- [ ] Remove or archive remaining default Expo starter content.
-- [ ] Replace remaining starter assets with Pilot 2 Finale assets.
-- [ ] Add a reusable screen container component.
-- [ ] Add common button and icon button components.
-- [ ] Add common empty state, list row, badge, card, form field, and modal/sheet components.
-- [ ] Add shared skeleton components instead of one-off skeleton styles.
-- [ ] Review tab icons and labels on Android, iOS, and web.
+- [x] Remove or archive remaining default Expo starter content.
+- [x] Replace remaining starter assets with Pilot 2 Finale assets.
+- [x] Add a reusable screen container component.
+- [x] Add common button and icon button components.
+- [x] Add common empty state, list row, badge, card, form field, and modal/sheet components.
+- [x] Add shared skeleton components instead of one-off skeleton styles.
+- [x] Review tab icons and labels on Android, iOS, and web.
 
 Acceptance Checks:
 
 - [x] The app launches into real product navigation instead of template screens.
 - [x] Empty states exist for each top-level route.
-- [ ] Loading and error states exist for each real data route.
+- [x] Loading and error states exist for each real data route.
 - [x] API calls can be made from mobile with consistent error formatting.
 
 ## Phase 2: Authentication And Session Handling
