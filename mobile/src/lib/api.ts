@@ -47,6 +47,10 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
     ...options.headers,
   });
 
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   if (cookieHeader && Platform.OS !== 'web') {
     headers.set('Cookie', cookieHeader);
   }

@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api';
-import type { TMDBSearchResult, TMDBSeason, TMDBShow } from '@/types/api';
+import type { ShowStatus, TMDBSearchResult, TMDBSeason, TMDBShow, UserShow } from '@/types/api';
 
 export function searchShows(query: string, page = 1) {
   const params = new URLSearchParams({ query, page: String(page) });
@@ -21,4 +21,8 @@ export function getShowDetails(id: number) {
 
 export function getSeasonDetails(showId: number, seasonNumber: number) {
   return apiRequest<TMDBSeason>(`/api/shows/${showId}/season/${seasonNumber}`);
+}
+
+export function getMyShows(status?: ShowStatus) {
+  return apiRequest<UserShow[]>(status ? `/api/my-shows?status=${status}` : '/api/my-shows');
 }

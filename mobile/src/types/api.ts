@@ -31,6 +31,44 @@ export type AuthEmailResponse = {
   };
 };
 
+export type ShowStatus = 'watching' | 'want_to_watch' | 'watched' | 'dropped' | 'on_hold';
+
+export type UserShow = {
+  id: number;
+  tmdb_id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string | null;
+  first_air_date: string | null;
+  status: ShowStatus;
+  vote_average: number;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  added_at: string;
+  updated_at: string;
+};
+
+export type ShowNextEpisode = {
+  tmdb_episode_id: number | null;
+  season_number: number;
+  episode_number: number;
+  episode_name: string | null;
+  has_reliable_next: boolean;
+};
+
+export type ShowProgress = {
+  tmdb_show_id: number;
+  watched_unique_count: number;
+  number_of_episodes: number;
+  next_episode: ShowNextEpisode | null;
+};
+
+export type EpisodeBatchResponse = {
+  logsByShowId: Record<number, unknown[]>;
+  progressByShowId: Record<number, ShowProgress>;
+};
+
 export type TMDBShow = {
   id: number;
   name: string;
