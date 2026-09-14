@@ -1,56 +1,71 @@
-# Welcome to your Expo app 👋
+# Pilot 2 Finale Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is the Expo mobile app for Pilot 2 Finale. The goal is to reuse the existing Next.js API and build a native-feeling version of the core TV tracking loop: discover a show, add it to your list, log episodes, and review progress.
 
-## Get started
+## What This Folder Contains
 
-1. Install dependencies
+- `src/app`: Expo Router screens. A file here usually becomes a route in the app.
+- `src/components`: reusable React Native components.
+- `src/constants`: shared values such as theme colors and spacing.
+- `src/lib`: app utilities such as the API client.
+- `assets`: icons, splash screen assets, and static images bundled with the app.
+- `app.json`: Expo app configuration such as name, scheme, icons, and platform settings.
 
-   ```bash
-   npm install
-   ```
+## First-Time Setup
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Install dependencies from this folder:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Copy the example environment file:
 
-### Other setup steps
+```bash
+cp .env.example .env
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Set `EXPO_PUBLIC_API_BASE_URL` to the Next.js app URL that the mobile app should call.
 
-## Learn more
+Common local values:
 
-To learn more about developing your project with Expo, look at the following resources:
+- Android emulator: `http://10.0.2.2:3000`
+- iOS simulator: `http://localhost:3000`
+- Physical phone: `http://YOUR_COMPUTER_LAN_IP:3000`
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Running The App
 
-## Join the community
+Start Expo:
 
-Join our community of developers creating universal apps.
+```bash
+npm run start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Then choose a target from the Expo terminal UI:
+
+- Press `a` for Android.
+- Press `i` for iOS on macOS.
+- Scan the QR code with Expo Go for a physical device.
+- Press `w` for web while developing UI quickly.
+
+## Learning Notes
+
+React Native does not use browser elements like `div`, `button`, or `input`. The usual equivalents are `View`, `Pressable`, and `TextInput`.
+
+Expo Router works like the Next.js App Router in spirit: files inside `src/app` define screens and layouts. The current `_layout.tsx` controls the app shell, while `index.tsx` is the first tab screen.
+
+Environment variables that need to be available in the mobile JavaScript bundle must start with `EXPO_PUBLIC_`.
+
+## Useful Commands
+
+```bash
+npm run start
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
+
+## Current Roadmap
+
+See `../docs/mobileRoadmap.md` for the phased implementation plan.
