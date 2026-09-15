@@ -32,6 +32,13 @@ export type AuthEmailResponse = {
 };
 
 export type ShowStatus = 'watching' | 'want_to_watch' | 'watched' | 'dropped' | 'on_hold';
+export const STATUS_LABELS: Record<ShowStatus, string> = {
+  watching: "Watching",
+  want_to_watch: "Watchlist",
+  watched: "Completed",
+  dropped: "Dropped",
+  on_hold: "On Hold",
+};
 
 export type UserShow = {
   id: number;

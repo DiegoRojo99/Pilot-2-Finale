@@ -19,6 +19,10 @@ export function getShowDetails(id: number) {
   return apiRequest<TMDBShow>(`/api/shows/${id}`);
 }
 
+export function getUserShowDetails(id: number) {
+  return apiRequest<UserShow>(`/api/my-shows/${id}`);
+}
+
 export function getSeasonDetails(showId: number, seasonNumber: number) {
   return apiRequest<TMDBSeason>(`/api/shows/${showId}/season/${seasonNumber}`);
 }

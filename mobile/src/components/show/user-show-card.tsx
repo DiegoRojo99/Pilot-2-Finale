@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,7 +12,6 @@ import type { ShowProgress, UserShow } from '@/types/api';
 type UserShowCardProps = {
   show: UserShow;
   progress?: ShowProgress;
-  onPress?: (show: UserShow) => void;
 };
 
 function getNextEpisodeSummary(show: UserShow, progress?: ShowProgress) {
@@ -56,15 +56,17 @@ function getNextEpisodeSummary(show: UserShow, progress?: ShowProgress) {
   };
 }
 
-export function UserShowCard({ show, progress, onPress }: UserShowCardProps) {
+export function UserShowCard({ show, progress }: UserShowCardProps) {
   const theme = useTheme();
   const posterUrl = getPosterUrl(show.poster_path);
   const nextEpisodeSummary = getNextEpisodeSummary(show, progress);
+  const router = useRouter();
+  const goToShow = () => { router.push(`/show/${show.tmdb_id}`); };
 
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => onPress?.(show)}
+      onPress={goToShow}
       style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}> 
         {posterUrl ? (

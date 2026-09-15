@@ -152,12 +152,12 @@ Tasks:
 
 - [ ] Add mobile API functions for `/api/my-shows`.
 - [ ] Add mobile API functions for `/api/my-shows/:tmdbId`.
-- [ ] Build the My Shows screen with status filters.
-- [ ] Add filters for Watching, Want to Watch, Watched, On Hold, and Dropped.
-- [ ] Render show cards with poster and title.
-- [ ] Render current status on show cards.
-- [ ] Render progress summary on show cards.
-- [ ] Render next episode when available.
+- [x] Build the My Shows screen with status filters.
+- [x] Add filters for Watching, Want to Watch, Watched, On Hold, and Dropped.
+- [x] Render show cards with poster and title.
+- [x] Render current status on show cards.
+- [x] Render progress summary on show cards.
+- [x] Render next episode when available.
 - [ ] Support updating a show's status from mobile.
 - [ ] Support removing a show from the user's tracker.
 - [ ] Add pull-to-refresh for library views.
@@ -166,7 +166,7 @@ Tasks:
 
 Acceptance Checks:
 
-- [ ] Users can view each status bucket on mobile.
+- [x] Users can view each status bucket on mobile.
 - [ ] Status changes persist and are reflected after refresh.
 - [ ] Deleting a show removes it from the current list without leaking stale data.
 

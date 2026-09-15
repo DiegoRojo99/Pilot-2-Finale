@@ -39,7 +39,7 @@ function EpisodeSummaryRow({ episode, onPress }: { episode: TMDBEpisode; onPress
           <ThemedText type="smallBold" numberOfLines={1}>
             {episode.episode_number}. {episode.name || `Episode ${episode.episode_number}`}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="xxs" themeColor="textSecondary">
             {formatAirDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime}m` : ''}
           </ThemedText>
         </ThemedView>

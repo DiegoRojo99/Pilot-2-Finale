@@ -11,9 +11,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getShowDetails } from '@/lib/shows';
+import { getShowDetails, getUserShowDetails } from '@/lib/shows';
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
-import type { TMDBEpisode, TMDBShow } from '@/types/api';
+import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow } from '@/types/api';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
@@ -61,6 +61,7 @@ export default function ShowDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [status, setStatus] = useState<DetailStatus>('loading');
   const [show, setShow] = useState<TMDBShow | null>(null);
+  const [userShow, setUserShow] = useState<UserShow | null>(null);
   const [loadedShowId, setLoadedShowId] = useState<number | null>(null);
   const theme = useTheme();
   const showId = Number(id);
@@ -69,7 +70,6 @@ export default function ShowDetailScreen() {
 
   useEffect(() => {
     if (!hasValidShowId) return;
-
     let isMounted = true;
 
     void getShowDetails(showId)
@@ -82,13 +82,26 @@ export default function ShowDetailScreen() {
       .catch(() => {
         if (!isMounted) return;
         setShow(null);
+        setUserShow(null);
         setLoadedShowId(null);
         setStatus('error');
       });
 
-    return () => {
-      isMounted = false;
-    };
+    void getUserShowDetails(showId)
+      .then((userShowDetails) => {
+        if (!isMounted) return;
+        setUserShow(userShowDetails);
+        setLoadedShowId(showId);
+        setStatus('success');
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setUserShow(null);
+        setLoadedShowId(null);
+        setStatus('error');
+      });
+
+    return () => { isMounted = false; };
   }, [hasValidShowId, showId]);
 
   const posterUrl = getPosterUrl(show?.poster_path ?? null);
@@ -141,7 +154,7 @@ export default function ShowDetailScreen() {
 
         {status === 'success' && show && isCurrentShowLoaded ? (
           <>
-            <ThemedView type="backgroundElement" style={[styles.heroCard, { borderColor: theme.border }]}> 
+            <ThemedView style={styles.hero}> 
               {posterUrl ? (
                 <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" alt={`${show.name} poster`} />
               ) : (
@@ -153,10 +166,13 @@ export default function ShowDetailScreen() {
               )}
 
               <ThemedView type="backgroundElement" style={styles.heroText}>
-                <ThemedText type="title">{show.name}</ThemedText>
+                <ThemedText type="smallBold">{show.name}</ThemedText>
+                <ThemedView style={styles.heroSubText}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)} / 10
+                  {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
                 </ThemedText>
+                <ShowStatusBadge status={userShow ? userShow.status : 'Not added'} />
+                </ThemedView>
                 <ThemedText type="small" themeColor="textSecondary">
                   {show.number_of_seasons ?? 0} seasons · {show.number_of_episodes ?? 0} episodes
                 </ThemedText>
@@ -167,7 +183,7 @@ export default function ShowDetailScreen() {
               <ThemedView style={styles.genreRow}>
                 {show.genres.slice(0, 4).map((genre) => (
                   <ThemedView key={genre.id} type="backgroundSelected" style={styles.genrePill}>
-                    <ThemedText type="small" themeColor="textSecondary">
+                    <ThemedText type="xs" themeColor="textSecondary">
                       {genre.name}
                     </ThemedText>
                   </ThemedView>
@@ -175,21 +191,15 @@ export default function ShowDetailScreen() {
               </ThemedView>
             ) : null}
 
-            <ThemedView type="backgroundElement" style={[styles.overviewCard, { borderColor: theme.border }]}> 
-              <ThemedText type="subtitle">Overview</ThemedText>
+            <ThemedView style={styles.overviewSection}> 
               <ThemedText themeColor="textSecondary" style={styles.overviewText}>
                 {show.overview || 'No overview available yet.'}
               </ThemedText>
             </ThemedView>
 
             {show.seasons && show.seasons.length > 0 ? (
-              <ThemedView type="backgroundElement" style={[styles.seasonsCard, { borderColor: theme.border }]}> 
-                <ThemedView type="backgroundElement" style={styles.seasonsHeader}>
-                  <ThemedText type="subtitle">Track Episodes</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Add this show to your list later to start marking episodes as watched.
-                  </ThemedText>
-                </ThemedView>
+              <ThemedView style={styles.seasonsSection}> 
+                <ThemedText type="smallBold">Track Episodes</ThemedText>
                 {show.seasons
                   .filter((season) => season.season_number > 0)
                   .map((season) => (
@@ -206,6 +216,27 @@ export default function ShowDetailScreen() {
         ) : null}
       </SafeAreaView>
     </ScrollView>
+  );
+}
+
+function ShowStatusBadge({ status }: { status: string }) {
+  const STATUS_COLORS: Record<ShowStatus, Record<string, string>> = {
+    watching: { backgroundColor: "rgba(96, 165, 250, 0.1)", color: "rgb(96, 165, 250)" },
+    want_to_watch: { backgroundColor: "rgba(139, 92, 246, 0.1)", color: "rgb(139, 92, 246)" },
+    watched: { backgroundColor: "rgba(34, 197, 94, 0.1)", color: "rgb(34, 197, 94)" },
+    dropped: { backgroundColor: "rgba(239, 68, 68, 0.1)", color: "rgb(239, 68, 68)" },
+    on_hold: { backgroundColor: "rgba(250, 204, 21, 0.1)", color: "rgb(250, 204, 21)" },
+  };
+
+  const statusColor = STATUS_COLORS[status as ShowStatus] || { backgroundColor: "", color: "" };
+  const statusLabel = STATUS_LABELS[status as ShowStatus] || status;
+
+  return (
+    <ThemedView>
+      <ThemedText type="small" style={[styles.statusBadge, { backgroundColor: statusColor.backgroundColor, color: statusColor.color }]}>
+        {statusLabel}
+      </ThemedText>
+    </ThemedView>
   );
 }
 
@@ -333,15 +364,13 @@ const styles = StyleSheet.create({
     left: 0,
     height: 96,
   },
-  heroCard: {
+  hero: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: Spacing.three,
-    padding: Spacing.two,
-    borderRadius: Spacing.four,
-    borderWidth: 1,
     marginTop: -Spacing.six,
+    backgroundColor: 'transparent',
   },
   poster: {
     width: 110,
@@ -358,8 +387,20 @@ const styles = StyleSheet.create({
   },
   heroText: {
     flex: 1,
-    gap: Spacing.two,
+    gap: Spacing.one,
     paddingRight: Spacing.two,
+    backgroundColor: 'transparent',
+  },
+  heroSubText: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  statusBadge: {
+    borderRadius: Spacing.five,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderWidth: 1,
   },
   genreRow: {
     flexDirection: 'row',
@@ -371,22 +412,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
   },
-  overviewCard: {
+  overviewSection: {
     alignSelf: 'stretch',
-    gap: Spacing.two,
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
-    borderWidth: 1,
+    paddingVertical: Spacing.two,
   },
   overviewText: {
-    lineHeight: 24,
+    lineHeight: 20,
+    fontSize: 14,
+    fontWeight: 500,
   },
-  seasonsCard: {
+  seasonsSection: {
     alignSelf: 'stretch',
     gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: Spacing.four,
-    borderWidth: 1,
+    paddingVertical: Spacing.two,
   },
   seasonsHeader: {
     gap: Spacing.one,
