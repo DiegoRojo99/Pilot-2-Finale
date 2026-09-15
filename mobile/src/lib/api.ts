@@ -55,15 +55,43 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
     headers.set('Cookie', cookieHeader);
   }
 
-  const response = await fetch(createApiUrl(path), {
-    ...options,
-    credentials: 'include',
-    headers,
-  });
+  // Single request with retry on 429
+  let lastError: ApiError | null = null;
 
-  if (!response.ok) throw new ApiError(`Request failed with status ${response.status}`, response.status);
-  if (response.status === 204) return undefined as ResponseBody;
-  return (await response.json()) as ResponseBody;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(createApiUrl(path), {
+        ...options,
+        credentials: 'include',
+        headers,
+      });
+
+      if (!response.ok) {
+        const error = new ApiError(`Request failed with status ${response.status}`, response.status);
+
+        // Retry only on 429, otherwise throw immediately
+        if (response.status === 429 && attempt < 2) {
+          const delayMs = Math.pow(2, attempt) * 500; // 500ms, 1s, 2s
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          lastError = error;
+          continue;
+        }
+
+        throw error;
+      }
+
+      if (response.status === 204) return undefined as ResponseBody;
+      return (await response.json()) as ResponseBody;
+    } catch (error) {
+      // If it's a 429 and we have retries, continue loop
+      if (error instanceof ApiError && error.status === 429 && attempt < 2) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError || new ApiError('Request failed after retries', 429);
 }
 
 export function getHealth() {

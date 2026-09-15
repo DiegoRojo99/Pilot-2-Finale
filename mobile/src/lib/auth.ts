@@ -45,7 +45,17 @@ async function authFetch(path: string, body?: unknown) {
 }
 
 export async function getMobileSession() {
-  return authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>;
+  try { return await authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>; } 
+  catch (error) {
+    // Clear cookies on any auth-related error (expired, invalid, etc)
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('invalid') || msg.includes('expired') || msg.includes('session') || msg.includes('auth')) {
+        await clearStoredAuthCookies();
+      }
+    }
+    throw error;
+  }
 }
 
 export async function signInWithEmail({ email, password }: EmailCredentials) {
