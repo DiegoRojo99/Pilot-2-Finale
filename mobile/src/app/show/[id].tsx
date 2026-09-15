@@ -1,21 +1,210 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
-import { SeasonSummaryRow } from '@/components/show/season-summary-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getShowDetails, getUserShowDetails } from '@/lib/shows';
+import { getShowDetails, getUserShowDetails, getSeasonDetails, addShow, removeShow, updateShowStatus } from '@/lib/shows';
+import { getShowEpisodeLogs, logEpisode } from '@/lib/episodes';
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
-import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow } from '@/types/api';
+import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary, type EpisodeLog } from '@/types/api';
 
 type DetailStatus = 'loading' | 'success' | 'error';
+
+function episodeKey(season: number, episode: number): string {
+  return `${season}-${episode}`;
+}
+
+type EpisodeRowProps = {
+  episode: TMDBEpisode;
+  isWatched: boolean;
+  onToggle: () => void;
+};
+
+function EpisodeRow({ episode, isWatched, onToggle }: EpisodeRowProps) {
+  const theme = useTheme();
+  
+  return (
+    <TouchableOpacity 
+      style={[styles.episodeRow, { borderBottomColor: theme.border }]}
+      onPress={onToggle}
+      activeOpacity={0.7}
+    >
+      {episode.still_path && getBackdropUrl(episode.still_path) ? (
+        <Image
+          source={{ uri: getBackdropUrl(episode.still_path) || '' }}
+          style={styles.episodeImage}
+          contentFit="cover"
+        />
+      ) : (
+        <ThemedView type="backgroundSelected" style={styles.episodeImagePlaceholder}>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 9, lineHeight: 12 }}>
+            No image
+          </ThemedText>
+        </ThemedView>
+      )}
+      
+      <ThemedView style={styles.episodeContentContainer}>
+        <ThemedView style={styles.episodeTopRow}>
+          <ThemedText type="small" themeColor="textSecondary" style={{ marginRight: Spacing.one }}>
+            {String(episode.episode_number).padStart(2, '0')}
+          </ThemedText>
+          <ThemedText 
+            type="small" 
+            style={{ 
+              flex: 1,
+              color: isWatched ? theme.textSecondary : theme.text 
+            }}
+            numberOfLines={1}
+          >
+            {episode.name}
+          </ThemedText>
+        </ThemedView>
+        
+        <ThemedView style={styles.episodeMeta}>
+          {episode.air_date && (
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+              {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </ThemedText>
+          )}
+          {episode.vote_average > 0 && (
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+              ⭐ {episode.vote_average.toFixed(1)}
+            </ThemedText>
+          )}
+        </ThemedView>
+      </ThemedView>
+      
+      <ThemedView
+        style={[
+          styles.episodeCheckbox,
+          { 
+            borderColor: isWatched ? theme.success : theme.border,
+            backgroundColor: isWatched ? theme.success : 'transparent'
+          }
+        ]}
+      >
+        {isWatched && <ThemedText style={{ fontSize: 16, lineHeight: 16, marginTop: -2, color: 'white' }}>✓</ThemedText>}
+      </ThemedView>
+    </TouchableOpacity>
+  );
+}
+
+function SeasonAccordion({
+  showId,
+  season,
+  watchedCount,
+  watchedSet,
+  onToggleEpisode,
+  getCachedSeasonDetails,
+}: {
+  showId: number;
+  season: TMDBSeasonSummary;
+  watchedCount: number;
+  watchedSet: Set<string>;
+  onToggleEpisode: (episode: TMDBEpisode) => void;
+  getCachedSeasonDetails: (seasonNumber: number) => Promise<TMDBSeason>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [seasonData, setSeasonData] = useState<TMDBSeason | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const theme = useTheme();
+  
+  const episodeCount = season.episode_count ?? 0;
+  
+  // Calculate effective watched count based on loaded season data
+  const loadedWatchedCount = seasonData?.episodes
+    ?.filter((episode) => watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
+    .length ?? 0;
+  const effectiveWatchedCount = seasonData ? loadedWatchedCount : watchedCount;
+  const progressPercent = episodeCount > 0 ? (effectiveWatchedCount / episodeCount) * 100 : 0;
+
+  const handleExpandPress = async () => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+
+    // Load season details only when expanded
+    if (!seasonData && !isLoading) {
+      setIsLoading(true);
+      try {
+        const details = await getCachedSeasonDetails(season.season_number);
+        setSeasonData(details);
+      } catch (error) {
+        console.error('Failed to load season episodes:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    setExpanded(true);
+  };
+
+  const episodes = seasonData?.episodes ?? [];
+
+  return (
+    <ThemedView 
+      type="backgroundElement"
+      style={[styles.seasonAccordion, { borderColor: theme.border }]}
+    >
+      <TouchableOpacity
+        style={styles.seasonHeader}
+        onPress={handleExpandPress}
+        activeOpacity={0.7}
+      >
+        <ThemedView style={styles.seasonLeftContent}>
+          <ThemedText type="smallBold">{season.name}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 2 }}>
+            {effectiveWatchedCount}/{episodeCount} episodes
+          </ThemedText>
+        </ThemedView>
+        
+        <ThemedView style={styles.seasonRightContent}>
+          <View style={[styles.progressBar, { backgroundColor: theme.backgroundSelected }]}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${progressPercent}%`, backgroundColor: theme.success }
+              ]}
+            />
+          </View>
+          <View style={{ width: 16, height: 16, justifyContent: 'center', alignItems: 'center' }}>
+            {expanded ? (
+              <ThemedText style={{ fontSize: 12, lineHeight: 12 }}>−</ThemedText>
+            ) : (
+              <ThemedText style={{ fontSize: 12, lineHeight: 12 }}>+</ThemedText>
+            )}
+          </View>
+        </ThemedView>
+      </TouchableOpacity>
+
+      {expanded && (
+        <ThemedView style={[styles.episodesList, { borderTopColor: theme.border }]}>
+          {isLoading && (
+            <ThemedView style={styles.loadingContainer}>
+              <ThemedText type="small" themeColor="textSecondary">Loading episodes…</ThemedText>
+            </ThemedView>
+          )}
+
+          {episodes.map((episode) => (
+            <EpisodeRow
+              key={episode.id}
+              episode={episode}
+              isWatched={watchedSet.has(episodeKey(episode.season_number, episode.episode_number))}
+              onToggle={() => onToggleEpisode(episode)}
+            />
+          ))}
+        </ThemedView>
+      )}
+    </ThemedView>
+  );
+}
 
 function ShowDetailSkeleton() {
   return (
@@ -57,66 +246,182 @@ function ShowDetailSkeleton() {
 }
 
 export default function ShowDetailScreen() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [status, setStatus] = useState<DetailStatus>('loading');
   const [show, setShow] = useState<TMDBShow | null>(null);
   const [userShow, setUserShow] = useState<UserShow | null>(null);
+  const [episodeLogs, setEpisodeLogs] = useState<EpisodeLog[]>([]);
   const [loadedShowId, setLoadedShowId] = useState<number | null>(null);
+  const [seasonDataCache, setSeasonDataCache] = useState<Map<string, TMDBSeason>>(new Map());
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const theme = useTheme();
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
   const isCurrentShowLoaded = loadedShowId === showId;
 
+  const watchedSet = useMemo(() => {
+    const set = new Set<string>();
+    episodeLogs.forEach((log) => set.add(episodeKey(log.season_number, log.episode_number)));
+    return set;
+  }, [episodeLogs]);
+
+  const watchedCountBySeason = useMemo(() => {
+    const counts = new Map<number, number>();
+    episodeLogs.forEach((log) => {
+      const current = counts.get(log.season_number) ?? 0;
+      counts.set(log.season_number, current + 1);
+    });
+    return counts;
+  }, [episodeLogs]);
+
   useEffect(() => {
     if (!hasValidShowId) return;
     let isMounted = true;
 
-    void getShowDetails(showId)
-      .then((showDetails) => {
+    const loadShowData = async () => {
+      try {
+        const [showDetails, myShow] = await Promise.all([
+          getShowDetails(showId),
+          getUserShowDetails(showId).catch(() => null),
+        ]);
+
         if (!isMounted) return;
         setShow(showDetails);
+        setUserShow(myShow);
         setLoadedShowId(showId);
+        
+        // Fetch episode logs if user has added the show
+        if (myShow) {
+          try {
+            const logs = await getShowEpisodeLogs(showId);
+            if (isMounted) setEpisodeLogs(logs);
+          } 
+          catch {
+            // Episode logs fetch failed, continue anyway
+          }
+        }
+        
         setStatus('success');
-      })
-      .catch(() => {
+      } catch (error) {
         if (!isMounted) return;
+        console.error('Error loading show:', error);
         setShow(null);
         setUserShow(null);
-        setLoadedShowId(null);
         setStatus('error');
-      });
+      }
+    };
 
-    void getUserShowDetails(showId)
-      .then((userShowDetails) => {
-        if (!isMounted) return;
-        setUserShow(userShowDetails);
-        setLoadedShowId(showId);
-        setStatus('success');
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setUserShow(null);
-        setLoadedShowId(null);
-        setStatus('error');
-      });
-
+    void loadShowData();
     return () => { isMounted = false; };
   }, [hasValidShowId, showId]);
 
+  const getCachedSeasonDetails = async (seasonNumber: number) => {
+    const cacheKey = `${showId}-${seasonNumber}`;
+    const cachedSeason = seasonDataCache.get(cacheKey);
+    if (cachedSeason) return cachedSeason;
+
+    const seasonData = await getSeasonDetails(showId, seasonNumber);
+    setSeasonDataCache((prev) => new Map(prev).set(cacheKey, seasonData));
+    return seasonData;
+  };
+
+  const handleToggleEpisode = async (episode: TMDBEpisode) => {
+    const key = episodeKey(episode.season_number, episode.episode_number);
+    const isCurrentlyWatched = watchedSet.has(key);
+    
+    // Optimistic update: update UI immediately
+    const previousLogs = episodeLogs;
+    
+    if (isCurrentlyWatched) {
+      // Remove from watched
+      setEpisodeLogs((prev) =>
+        prev.filter(
+          (log) =>
+            !(log.season_number === episode.season_number && log.episode_number === episode.episode_number)
+        )
+      );
+    } else {
+      // Add to watched
+      const newLog: EpisodeLog = {
+        id: Date.now(), // Use timestamp as temporary ID
+        tmdb_show_id: showId,
+        season_number: episode.season_number,
+        episode_number: episode.episode_number,
+        episode_name: episode.name,
+        watched_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        rating: null,
+        notes: null,
+      };
+      setEpisodeLogs((prev) => [...prev, newLog]);
+    }
+    
+    // Then call API
+    try {
+      const watchedAt = isCurrentlyWatched ? null : new Date().toISOString();
+      
+      await logEpisode({
+        tmdb_show_id: showId,
+        tmdb_episode_id: episode.id,
+        season_number: episode.season_number,
+        episode_number: episode.episode_number,
+        episode_name: episode.name,
+        watched_at: watchedAt,
+        rating: undefined,
+      });
+    } catch (error) {
+      // Revert on error
+      console.error('Error toggling episode:', error);
+      setEpisodeLogs(previousLogs);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: ShowStatus) => {
+    if (!show) return;
+
+    try {
+      if (!userShow) {
+        // Add show with new status
+        const added = await addShow({
+          tmdb_id: show.id,
+          name: show.name,
+          poster_path: show.poster_path,
+          backdrop_path: show.backdrop_path,
+          overview: show.overview,
+          first_air_date: show.first_air_date,
+          vote_average: show.vote_average,
+          number_of_seasons: show.number_of_seasons ?? 0,
+          number_of_episodes: show.number_of_episodes ?? 0,
+          status: newStatus,
+        });
+        setUserShow(added);
+      } else {
+        // Update existing status
+        const updated = await updateShowStatus(showId, newStatus);
+        setUserShow(updated);
+      }
+      setShowStatusMenu(false);
+    } catch (error) {
+      console.error('Error updating show status:', error);
+    }
+  };
+
+  const handleRemoveShow = async () => {
+    if (!userShow) return;
+
+    try {
+      await removeShow(showId);
+      setUserShow(null);
+      setEpisodeLogs([]);
+      setShowStatusMenu(false);
+    } catch (error) {
+      console.error('Error removing show:', error);
+    }
+  };
+
   const posterUrl = getPosterUrl(show?.poster_path ?? null);
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
-
-  function openEpisode(episode: TMDBEpisode) {
-    router.push({
-      pathname: '/show/[id]/season/[seasonNumber]/episode/[episodeNumber]',
-      params: {
-        id: String(showId),
-        seasonNumber: String(episode.season_number),
-        episodeNumber: String(episode.episode_number),
-      },
-    });
-  }
 
   return (
     <ScrollView
@@ -129,7 +434,6 @@ export default function ShowDetailScreen() {
             style={styles.backdrop}
             contentFit="cover"
             contentPosition="top center"
-            alt={`${show.name} backdrop`}
           />
           <LinearGradient
             pointerEvents="none"
@@ -156,7 +460,7 @@ export default function ShowDetailScreen() {
           <>
             <ThemedView style={styles.hero}> 
               {posterUrl ? (
-                <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" alt={`${show.name} poster`} />
+                <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
               ) : (
                 <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
                   <ThemedText type="small" themeColor="textSecondary">
@@ -168,15 +472,61 @@ export default function ShowDetailScreen() {
               <ThemedView type="backgroundElement" style={styles.heroText}>
                 <ThemedText type="smallBold">{show.name}</ThemedText>
                 <ThemedView style={styles.heroSubText}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
-                </ThemedText>
-                <ShowStatusBadge status={userShow ? userShow.status : 'Not added'} />
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
+                  </ThemedText>
+                  <ShowStatusBadge status={userShow?.status ?? 'Not added'} />
                 </ThemedView>
                 <ThemedText type="small" themeColor="textSecondary">
                   {show.number_of_seasons ?? 0} seasons · {show.number_of_episodes ?? 0} episodes
                 </ThemedText>
               </ThemedView>
+            </ThemedView>
+
+            <ThemedView style={styles.statusPickerContainer}>
+              <TouchableOpacity
+                onPress={() => setShowStatusMenu(!showStatusMenu)}
+                style={[styles.statusButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
+              >
+                <ThemedText type="small">
+                  {userShow ? STATUS_LABELS[userShow.status] : 'Add to List'}
+                </ThemedText>
+              </TouchableOpacity>
+              
+              {showStatusMenu && (
+                <View style={[styles.statusMenu, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                  {(['watching', 'want_to_watch', 'watched', 'on_hold', 'dropped'] as ShowStatus[]).map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      onPress={() => handleStatusChange(s)}
+                      style={[
+                        styles.statusMenuItem,
+                        userShow?.status === s && { backgroundColor: theme.accent }
+                      ]}
+                    >
+                      <ThemedText
+                        type="small"
+                        style={{ color: userShow?.status === s ? theme.accentText : theme.text }}
+                      >
+                        {STATUS_LABELS[s]}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                  {userShow && (
+                    <>
+                      <View style={[styles.statusMenuDivider, { borderColor: theme.border }]} />
+                      <TouchableOpacity
+                        onPress={handleRemoveShow}
+                        style={styles.statusMenuItem}
+                      >
+                        <ThemedText type="small" style={{ color: theme.danger }}>
+                          Remove from list
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              )}
             </ThemedView>
 
             {show.genres && show.genres.length > 0 ? (
@@ -197,17 +547,20 @@ export default function ShowDetailScreen() {
               </ThemedText>
             </ThemedView>
 
-            {show.seasons && show.seasons.length > 0 ? (
+            {show.seasons && show.seasons.length > 0 && userShow ? (
               <ThemedView style={styles.seasonsSection}> 
                 <ThemedText type="smallBold">Track Episodes</ThemedText>
                 {show.seasons
                   .filter((season) => season.season_number > 0)
-                  .map((season) => (
-                    <SeasonSummaryRow
-                      key={season.season_number}
-                      season={season}
+                  .map((seasonSummary) => (
+                    <SeasonAccordion
+                      key={seasonSummary.season_number}
                       showId={showId}
-                      onEpisodePress={openEpisode}
+                      season={seasonSummary}
+                      watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
+                      watchedSet={watchedSet}
+                      onToggleEpisode={handleToggleEpisode}
+                      getCachedSeasonDetails={getCachedSeasonDetails}
                     />
                   ))}
               </ThemedView>
@@ -402,6 +755,35 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     borderWidth: 1,
   },
+  statusPickerContainer: {
+    alignSelf: 'stretch',
+  },
+  statusButton: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    height: 44,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  statusMenu: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    marginTop: Spacing.one,
+    overflow: 'hidden',
+  },
+  statusMenuItem: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    borderBottomWidth: 1,
+  },
+  statusMenuDivider: {
+    height: 1,
+    borderBottomWidth: 1,
+  },
   genreRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -419,16 +801,96 @@ const styles = StyleSheet.create({
   overviewText: {
     lineHeight: 20,
     fontSize: 14,
-    fontWeight: 500,
+    fontWeight: '500',
   },
   seasonsSection: {
     alignSelf: 'stretch',
     gap: Spacing.two,
     paddingVertical: Spacing.two,
   },
-  seasonsHeader: {
+  seasonAccordion: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: Spacing.one,
+  },
+  seasonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  seasonLeftContent: {
+    flex: 1,
+    marginRight: Spacing.two,
+    backgroundColor: 'transparent',
+  },
+  seasonRightContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    backgroundColor: 'transparent',
+  },
+  progressBar: {
+    width: 48,
+    height: 3,
+    borderRadius: 1.5,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+  },
+  episodesList: {
+    borderTopWidth: 1,
+  },
+  loadingContainer: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  episodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
+  },
+  episodeImage: {
+    width: 56,
+    height: 42,
+    borderRadius: Spacing.one,
+  },
+  episodeImagePlaceholder: {
+    width: 56,
+    height: 42,
+    borderRadius: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  episodeContentContainer: {
+    flex: 1,
     gap: Spacing.one,
-    paddingHorizontal: Spacing.one,
-    paddingBottom: Spacing.one,
+  },
+  episodeTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  episodeMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginLeft: 4,
+  },
+  episodeCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

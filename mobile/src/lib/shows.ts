@@ -30,3 +30,34 @@ export function getSeasonDetails(showId: number, seasonNumber: number) {
 export function getMyShows(status?: ShowStatus) {
   return apiRequest<UserShow[]>(status ? `/api/my-shows?status=${status}` : '/api/my-shows');
 }
+
+export function addShow(data: {
+  tmdb_id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string;
+  first_air_date: string;
+  vote_average: number;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  status: ShowStatus;
+}) {
+  return apiRequest<UserShow>('/api/my-shows', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateShowStatus(showId: number, status: ShowStatus) {
+  return apiRequest<UserShow>(`/api/my-shows/${showId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function removeShow(showId: number) {
+  return apiRequest<void>(`/api/my-shows/${showId}`, {
+    method: 'DELETE',
+  });
+}
