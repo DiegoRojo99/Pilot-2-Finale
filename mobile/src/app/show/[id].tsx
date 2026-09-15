@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -69,7 +69,7 @@ function EpisodeRow({ episode, isWatched, onToggle }: EpisodeRowProps) {
         <ThemedView style={styles.episodeMeta}>
           {episode.air_date && (
             <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
-              {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </ThemedText>
           )}
           {episode.vote_average > 0 && (
@@ -254,6 +254,12 @@ export default function ShowDetailScreen() {
   const [loadedShowId, setLoadedShowId] = useState<number | null>(null);
   const [seasonDataCache, setSeasonDataCache] = useState<Map<string, TMDBSeason>>(new Map());
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [isDiaryModalOpen, setIsDiaryModalOpen] = useState(false);
+  const [selectedEpisodeForDiary, setSelectedEpisodeForDiary] = useState<TMDBEpisode | null>(null);
+  const [diaryDate, setDiaryDate] = useState(new Date());
+  const [diaryRating, setDiaryRating] = useState('');
+  const [isDiarySaving, setIsDiarySaving] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const theme = useTheme();
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
@@ -326,7 +332,18 @@ export default function ShowDetailScreen() {
   };
 
   const handleToggleEpisode = async (episode: TMDBEpisode) => {
-    const key = episodeKey(episode.season_number, episode.episode_number);
+    // Open the diary modal to let user input date and rating
+    setSelectedEpisodeForDiary(episode);
+    setDiaryDate(new Date());
+    setDiaryRating('');
+    setShowDatePicker(false);
+    setIsDiaryModalOpen(true);
+  };
+
+  const handleDiarySave = async () => {
+    if (!selectedEpisodeForDiary) return;
+    
+    const key = episodeKey(selectedEpisodeForDiary.season_number, selectedEpisodeForDiary.episode_number);
     const isCurrentlyWatched = watchedSet.has(key);
     
     // Optimistic update: update UI immediately
@@ -337,43 +354,49 @@ export default function ShowDetailScreen() {
       setEpisodeLogs((prev) =>
         prev.filter(
           (log) =>
-            !(log.season_number === episode.season_number && log.episode_number === episode.episode_number)
+            !(log.season_number === selectedEpisodeForDiary.season_number && log.episode_number === selectedEpisodeForDiary.episode_number)
         )
       );
     } else {
       // Add to watched
+      const parsedRating = diaryRating.trim() === '' ? null : Number(diaryRating);
       const newLog: EpisodeLog = {
-        id: Date.now(), // Use timestamp as temporary ID
+        id: Date.now(),
         tmdb_show_id: showId,
-        season_number: episode.season_number,
-        episode_number: episode.episode_number,
-        episode_name: episode.name,
-        watched_at: new Date().toISOString(),
+        season_number: selectedEpisodeForDiary.season_number,
+        episode_number: selectedEpisodeForDiary.episode_number,
+        episode_name: selectedEpisodeForDiary.name,
+        watched_at: diaryDate ? new Date(diaryDate).toISOString() : new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        rating: null,
+        rating: parsedRating,
         notes: null,
       };
       setEpisodeLogs((prev) => [...prev, newLog]);
     }
     
-    // Then call API
+    setIsDiarySaving(true);
     try {
-      const watchedAt = isCurrentlyWatched ? null : new Date().toISOString();
+      const parsedRating = diaryRating.trim() === '' ? undefined : Number(diaryRating);
+      const watchedAt = isCurrentlyWatched ? null : (diaryDate ? new Date(diaryDate).toISOString() : new Date().toISOString());
       
       await logEpisode({
         tmdb_show_id: showId,
-        tmdb_episode_id: episode.id,
-        season_number: episode.season_number,
-        episode_number: episode.episode_number,
-        episode_name: episode.name,
+        tmdb_episode_id: selectedEpisodeForDiary.id,
+        season_number: selectedEpisodeForDiary.season_number,
+        episode_number: selectedEpisodeForDiary.episode_number,
+        episode_name: selectedEpisodeForDiary.name,
         watched_at: watchedAt,
-        rating: undefined,
+        rating: parsedRating,
       });
+      
+      setIsDiaryModalOpen(false);
+      setSelectedEpisodeForDiary(null);
     } catch (error) {
-      // Revert on error
-      console.error('Error toggling episode:', error);
+      console.error('Error saving episode diary:', error);
       setEpisodeLogs(previousLogs);
+    } finally {
+      setIsDiarySaving(false);
     }
   };
 
@@ -424,151 +447,282 @@ export default function ShowDetailScreen() {
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.scrollContent}>
-      {status === 'success' && show && backdropUrl ? (
-        <ThemedView style={styles.backdropFrame}>
-          <Image
-            source={{ uri: backdropUrl }}
-            style={styles.backdrop}
-            contentFit="cover"
-            contentPosition="top center"
-          />
-          <LinearGradient
-            pointerEvents="none"
-            colors={['transparent', theme.background]}
-            locations={[0, 1]}
-            style={styles.backdropFade}
-          />
-        </ThemedView>
-      ) : null}
-
-      <SafeAreaView style={styles.safeArea}>
-        {hasValidShowId && (status === 'loading' || !isCurrentShowLoaded) ? <ShowDetailSkeleton /> : null}
-
-        {!hasValidShowId || status === 'error' ? (
-          <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
-            <ThemedText type="subtitle">Show unavailable</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              We could not load this show right now. Check your connection and try again.
-            </ThemedText>
+    <>
+      <ScrollView
+        style={[styles.scrollView, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.scrollContent}>
+        {status === 'success' && show && backdropUrl ? (
+          <ThemedView style={styles.backdropFrame}>
+            <Image
+              source={{ uri: backdropUrl }}
+              style={styles.backdrop}
+              contentFit="cover"
+              contentPosition="top center"
+            />
+            <LinearGradient
+              pointerEvents="none"
+              colors={['transparent', theme.background]}
+              locations={[0, 1]}
+              style={styles.backdropFade}
+            />
           </ThemedView>
         ) : null}
 
-        {status === 'success' && show && isCurrentShowLoaded ? (
-          <>
-            <ThemedView style={styles.hero}> 
-              {posterUrl ? (
-                <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
-              ) : (
-                <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    No poster
-                  </ThemedText>
-                </ThemedView>
-              )}
+        <SafeAreaView style={styles.safeArea}>
+          {hasValidShowId && (status === 'loading' || !isCurrentShowLoaded) ? <ShowDetailSkeleton /> : null}
 
-              <ThemedView type="backgroundElement" style={styles.heroText}>
-                <ThemedText type="smallBold">{show.name}</ThemedText>
-                <ThemedView style={styles.heroSubText}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
-                  </ThemedText>
-                  <ShowStatusBadge status={userShow?.status ?? 'Not added'} />
-                </ThemedView>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {show.number_of_seasons ?? 0} seasons · {show.number_of_episodes ?? 0} episodes
-                </ThemedText>
-              </ThemedView>
-            </ThemedView>
-
-            <ThemedView style={styles.statusPickerContainer}>
-              <TouchableOpacity
-                onPress={() => setShowStatusMenu(!showStatusMenu)}
-                style={[styles.statusButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
-              >
-                <ThemedText type="small">
-                  {userShow ? STATUS_LABELS[userShow.status] : 'Add to List'}
-                </ThemedText>
-              </TouchableOpacity>
-              
-              {showStatusMenu && (
-                <View style={[styles.statusMenu, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                  {(['watching', 'want_to_watch', 'watched', 'on_hold', 'dropped'] as ShowStatus[]).map((s) => (
-                    <TouchableOpacity
-                      key={s}
-                      onPress={() => handleStatusChange(s)}
-                      style={[
-                        styles.statusMenuItem,
-                        userShow?.status === s && { backgroundColor: theme.accent }
-                      ]}
-                    >
-                      <ThemedText
-                        type="small"
-                        style={{ color: userShow?.status === s ? theme.accentText : theme.text }}
-                      >
-                        {STATUS_LABELS[s]}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                  {userShow && (
-                    <>
-                      <View style={[styles.statusMenuDivider, { borderColor: theme.border }]} />
-                      <TouchableOpacity
-                        onPress={handleRemoveShow}
-                        style={styles.statusMenuItem}
-                      >
-                        <ThemedText type="small" style={{ color: theme.danger }}>
-                          Remove from list
-                        </ThemedText>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              )}
-            </ThemedView>
-
-            {show.genres && show.genres.length > 0 ? (
-              <ThemedView style={styles.genreRow}>
-                {show.genres.slice(0, 4).map((genre) => (
-                  <ThemedView key={genre.id} type="backgroundSelected" style={styles.genrePill}>
-                    <ThemedText type="xs" themeColor="textSecondary">
-                      {genre.name}
-                    </ThemedText>
-                  </ThemedView>
-                ))}
-              </ThemedView>
-            ) : null}
-
-            <ThemedView style={styles.overviewSection}> 
-              <ThemedText themeColor="textSecondary" style={styles.overviewText}>
-                {show.overview || 'No overview available yet.'}
+          {!hasValidShowId || status === 'error' ? (
+            <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
+              <ThemedText type="subtitle">Show unavailable</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                We could not load this show right now. Check your connection and try again.
               </ThemedText>
             </ThemedView>
+          ) : null}
 
-            {show.seasons && show.seasons.length > 0 && userShow ? (
-              <ThemedView style={styles.seasonsSection}> 
-                <ThemedText type="smallBold">Track Episodes</ThemedText>
-                {show.seasons
-                  .filter((season) => season.season_number > 0)
-                  .map((seasonSummary) => (
-                    <SeasonAccordion
-                      key={seasonSummary.season_number}
-                      showId={showId}
-                      season={seasonSummary}
-                      watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
-                      watchedSet={watchedSet}
-                      onToggleEpisode={handleToggleEpisode}
-                      getCachedSeasonDetails={getCachedSeasonDetails}
-                    />
-                  ))}
+          {status === 'success' && show && isCurrentShowLoaded ? (
+            <>
+              <ThemedView style={styles.hero}> 
+                {posterUrl ? (
+                  <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
+                ) : (
+                  <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      No poster
+                    </ThemedText>
+                  </ThemedView>
+                )}
+
+                <ThemedView type="backgroundElement" style={styles.heroText}>
+                  <ThemedText type="smallBold">{show.name}</ThemedText>
+                  <ThemedView style={styles.heroSubText}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
+                    </ThemedText>
+                    <ShowStatusBadge status={userShow?.status ?? 'Not added'} />
+                  </ThemedView>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {show.number_of_seasons ?? 0} seasons · {show.number_of_episodes ?? 0} episodes
+                  </ThemedText>
+                </ThemedView>
               </ThemedView>
-            ) : null}
-          </>
-        ) : null}
-      </SafeAreaView>
-    </ScrollView>
+
+              <ThemedView style={styles.statusPickerContainer}>
+                <TouchableOpacity
+                  onPress={() => setShowStatusMenu(!showStatusMenu)}
+                  style={[styles.statusButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
+                >
+                  <ThemedText type="small">
+                    {userShow ? STATUS_LABELS[userShow.status] : 'Add to List'}
+                  </ThemedText>
+                </TouchableOpacity>
+                
+                {showStatusMenu && (
+                  <View style={[styles.statusMenu, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                    {(['watching', 'want_to_watch', 'watched', 'on_hold', 'dropped'] as ShowStatus[]).map((s) => (
+                      <TouchableOpacity
+                        key={s}
+                        onPress={() => handleStatusChange(s)}
+                        style={[
+                          styles.statusMenuItem,
+                          userShow?.status === s && { backgroundColor: theme.accent }
+                        ]}
+                      >
+                        <ThemedText
+                          type="small"
+                          style={{ color: userShow?.status === s ? theme.accentText : theme.text }}
+                        >
+                          {STATUS_LABELS[s]}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                    {userShow && (
+                      <>
+                        <View style={[styles.statusMenuDivider, { borderColor: theme.border }]} />
+                        <TouchableOpacity
+                          onPress={handleRemoveShow}
+                          style={styles.statusMenuItem}
+                        >
+                          <ThemedText type="small" style={{ color: theme.danger }}>
+                            Remove from list
+                          </ThemedText>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                )}
+              </ThemedView>
+
+              {show.genres && show.genres.length > 0 ? (
+                <ThemedView style={styles.genreRow}>
+                  {show.genres.slice(0, 4).map((genre) => (
+                    <ThemedView key={genre.id} type="backgroundSelected" style={styles.genrePill}>
+                      <ThemedText type="xs" themeColor="textSecondary">
+                        {genre.name}
+                      </ThemedText>
+                    </ThemedView>
+                  ))}
+                </ThemedView>
+              ) : null}
+
+              <ThemedView style={styles.overviewSection}> 
+                <ThemedText themeColor="textSecondary" style={styles.overviewText}>
+                  {show.overview || 'No overview available yet.'}
+                </ThemedText>
+              </ThemedView>
+
+              {show.seasons && show.seasons.length > 0 && userShow ? (
+                <ThemedView style={styles.seasonsSection}> 
+                  <ThemedText type="smallBold">Track Episodes</ThemedText>
+                  {show.seasons
+                    .filter((season) => season.season_number > 0)
+                    .map((seasonSummary) => (
+                      <SeasonAccordion
+                        key={seasonSummary.season_number}
+                        showId={showId}
+                        season={seasonSummary}
+                        watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
+                        watchedSet={watchedSet}
+                        onToggleEpisode={handleToggleEpisode}
+                        getCachedSeasonDetails={getCachedSeasonDetails}
+                      />
+                    ))}
+                </ThemedView>
+              ) : null}
+            </>
+          ) : null}
+        </SafeAreaView>
+      </ScrollView>
+
+      {isDiaryModalOpen && selectedEpisodeForDiary && (
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <ThemedText type="smallBold">Log Episode Watch</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
+              S{String(selectedEpisodeForDiary.season_number).padStart(2, '0')}E{String(selectedEpisodeForDiary.episode_number).padStart(2, '0')} - {selectedEpisodeForDiary.name}
+            </ThemedText>
+
+            <View style={styles.modalInputs}>
+              <View>
+                <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Watched date (optional)</ThemedText>
+                <TouchableOpacity
+                  style={[
+                    styles.modalInput,
+                    { 
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                    }
+                  ]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <ThemedText type="small">
+                    {diaryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+
+              <View>
+                <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Rating 0-10 (optional)</ThemedText>
+                <View 
+                  style={[
+                    styles.modalInput,
+                    { 
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                      paddingHorizontal: Spacing.two,
+                    }
+                  ]}
+                >
+                  <TextInput
+                    style={[
+                      styles.ratingInput,
+                      { color: theme.text }
+                    ]}
+                    placeholder="0-10"
+                    placeholderTextColor={theme.textSecondary}
+                    value={diaryRating}
+                    onChangeText={(text) => {
+                      if (text === '') {
+                        setDiaryRating('');
+                      } else {
+                        const num = Number(text);
+                        if (!isNaN(num) && num >= 0 && num <= 10) {
+                          setDiaryRating(text);
+                        }
+                      }
+                    }}
+                    keyboardType="decimal-pad"
+                    maxLength={4}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {showDatePicker && (
+              <View style={styles.datePickerContainer}>
+                <View style={[styles.datePickerHeader, { backgroundColor: theme.backgroundElement, borderBottomColor: theme.border }]}>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <ThemedText type="small" style={{ color: theme.accent }}>Done</ThemedText>
+                  </TouchableOpacity>
+                </View>
+                <View style={[styles.datePickerContent, { backgroundColor: theme.background }]}>
+                  <View style={styles.datePickerRow}>
+                    <TouchableOpacity
+                      style={styles.datePickerButton}
+                      onPress={() => {
+                        const prev = new Date(diaryDate);
+                        prev.setDate(prev.getDate() - 1);
+                        setDiaryDate(prev);
+                      }}
+                    >
+                      <ThemedText type="small">−</ThemedText>
+                    </TouchableOpacity>
+                    <ThemedText type="small" style={{ flex: 1, textAlign: 'center' }}>
+                      {diaryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </ThemedText>
+                    <TouchableOpacity
+                      style={styles.datePickerButton}
+                      onPress={() => {
+                        const next = new Date(diaryDate);
+                        next.setDate(next.getDate() + 1);
+                        setDiaryDate(next);
+                      }}
+                    >
+                      <ThemedText type="small">+</ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
+                onPress={() => {
+                  setIsDiaryModalOpen(false);
+                  setSelectedEpisodeForDiary(null);
+                  setDiaryDate(new Date());
+                  setDiaryRating('');
+                  setShowDatePicker(false);
+                }}
+                disabled={isDiarySaving}
+              >
+                <ThemedText type="small">Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.accent }]}
+                onPress={handleDiarySave}
+                disabled={isDiarySaving}
+              >
+                <ThemedText type="small" style={{ color: theme.accentText }}>
+                  {isDiarySaving ? 'Saving...' : 'Save'}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+    </>
   );
 }
 
@@ -634,7 +788,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.two,
     borderRadius: Spacing.four,
-    marginTop: -Spacing.six,
+    marginTop: -Spacing.seven,
   },
   skeletonPoster: {
     width: 110,
@@ -722,7 +876,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: Spacing.three,
-    marginTop: -Spacing.six,
+    marginTop: -Spacing.seven,
     backgroundColor: 'transparent',
   },
   poster: {
@@ -892,5 +1046,87 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    borderRadius: Spacing.four,
+    borderWidth: 1,
+    padding: Spacing.four,
+    width: '85%',
+    maxWidth: 320,
+  },
+  modalInputs: {
+    gap: Spacing.three,
+    marginTop: Spacing.three,
+    marginBottom: Spacing.three,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    paddingVertical: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingInput: {
+    fontSize: 16,
+    padding: 0,
+    flex: 1,
+  },
+  datePickerContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    marginHorizontal: -Spacing.four,
+    marginBottom: -Spacing.four,
+    borderBottomLeftRadius: Spacing.four,
+    borderBottomRightRadius: Spacing.four,
+    overflow: 'hidden',
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
+  },
+  datePickerContent: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    marginBottom: Spacing.five,
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  datePickerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
 });
