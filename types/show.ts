@@ -73,7 +73,7 @@ export interface EpisodeBatchResponse {
 export const STATUS_LABELS: Record<ShowStatus, string> = {
   watching: "Watching",
   want_to_watch: "Watchlist",
-  watched: "Watched",
+  watched: "Completed",
   dropped: "Dropped",
   on_hold: "On Hold",
 };

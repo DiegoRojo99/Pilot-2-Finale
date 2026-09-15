@@ -51,7 +51,7 @@ function getNextEpisodeSummary(show: UserShow, progress?: ShowProgress) {
   return {
     primary: nextEpisodeLabel ?? 'Completed',
     secondary: nextEpisodeName ?? (isCompleted ? 'All episodes watched' : 'Start watching'),
-    extra: nextEpisode ? `+${remainingAfterNextEpisode}` : null,
+    extra: nextEpisode ? remainingAfterNextEpisode > 0 ? `+${remainingAfterNextEpisode}` : "Last Episode" : null,
     isLoading: false,
   };
 }
@@ -111,18 +111,18 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.two,
     borderRadius: Spacing.three,
     borderWidth: 1,
   },
   poster: {
-    width: 100,
-    height: 150,
-    borderRadius: Spacing.two,
+    width: 68,
+    height: 104,
+    borderTopLeftRadius: Spacing.two,
+    borderBottomLeftRadius: Spacing.two,
   },
   posterPlaceholder: {
-    width: 100,
-    height: 150,
+    width: 68,
+    height: 104,
     borderRadius: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   infoPanel: {
     flex: 1,
     gap: Spacing.two,
-    padding: Spacing.three,
+    paddingHorizontal: Spacing.three,
     borderTopRightRadius: Spacing.two,
     borderBottomRightRadius: Spacing.two,
   },

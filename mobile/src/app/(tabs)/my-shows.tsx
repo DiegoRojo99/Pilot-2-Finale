@@ -95,7 +95,7 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
 
 export default function MyShowsScreen() {
   const theme = useTheme();
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('watching');
 
   return (
     <ScrollView
@@ -123,9 +123,9 @@ function WatchedStatusDropdown({ selectedStatus, setSelectedStatus }: { selected
   const statusOptions = [
     { label: 'All', value: '' },
     { label: 'Watching', value: 'watching' },
-    { label: 'Watchlist', value: 'watchlist' },
+    { label: 'Watchlist', value: 'want_to_watch' },
     { label: 'Completed', value: 'watched' },
-    { label: 'On Hold', value: 'on-hold' },
+    { label: 'On Hold', value: 'on_hold' },
     { label: 'Dropped', value: 'dropped' },
   ];
 

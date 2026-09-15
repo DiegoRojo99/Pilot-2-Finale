@@ -112,7 +112,11 @@ export function UserShowCard({ show, progress }: UserShowCardProps) {
                 <>
                   <p className="truncate text-sm font-semibold text-blue-400">
                     {primaryStatusLabel}
-                    {nextEpisode ? <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : null}
+                    {nextEpisode ? 
+                      remainingAfterNextEpisode > 0 ? 
+                        <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : 
+                        <span className="ml-2 text-xs font-medium text-slate-500">Last Episode</span> : 
+                      null}
                   </p>
                   <p className="mt-1 truncate text-xs text-slate-400">{secondaryStatusLabel}</p>
                 </>
