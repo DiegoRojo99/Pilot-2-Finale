@@ -27,3 +27,21 @@ export function logEpisode(data: {
     body: JSON.stringify(data),
   });
 }
+
+export function logEpisodesBulk(data: {
+  tmdb_show_id: number;
+  episodes: Array<{
+    tmdb_episode_id?: number;
+    season_number: number;
+    episode_number: number;
+    episode_name?: string;
+    rating?: number;
+    notes?: string;
+    watched_at?: string | null;
+  }>;
+}) {
+  return apiRequest<{ count: number }>('/api/episodes', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

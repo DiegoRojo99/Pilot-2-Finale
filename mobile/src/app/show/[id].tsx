@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, Platform } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getShowDetails, getUserShowDetails, getSeasonDetails, addShow, removeShow, updateShowStatus } from '@/lib/shows';
-import { getShowEpisodeLogs, logEpisode } from '@/lib/episodes';
+import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes';
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary, type EpisodeLog } from '@/types/api';
 
@@ -101,6 +101,7 @@ function SeasonAccordion({
   watchedCount,
   watchedSet,
   onToggleEpisode,
+  onMarkSeasonAll,
   getCachedSeasonDetails,
 }: {
   showId: number;
@@ -108,6 +109,7 @@ function SeasonAccordion({
   watchedCount: number;
   watchedSet: Set<string>;
   onToggleEpisode: (episode: TMDBEpisode) => void;
+  onMarkSeasonAll: (seasonNumber: number) => void;
   getCachedSeasonDetails: (seasonNumber: number) => Promise<TMDBSeason>;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -174,6 +176,18 @@ function SeasonAccordion({
               ]}
             />
           </View>
+          {effectiveWatchedCount < episodeCount && (
+            <TouchableOpacity
+              style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onMarkSeasonAll(season.season_number);
+              }}
+              activeOpacity={0.6}
+            >
+              <ThemedText style={{ fontSize: 18 }}>+</ThemedText>
+            </TouchableOpacity>
+          )}
           <View style={{ width: 16, height: 16, justifyContent: 'center', alignItems: 'center' }}>
             {expanded ? (
               <ThemedText style={{ fontSize: 12, lineHeight: 12 }}>−</ThemedText>
@@ -260,6 +274,8 @@ export default function ShowDetailScreen() {
   const [diaryRating, setDiaryRating] = useState('');
   const [isDiarySaving, setIsDiarySaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [bulkMarkConfirm, setBulkMarkConfirm] = useState<{ seasonNumber: number; count: number } | null>(null);
+  const [isBulkMarking, setIsBulkMarking] = useState(false);
   const theme = useTheme();
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
@@ -443,6 +459,77 @@ export default function ShowDetailScreen() {
     }
   };
 
+  const handleMarkSeasonAll = (seasonNumber: number) => {
+    if (!show) return;
+    
+    const season = show.seasons?.find(s => s.season_number === seasonNumber);
+    if (!season) return;
+
+    const episodeCount = season.episode_count ?? 0;
+    const watchedCount = watchedCountBySeason.get(seasonNumber) ?? 0;
+    const remainingCount = episodeCount - watchedCount;
+
+    if (remainingCount <= 0) return;
+
+    setBulkMarkConfirm({ seasonNumber, count: remainingCount });
+  };
+
+  const handleConfirmBulkMark = async () => {
+    if (!bulkMarkConfirm || !show) return;
+
+    const { seasonNumber, count } = bulkMarkConfirm;
+    const season = show.seasons?.find(s => s.season_number === seasonNumber);
+    if (!season) return;
+
+    const seasonData = seasonDataCache.get(`${showId}-${seasonNumber}`);
+    if (!seasonData?.episodes) return;
+
+    const unwatchedEpisodes = seasonData.episodes.filter(
+      (ep) => !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+    );
+
+    if (unwatchedEpisodes.length === 0) return;
+
+    setIsBulkMarking(true);
+    const previousLogs = episodeLogs;
+
+    try {
+      // Optimistic update
+      const newLogs = unwatchedEpisodes.map(ep => ({
+        id: Date.now() + Math.random(),
+        tmdb_show_id: showId,
+        season_number: ep.season_number,
+        episode_number: ep.episode_number,
+        episode_name: ep.name,
+        watched_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        rating: null,
+        notes: null,
+      }));
+      setEpisodeLogs((prev) => [...prev, ...newLogs]);
+
+      // API call
+      await logEpisodesBulk({
+        tmdb_show_id: showId,
+        episodes: unwatchedEpisodes.map(ep => ({
+          tmdb_episode_id: ep.id,
+          season_number: ep.season_number,
+          episode_number: ep.episode_number,
+          episode_name: ep.name,
+          watched_at: new Date().toISOString(),
+        })),
+      });
+
+      setBulkMarkConfirm(null);
+    } catch (error) {
+      console.error('Error bulk marking episodes:', error);
+      setEpisodeLogs(previousLogs);
+    } finally {
+      setIsBulkMarking(false);
+    }
+  };
+
   const posterUrl = getPosterUrl(show?.poster_path ?? null);
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
 
@@ -584,6 +671,7 @@ export default function ShowDetailScreen() {
                         watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
                         watchedSet={watchedSet}
                         onToggleEpisode={handleToggleEpisode}
+                        onMarkSeasonAll={handleMarkSeasonAll}
                         getCachedSeasonDetails={getCachedSeasonDetails}
                       />
                     ))}
@@ -716,6 +804,36 @@ export default function ShowDetailScreen() {
               >
                 <ThemedText type="small" style={{ color: theme.accentText }}>
                   {isDiarySaving ? 'Saving...' : 'Save'}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {bulkMarkConfirm && (
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <ThemedText type="smallBold">Mark Episodes as Watched?</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one, marginBottom: Spacing.three }}>
+              You're about to mark {bulkMarkConfirm.count} {bulkMarkConfirm.count === 1 ? 'episode' : 'episodes'} as watched.
+            </ThemedText>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
+                onPress={() => setBulkMarkConfirm(null)}
+                disabled={isBulkMarking}
+              >
+                <ThemedText type="small">Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.accent }]}
+                onPress={handleConfirmBulkMark}
+                disabled={isBulkMarking}
+              >
+                <ThemedText type="small" style={{ color: theme.accentText }}>
+                  {isBulkMarking ? 'Adding...' : 'Mark All'}
                 </ThemedText>
               </TouchableOpacity>
             </View>
