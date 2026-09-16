@@ -282,6 +282,14 @@ export default function ShowDetailScreen() {
   const [bulkMarkConfirm, setBulkMarkConfirm] = useState<{ seasonNumber: number; count: number; seasonData?: TMDBSeason } | null>(null);
   const [isBulkMarking, setIsBulkMarking] = useState(false);
   const [isLoadingSeasonForBulk, setIsLoadingSeasonForBulk] = useState(false);
+  const [markPreviousConfirm, setMarkPreviousConfirm] = useState<{
+    seasonNumber: number;
+    episodeNumber: number;
+    episodeName: string;
+    tmdbEpisodeId?: number;
+    count: number;
+  } | null>(null);
+  const [isMarkingPrevious, setIsMarkingPrevious] = useState(false);
   const theme = useTheme();
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
@@ -354,7 +362,48 @@ export default function ShowDetailScreen() {
   };
 
   const handleToggleEpisode = async (episode: TMDBEpisode) => {
-    // Open the diary modal to let user input date and rating
+    const isCurrentlyWatched = watchedSet.has(episodeKey(episode.season_number, episode.episode_number));
+    
+    // If unmarking or already loading, just open the diary modal
+    if (isCurrentlyWatched || isLoadingSeasonForBulk || isBulkMarking || isMarkingPrevious) {
+      setSelectedEpisodeForDiary(episode);
+      setDiaryDate(new Date());
+      setDiaryRating('');
+      setShowDatePicker(false);
+      setIsDiaryModalOpen(true);
+      return;
+    }
+
+    // Try to load season data to check for previous unwatched episodes
+    try {
+      setIsLoadingSeasonForBulk(true);
+      const seasonData = await getCachedSeasonDetails(episode.season_number);
+      
+      if (seasonData?.episodes?.length) {
+        const previousUnwatched = seasonData.episodes.filter(
+          (ep) =>
+            ep.episode_number < episode.episode_number &&
+            !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+        );
+
+        if (previousUnwatched.length > 0) {
+          setMarkPreviousConfirm({
+            seasonNumber: episode.season_number,
+            episodeNumber: episode.episode_number,
+            episodeName: episode.name,
+            tmdbEpisodeId: episode.id,
+            count: previousUnwatched.length,
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load season for previous episodes check:', error);
+    } finally {
+      setIsLoadingSeasonForBulk(false);
+    }
+
+    // No previous unwatched episodes, just open diary modal
     setSelectedEpisodeForDiary(episode);
     setDiaryDate(new Date());
     setDiaryRating('');
@@ -463,6 +512,104 @@ export default function ShowDetailScreen() {
     } catch (error) {
       console.error('Error removing show:', error);
     }
+  };
+
+  const handleConfirmMarkPrevious = async () => {
+    if (!markPreviousConfirm || !show) return;
+
+    const { seasonNumber, episodeNumber, episodeName, tmdbEpisodeId, count } = markPreviousConfirm;
+    const season = show.seasons?.find(s => s.season_number === seasonNumber);
+    if (!season) return;
+
+    const seasonData = seasonDataCache.get(`${showId}-${seasonNumber}`);
+    if (!seasonData?.episodes) return;
+
+    const previousUnwatched = seasonData.episodes.filter(
+      (ep) =>
+        ep.episode_number < episodeNumber &&
+        !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+    );
+
+    if (previousUnwatched.length === 0) return;
+
+    setIsMarkingPrevious(true);
+    const previousLogs = episodeLogs;
+
+    try {
+      // Optimistic update
+      const newLogs = previousUnwatched.map(ep => ({
+        id: Date.now() + Math.random(),
+        tmdb_show_id: showId,
+        season_number: ep.season_number,
+        episode_number: ep.episode_number,
+        episode_name: ep.name,
+        watched_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        rating: null,
+        notes: null,
+      }));
+      setEpisodeLogs((prev) => [...prev, ...newLogs]);
+
+      // API call
+      await logEpisodesBulk({
+        tmdb_show_id: showId,
+        episodes: previousUnwatched.map(ep => ({
+          tmdb_episode_id: ep.id,
+          season_number: ep.season_number,
+          episode_number: ep.episode_number,
+          episode_name: ep.name,
+          watched_at: new Date().toISOString(),
+        })),
+      });
+
+      // Now open the diary modal for the current episode
+      setMarkPreviousConfirm(null);
+      setSelectedEpisodeForDiary({
+        id: tmdbEpisodeId || 0,
+        season_number: seasonNumber,
+        episode_number: episodeNumber,
+        name: episodeName,
+        overview: '',
+        still_path: null,
+        air_date: '',
+        vote_average: 0,
+        runtime: 0,
+      } as TMDBEpisode);
+      setDiaryDate(new Date());
+      setDiaryRating('');
+      setShowDatePicker(false);
+      setIsDiaryModalOpen(true);
+    } catch (error) {
+      console.error('Error marking previous episodes:', error);
+      setEpisodeLogs(previousLogs);
+    } finally {
+      setIsMarkingPrevious(false);
+    }
+  };
+
+  const handleCancelMarkPrevious = () => {
+    if (!markPreviousConfirm) return;
+    
+    // Open diary modal for the current episode without marking previous ones
+    const { seasonNumber, episodeNumber, episodeName, tmdbEpisodeId } = markPreviousConfirm;
+    
+    setMarkPreviousConfirm(null);
+    setSelectedEpisodeForDiary({
+      id: tmdbEpisodeId || 0,
+      season_number: seasonNumber,
+      episode_number: episodeNumber,
+      name: episodeName,
+      overview: '',
+      still_path: null,
+      air_date: '',
+      vote_average: 0,
+      runtime: 0,
+    } as TMDBEpisode);
+    setDiaryDate(new Date());
+    setDiaryRating('');
+    setShowDatePicker(false);
+    setIsDiaryModalOpen(true);
   };
 
   const handleMarkSeasonAll = async (seasonNumber: number) => {
@@ -850,6 +997,36 @@ export default function ShowDetailScreen() {
               >
                 <ThemedText type="small" style={{ color: theme.accentText }}>
                   {isBulkMarking ? 'Adding...' : 'Mark All'}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {markPreviousConfirm && (
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <ThemedText type="smallBold">Mark Previous Episodes?</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one, marginBottom: Spacing.three }}>
+              You're marking episode {markPreviousConfirm.episodeNumber} as watched. Would you also like to mark the {markPreviousConfirm.count} earlier {markPreviousConfirm.count === 1 ? 'episode' : 'episodes'} as watched?
+            </ThemedText>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
+                onPress={handleCancelMarkPrevious}
+                disabled={isMarkingPrevious}
+              >
+                <ThemedText type="small">Skip</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.accent }]}
+                onPress={handleConfirmMarkPrevious}
+                disabled={isMarkingPrevious}
+              >
+                <ThemedText type="small" style={{ color: theme.accentText }}>
+                  {isMarkingPrevious ? 'Adding...' : 'Mark All'}
                 </ThemedText>
               </TouchableOpacity>
             </View>
