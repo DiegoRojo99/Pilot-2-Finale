@@ -178,15 +178,20 @@ function SeasonAccordion({
           </View>
           {effectiveWatchedCount < episodeCount && (
             <TouchableOpacity
-              style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}
+              style={[
+                styles.markAllButton,
+                { 
+                  borderColor: theme.border,
+                  opacity: isLoading ? 0.5 : 1,
+                }
+              ]}
               onPress={(e) => {
                 e.stopPropagation?.();
                 onMarkSeasonAll(season.season_number);
               }}
               activeOpacity={0.6}
-            >
-              <ThemedText style={{ fontSize: 18 }}>+</ThemedText>
-            </TouchableOpacity>
+              disabled={isLoading}
+            />
           )}
           <View style={{ width: 16, height: 16, justifyContent: 'center', alignItems: 'center' }}>
             {expanded ? (
@@ -274,8 +279,9 @@ export default function ShowDetailScreen() {
   const [diaryRating, setDiaryRating] = useState('');
   const [isDiarySaving, setIsDiarySaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [bulkMarkConfirm, setBulkMarkConfirm] = useState<{ seasonNumber: number; count: number } | null>(null);
+  const [bulkMarkConfirm, setBulkMarkConfirm] = useState<{ seasonNumber: number; count: number; seasonData?: TMDBSeason } | null>(null);
   const [isBulkMarking, setIsBulkMarking] = useState(false);
+  const [isLoadingSeasonForBulk, setIsLoadingSeasonForBulk] = useState(false);
   const theme = useTheme();
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
@@ -459,8 +465,8 @@ export default function ShowDetailScreen() {
     }
   };
 
-  const handleMarkSeasonAll = (seasonNumber: number) => {
-    if (!show) return;
+  const handleMarkSeasonAll = async (seasonNumber: number) => {
+    if (!show || isLoadingSeasonForBulk || isBulkMarking) return;
     
     const season = show.seasons?.find(s => s.season_number === seasonNumber);
     if (!season) return;
@@ -471,17 +477,27 @@ export default function ShowDetailScreen() {
 
     if (remainingCount <= 0) return;
 
-    setBulkMarkConfirm({ seasonNumber, count: remainingCount });
+    // Load season data if not already cached
+    setIsLoadingSeasonForBulk(true);
+    try {
+      const seasonData = await getCachedSeasonDetails(seasonNumber);
+      setBulkMarkConfirm({ seasonNumber, count: remainingCount, seasonData });
+    } catch (error) {
+      console.error('Failed to load season for bulk marking:', error);
+    } finally {
+      setIsLoadingSeasonForBulk(false);
+    }
   };
 
   const handleConfirmBulkMark = async () => {
     if (!bulkMarkConfirm || !show) return;
 
-    const { seasonNumber, count } = bulkMarkConfirm;
+    const { seasonNumber, count, seasonData: passedSeasonData } = bulkMarkConfirm;
     const season = show.seasons?.find(s => s.season_number === seasonNumber);
     if (!season) return;
 
-    const seasonData = seasonDataCache.get(`${showId}-${seasonNumber}`);
+    // Use passed seasonData from handleMarkSeasonAll, or fall back to cache
+    const seasonData = passedSeasonData || seasonDataCache.get(`${showId}-${seasonNumber}`);
     if (!seasonData?.episodes) return;
 
     const unwatchedEpisodes = seasonData.episodes.filter(
@@ -1112,6 +1128,14 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
+  },
+  markAllButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   episodesList: {
     borderTopWidth: 1,
