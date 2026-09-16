@@ -38,21 +38,44 @@ async function authFetch(path: string, body?: unknown) {
       data &&
       'error' in data &&
       (typeof data.error === 'string' ? data.error : typeof data.error?.message === 'string' ? data.error.message : null);
-    throw new Error(message || 'Authentication request failed.');
+    
+    // Create error with both message and status code for better error detection
+    const error = new Error(message || 'Authentication request failed.');
+    (error as any).statusCode = response.status;
+    throw error;
   }
 
   return data;
 }
 
 export async function getMobileSession() {
-  try { return await authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>; } 
+  try { 
+    return await authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>; 
+  } 
   catch (error) {
-    // Clear cookies on any auth-related error (expired, invalid, etc)
+    // Always clear cookies on auth failures - the session is invalid/expired
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();
-      if (msg.includes('invalid') || msg.includes('expired') || msg.includes('session') || msg.includes('auth')) {
-        await clearStoredAuthCookies();
-      }
+      const statusCode = (error as any).statusCode;
+      
+      // Check for various session-related errors:
+      // - JWT validation errors (exp claim, invalid token, etc)
+      // - Explicit auth errors (expired, invalid, session, auth, unauthorized)
+      // - 401/403 status codes (typical for expired/invalid sessions)
+      const isSessionError = 
+        msg.includes('exp') || 
+        msg.includes('claim') || 
+        msg.includes('jwt') || 
+        msg.includes('token') ||
+        msg.includes('invalid') || 
+        msg.includes('expired') || 
+        msg.includes('session') || 
+        msg.includes('auth') ||
+        msg.includes('unauthorized') ||
+        statusCode === 401 ||
+        statusCode === 403;
+      
+      if (isSessionError) await clearStoredAuthCookies();
     }
     throw error;
   }
