@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchShowCount, fetchShowIdsPageAfterCursor } from "@/lib/data/admin-catalog-refresh";
-import { readJson } from "@/lib/http";
-import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { readJson, enforceRateLimit, getClientAddress } from "@/lib/core";
 import { requireAdminUser } from "@/lib/auth/admin";
-import { fetchAndStoreShowCatalog } from "@/lib/show-catalog";
+import { fetchAndStoreShowCatalog } from "@/lib/shows";
 
 export const runtime = "nodejs";
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { isNumericId } from "@/lib/http";
-import { defaultRateLimit } from "@/lib/rate-limit";
+import { isNumericId, defaultRateLimit } from "@/lib/core";
 import { tmdbFetch } from "@/lib/tmdb";
 
 export const runtime = "nodejs";

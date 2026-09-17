@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, isNumericId, readJson, defaultRateLimit } from "@/lib/core";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { isNumericId, readJson } from "@/lib/http";
-import { fetchUserShowByTmdbId } from "@/lib/data/user-shows";
-import { defaultRateLimit } from "@/lib/rate-limit";
-import { repairShowCatalogIfNeeded } from "@/lib/show-catalog";
+import { fetchUserShowByTmdbId, repairShowCatalogIfNeeded } from "@/lib/shows";
 import {
   safeIncrementWatchlistToWatchedProgress,
   safeRecomputeAchievementProgressForUser,

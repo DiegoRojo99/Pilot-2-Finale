@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 import type { EpisodeStatsPeriod, EpisodeStatsResponse } from "@/types";
 
 const PERIOD_TO_DAYS: Record<EpisodeStatsPeriod, number> = {

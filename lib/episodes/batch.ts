@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 import type { EpisodeBatchResponse, EpisodeLog, ShowProgress } from "@/types";
 
 function mapEpisodeLog(row: {
@@ -186,6 +186,11 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
     // Find next episode from cached episodes first
     let nextEpisode = showEpisodes.find((episode) => !watchedEpisodeIds.has(episode.id)) ?? null;
 
+    // Debug: log if this is Slow Horses (TMDB ID 65937) or any show with watched episodes but no next
+    if ((showId === 65937 || (watchedUniqueCount > 0 && !nextEpisode && showLogs.length > 0))) {
+      console.log(`[episode-batch] Show ${showId}: cached episodes: ${showEpisodes.length}, logs: ${showLogs.length}, watched count: ${watchedUniqueCount}`);
+    }
+
     // If no next episode found in cache, try to infer from logs
     if (!nextEpisode && showLogs.length > 0) {
       // Find the highest watched episode from logs
@@ -199,6 +204,11 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
           return highest;
         });
 
+        if (showId === 65937) {
+          console.log(`[episode-batch] Slow Horses: highest watched from logs: S${highestWatched.season_number}E${highestWatched.episode_number}, looking for next...`);
+          console.log(`[episode-batch] Slow Horses: cached episodes available:`, showEpisodes.length);
+        }
+
         // Try to find next episode from cache (episodes table)
         if (showEpisodes.length > 0) {
           nextEpisode = showEpisodes.find(
@@ -206,6 +216,10 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
               ep.seasonNumber > highestWatched.season_number ||
               (ep.seasonNumber === highestWatched.season_number && ep.episodeNumber > highestWatched.episode_number),
           ) ?? null;
+          
+          if (showId === 65937) {
+            console.log(`[episode-batch] Slow Horses: found next in cache:`, nextEpisode ? `S${nextEpisode.seasonNumber}E${nextEpisode.episodeNumber}` : 'null');
+          }
         }
 
         // If still not found, construct from the next logical episode
@@ -216,6 +230,10 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
               (log.season_number === highestWatched.season_number && log.episode_number > highestWatched.episode_number),
           );
 
+          if (showId === 65937) {
+            console.log(`[episode-batch] Slow Horses: found next in logs:`, nextInSequence ? `S${nextInSequence.season_number}E${nextInSequence.episode_number}` : 'null');
+          }
+
           if (nextInSequence) {
             nextEpisode = {
               id: 0,
@@ -224,6 +242,18 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
               seasonNumber: nextInSequence.season_number,
               episodeNumber: nextInSequence.episode_number,
               name: nextInSequence.episode_name,
+            };
+          } 
+          else {
+            // Final fallback: suggest the next episode in sequence (not in cache or logs)
+            // This handles shows where later episodes haven't been synced to the database yet
+            nextEpisode = {
+              id: 0,
+              tmdbShowId: showId,
+              tmdbEpisodeId: null,
+              seasonNumber: highestWatched.season_number,
+              episodeNumber: highestWatched.episode_number + 1,
+              name: null,
             };
           }
         }
@@ -240,6 +270,29 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
             name: firstInLogs.episode_name,
           };
         }
+      }
+    } else if (!nextEpisode && watchedUniqueCount > 0) {
+      // Alternative: if we have cached episodes with watches but no next episode found
+      // and no logs to fall back to, we should still try to suggest the next episode
+      // Find the highest watched episode from the cache
+      const watchedEpisodes = showEpisodes.filter((ep) => watchedEpisodeIds.has(ep.id));
+      if (watchedEpisodes.length > 0) {
+        const highestWatched = watchedEpisodes.reduce((highest, current) => {
+          if (current.seasonNumber > highest.seasonNumber) return current;
+          if (current.seasonNumber === highest.seasonNumber && current.episodeNumber > highest.episodeNumber)
+            return current;
+          return highest;
+        });
+
+        // Suggest the next episode in sequence
+        nextEpisode = {
+          id: 0,
+          tmdbShowId: showId,
+          tmdbEpisodeId: null,
+          seasonNumber: highestWatched.seasonNumber,
+          episodeNumber: highestWatched.episodeNumber + 1,
+          name: null,
+        };
       }
     }
 

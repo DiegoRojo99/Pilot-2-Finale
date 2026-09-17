@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 import { ACHIEVEMENT_DEFINITIONS } from "@/lib/achievements/definitions";
 
 const WATCHLIST_TO_WATCHED_KEY = "watchlist_to_watched_total";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { defaultRateLimit } from "@/lib/rate-limit";
+import { defaultRateLimit } from "@/lib/core";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { fetchUserAchievementProgress } from "@/lib/data/achievements";
 

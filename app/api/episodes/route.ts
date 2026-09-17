@@ -6,10 +6,9 @@ import {
   fetchEpisodeLogsForUser,
   fetchLatestEpisodeLogsForShow,
   userHasShowInList,
-} from "@/lib/data/episode-logs";
-import { readJson } from "@/lib/http";
-import { defaultRateLimit } from "@/lib/rate-limit";
-import { reconcileUserShowStatus } from "@/lib/user-show-status";
+} from "@/lib/episodes";
+import { reconcileUserShowStatus } from "@/lib/shows";
+import { readJson, defaultRateLimit } from "@/lib/core";
 import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 
 export const runtime = "nodejs";

@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
-import { upsertShowCatalog } from "@/lib/show-catalog";
+import { prisma } from "@/lib/core";
+import { upsertShowCatalog } from "@/lib/shows";
 import { tmdbFetch } from "@/lib/tmdb";
-import { refreshAllUsersShowProgress } from "@/lib/user-show-status";
+import { refreshAllUsersShowProgress } from "@/lib/shows";
 
 type CatalogSyncResult = {
   tmdbShowId: number;

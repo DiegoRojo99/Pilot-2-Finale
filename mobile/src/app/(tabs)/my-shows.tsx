@@ -79,11 +79,14 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
 
   // Refetch progress when screen gains focus, with debounce
   useFocusEffect(() => {
-    console.log('[useFocusEffect] Screen gained focus');
-    const showIds = allShows.map((show) => show.tmdb_id);
-    if (showIds.length > 0) {
-      console.log('[useFocusEffect] Fetching progress for', showIds.length, 'shows');
-      void fetchProgress(showIds, false); // Let debounce decide
+    console.log('[useFocusEffect] Screen gained focus, status:', status);
+    // Only fetch if initial load is complete and we have shows
+    if (status === 'success') {
+      const showIds = allShows.map((show) => show.tmdb_id);
+      if (showIds.length > 0) {
+        console.log('[useFocusEffect] Fetching progress for', showIds.length, 'shows');
+        void fetchProgress(showIds, false); // Let debounce decide
+      }
     }
   });
 

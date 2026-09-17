@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 
 export async function fetchShowCount(): Promise<number> {
   return prisma.show.count();

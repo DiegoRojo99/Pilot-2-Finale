@@ -1,5 +1,5 @@
 import type { ShowStatus } from "@/types";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 
 type ProgressSnapshot = {
   totalEpisodes: number;

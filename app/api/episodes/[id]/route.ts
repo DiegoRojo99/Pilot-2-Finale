@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { deleteEpisodeLogById, updateEpisodeLogById } from "@/lib/data/episode-logs";
-import { defaultRateLimit } from "@/lib/rate-limit";
-import { reconcileUserShowStatus } from "@/lib/user-show-status";
+import { deleteEpisodeLogById, updateEpisodeLogById } from "@/lib/episodes";
+import { reconcileUserShowStatus } from "@/lib/shows";
+import { defaultRateLimit } from "@/lib/core";
 import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 
 export const runtime = "nodejs";

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 import { tmdbFetch } from "@/lib/tmdb";
 import type { ShowRecord, TMDBShow } from "@/types";
 

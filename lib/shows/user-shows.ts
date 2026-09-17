@@ -1,6 +1,6 @@
 import type { ShowStatus, UserShow } from "@/types";
 import { mapUserShow } from "@/lib/mappers/user-show";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 
 type MapOptions = {
   preferUserNameWhenShowIsPlaceholder?: boolean;

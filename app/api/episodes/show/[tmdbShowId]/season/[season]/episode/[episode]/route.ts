@@ -3,10 +3,10 @@ import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import {
   deleteEpisodeLogsForShowSeasonEpisode,
   fetchEpisodeLogsForShowSeasonEpisode,
-} from "@/lib/data/episode-logs";
+} from "@/lib/episodes";
+import { reconcileUserShowStatus } from "@/lib/shows";
 import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
-import { defaultRateLimit } from "@/lib/rate-limit";
-import { reconcileUserShowStatus } from "@/lib/user-show-status";
+import { defaultRateLimit } from "@/lib/core";
 
 export const runtime = "nodejs";
 
