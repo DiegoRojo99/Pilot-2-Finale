@@ -55,10 +55,13 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
     headers.set('Cookie', cookieHeader);
   }
 
-  // Single request with retry on 429
+  // Retry logic with exponential backoff for 429 errors
   let lastError: ApiError | null = null;
+  const maxAttempts = 5; // Increased from 3 to 5
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  console.log(`[API] ${options.method || 'GET'} ${path}`);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const response = await fetch(createApiUrl(path), {
         ...options,
@@ -67,11 +70,22 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
       });
 
       if (!response.ok) {
-        const error = new ApiError(`Request failed with status ${response.status}`, response.status);
+        let errorBody = '';
+        try { errorBody = await response.text(); } 
+        catch {
+          // Ignore if we can't read body
+        }
+
+        const error = new ApiError(
+          `Request failed with status ${response.status}: ${errorBody}`,
+          response.status,
+        );
 
         // Retry only on 429, otherwise throw immediately
-        if (response.status === 429 && attempt < 2) {
-          const delayMs = Math.pow(2, attempt) * 500; // 500ms, 1s, 2s
+        if (response.status === 429 && attempt < maxAttempts - 1) {
+          // Exponential backoff: 1s, 2s, 4s, 8s
+          const delayMs = Math.pow(2, attempt) * 1000;
+          console.log(`[API] 429 on attempt ${attempt + 1}/${maxAttempts}, retrying after ${delayMs}ms`);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           lastError = error;
           continue;
@@ -84,7 +98,7 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
       return (await response.json()) as ResponseBody;
     } catch (error) {
       // If it's a 429 and we have retries, continue loop
-      if (error instanceof ApiError && error.status === 429 && attempt < 2) {
+      if (error instanceof ApiError && error.status === 429 && attempt < maxAttempts - 1) {
         continue;
       }
       throw error;

@@ -1,7 +1,8 @@
 import { AuthGate } from '@/components/auth/auth-gate';
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
@@ -18,33 +19,82 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
   const [shows, setShows] = useState<UserShow[]>([]);
   const [progressByShowId, setProgressByShowId] = useState<Record<number, ShowProgress>>({});
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastProgressFetch, setLastProgressFetch] = useState<number>(0);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchShows() {
-      try {
-        const data = await getMyShows();
-        if (!isMounted) return;
-        setAllShows(data);
-        setStatus('success');
-
-        const showIds = data.map((show) => show.tmdb_id);
-        if (showIds.length === 0) return;
-
-        const logsBatch = await getShowEpisodeLogsBatch(showIds);
-        if (!isMounted) return;
-        setProgressByShowId(logsBatch.progressByShowId);
-      } catch (error) {
-        if (!isMounted) return;
-        setStatus('error');
-        console.error('Failed to load shows:', error);
-      }
+  const fetchProgress = async (showIds: number[], force: boolean = false) => {
+    if (showIds.length === 0) return;
+    
+    // Debounce: don't fetch if we fetched less than 5 seconds ago (unless forced)
+    const now = Date.now();
+    if (!force && now - lastProgressFetch < 5000) {
+      console.log('[fetchProgress] Skipped due to debounce (last fetch was', now - lastProgressFetch, 'ms ago)');
+      return;
     }
 
-    void fetchShows();
-    return () => { isMounted = false; };
+    console.log('[fetchProgress] Fetching progress for', showIds.length, 'shows (force=' + force + ')');
+    try {
+      const logsBatch = await getShowEpisodeLogsBatch(showIds);
+      setProgressByShowId(logsBatch.progressByShowId);
+      setLastProgressFetch(now);
+      console.log('[fetchProgress] Success');
+    } catch (error) {
+      console.error('[fetchProgress] Failed to load progress:', error);
+    }
+  };
+
+  const fetchShows = async () => {
+    console.log('[fetchShows] Starting fetch');
+    try {
+      console.log('[fetchShows] Calling getMyShows...');
+      const data = await getMyShows();
+      console.log('[fetchShows] Got', data.length, 'shows');
+      setAllShows(data);
+      setStatus('success');
+
+      const showIds = data.map((show) => show.tmdb_id);
+      console.log('[fetchShows] Now fetching progress for show IDs:', showIds);
+      await fetchProgress(showIds, true); // Force fetch on initial load
+    } catch (error) {
+      setStatus('error');
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('[fetchShows] Failed to load shows:', errorMsg, error);
+    }
+  };
+
+  useEffect(() => {
+    console.log('[useEffect] Component mounted, triggering initial fetch');
+    let isMounted = true;
+
+    async function load() {
+      if (isMounted) await fetchShows();
+    }
+
+    void load();
+    return () => { 
+      console.log('[useEffect] Component unmounting');
+      isMounted = false; 
+    };
   }, []);
+
+  // Refetch progress when screen gains focus, with debounce
+  useFocusEffect(() => {
+    console.log('[useFocusEffect] Screen gained focus');
+    const showIds = allShows.map((show) => show.tmdb_id);
+    if (showIds.length > 0) {
+      console.log('[useFocusEffect] Fetching progress for', showIds.length, 'shows');
+      void fetchProgress(showIds, false); // Let debounce decide
+    }
+  });
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchShows();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedStatus === '') setShows(allShows);
@@ -85,11 +135,17 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
   }
 
   return (
-    <ThemedView style={styles.list}>
-      {shows.map((show) => (
-        <UserShowCard key={show.id} show={show} progress={progressByShowId[show.tmdb_id]} />
-      ))}
-    </ThemedView>
+    <ScrollView
+      scrollEnabled={true}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
+      style={{ flex: 1 }}
+    >
+      <ThemedView style={styles.list}>
+        {shows.map((show) => (
+          <UserShowCard key={show.id} show={show} progress={progressByShowId[show.tmdb_id]} />
+        ))}
+      </ThemedView>
+    </ScrollView>
   );
 }
 
@@ -98,9 +154,7 @@ export default function MyShowsScreen() {
   const [selectedStatus, setSelectedStatus] = useState<string>('watching');
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.scrollContent}>
+    <View style={[styles.scrollView, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.titleArea}>
           <ThemedText type="title" themeColor="text">
@@ -112,7 +166,7 @@ export default function MyShowsScreen() {
           <AuthenticatedMyShows selectedStatus={selectedStatus} />
         </AuthGate>
       </SafeAreaView>
-    </ScrollView>
+    </View>
   );
 }
 

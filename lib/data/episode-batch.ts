@@ -175,12 +175,73 @@ export async function fetchEpisodeBatchForUser(userId: string, tmdbShowIds: numb
   for (const userShow of userShows) {
     const showId = userShow.tmdbId;
     const showEpisodes = episodesByShowId.get(showId) ?? [];
+    const showLogs = logsByShowId[showId] ?? [];
+    
+    // Count watched episodes from both cache and logs
     const watchedUniqueCount = showEpisodes.reduce(
       (count, episode) => count + (watchedEpisodeIds.has(episode.id) ? 1 : 0),
       0,
     );
 
-    const nextEpisode = showEpisodes.find((episode) => !watchedEpisodeIds.has(episode.id)) ?? null;
+    // Find next episode from cached episodes first
+    let nextEpisode = showEpisodes.find((episode) => !watchedEpisodeIds.has(episode.id)) ?? null;
+
+    // If no next episode found in cache, try to infer from logs
+    if (!nextEpisode && showLogs.length > 0) {
+      // Find the highest watched episode from logs
+      const watchedLogs = showLogs.filter((log) => log.watched_at !== null);
+      
+      if (watchedLogs.length > 0) {
+        const highestWatched = watchedLogs.reduce((highest, current) => {
+          if (current.season_number > highest.season_number) return current;
+          if (current.season_number === highest.season_number && current.episode_number > highest.episode_number)
+            return current;
+          return highest;
+        });
+
+        // Try to find next episode from cache (episodes table)
+        if (showEpisodes.length > 0) {
+          nextEpisode = showEpisodes.find(
+            (ep) =>
+              ep.seasonNumber > highestWatched.season_number ||
+              (ep.seasonNumber === highestWatched.season_number && ep.episodeNumber > highestWatched.episode_number),
+          ) ?? null;
+        }
+
+        // If still not found, construct from the next logical episode
+        if (!nextEpisode) {
+          const nextInSequence = showLogs.find(
+            (log) =>
+              log.season_number > highestWatched.season_number ||
+              (log.season_number === highestWatched.season_number && log.episode_number > highestWatched.episode_number),
+          );
+
+          if (nextInSequence) {
+            nextEpisode = {
+              id: 0,
+              tmdbShowId: showId,
+              tmdbEpisodeId: nextInSequence.tmdb_episode_id ?? null,
+              seasonNumber: nextInSequence.season_number,
+              episodeNumber: nextInSequence.episode_number,
+              name: nextInSequence.episode_name,
+            };
+          }
+        }
+      } else if (showLogs.length > 0 && showEpisodes.length === 0) {
+        // No cached episodes and no watched logs, suggest first episode from logs
+        const firstInLogs = showLogs[0];
+        if (firstInLogs) {
+          nextEpisode = {
+            id: 0,
+            tmdbShowId: showId,
+            tmdbEpisodeId: firstInLogs.tmdb_episode_id ?? null,
+            seasonNumber: firstInLogs.season_number,
+            episodeNumber: firstInLogs.episode_number,
+            name: firstInLogs.episode_name,
+          };
+        }
+      }
+    }
 
     progressByShowId[showId] = {
       tmdb_show_id: showId,

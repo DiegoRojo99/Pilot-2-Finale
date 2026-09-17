@@ -43,9 +43,7 @@ export function enforceRateLimit({ key, windowMs, max, message }: RateLimitOptio
       { error: message },
       {
         status: 429,
-        headers: {
-          "Retry-After": String(retryAfter),
-        },
+        headers: { "Retry-After": String(retryAfter), },
       },
     );
   }
@@ -59,7 +57,7 @@ export function defaultRateLimit(request: Request) {
   return enforceRateLimit({
     key: `api:${getClientAddress(request)}`,
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: 600, // Increased from 300 to support mobile app navigation patterns
     message: "Too many requests, please try again later.",
   });
 }
