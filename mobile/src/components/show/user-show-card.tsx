@@ -25,10 +25,6 @@ function getNextEpisodeSummary(show: UserShow, progress?: ShowProgress) {
   const shouldSuggestFirstEpisode =
     !!progress && !nextEpisodeFromProgress && !isCompleted && watchedUniqueCount === 0 && totalEpisodes > 0;
   
-  if (!nextEpisodeFromProgress && !!progress && !isCompleted && watchedUniqueCount > 0) {
-    console.log(`[UserShowCard] Show "${show.name}" has no next episode but should: watched=${watchedUniqueCount}, total=${totalEpisodes}, status=${show.status}`);
-  }
-  
   const nextEpisode = nextEpisodeFromProgress ?? (shouldSuggestFirstEpisode
     ? {
         tmdb_episode_id: null,
