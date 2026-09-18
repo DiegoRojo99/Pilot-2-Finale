@@ -5,6 +5,12 @@ import type { HealthResponse } from '@/types/api';
 
 const DEFAULT_API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
+type SessionRefreshHandler = () => Promise<boolean>;
+let sessionRefreshHandler: SessionRefreshHandler | null = null;
+export function setSessionRefreshHandler(handler: SessionRefreshHandler | null) {
+  sessionRefreshHandler = handler;
+}
+
 type ExpoExtra = {
   apiBaseUrl?: string;
 };
@@ -40,28 +46,24 @@ export function createApiUrl(path: string) {
   return `${getApiBaseUrl()}${normalizedPath}`;
 }
 
-export async function apiRequest<ResponseBody>(path: string, options: RequestInit = {}) {
-  const cookieHeader = await getStoredAuthCookieHeader();
-  const headers = new Headers({
-    Accept: 'application/json',
-    ...options.headers,
-  });
-
-  if (options.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  if (cookieHeader && Platform.OS !== 'web') {
-    headers.set('Cookie', cookieHeader);
-  }
-
-  // Retry logic with exponential backoff for 429 errors
+export async function apiRequest<ResponseBody>(
+  path: string,
+  options: RequestInit = {},
+) {
+  const maxAttempts = 2;
   let lastError: ApiError | null = null;
-  const maxAttempts = 5; // Increased from 3 to 5
 
   console.log(`[API] ${options.method || 'GET'} ${path}`);
-
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const cookieHeader = await getStoredAuthCookieHeader();
+    const headers = new Headers({
+      Accept: 'application/json',
+      ...options.headers,
+    });
+
+    if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (cookieHeader && Platform.OS !== 'web') headers.set('Cookie', cookieHeader);
+
     try {
       const response = await fetch(createApiUrl(path), {
         ...options,
@@ -71,21 +73,33 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
 
       if (!response.ok) {
         let errorBody = '';
+
         try { errorBody = await response.text(); } 
-        catch {
-          // Ignore if we can't read body
-        }
+        catch {}
 
         const error = new ApiError(
           `Request failed with status ${response.status}: ${errorBody}`,
           response.status,
         );
 
-        // Retry only on 429, otherwise throw immediately
+        // Authentication failed. Give the session one chance to refresh.
+        if (
+          (response.status === 401 || response.status === 403) &&
+          attempt === 0 &&
+          sessionRefreshHandler
+        ) {
+          console.log('[API] Authentication failed, attempting session refresh');
+          const refreshed = await sessionRefreshHandler();
+          if (refreshed) {
+            console.log('[API] Session refreshed, retrying request');
+            continue;
+          }
+        }
+
+        // Keep your existing 429 retry behavior.
         if (response.status === 429 && attempt < maxAttempts - 1) {
-          // Exponential backoff: 1s, 2s, 4s, 8s
           const delayMs = Math.pow(2, attempt) * 1000;
-          console.log(`[API] 429 on attempt ${attempt + 1}/${maxAttempts}, retrying after ${delayMs}ms`);
+          console.log( `[API] 429 on attempt ${attempt + 1}/${maxAttempts}, retrying after ${delayMs}ms`);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           lastError = error;
           continue;
@@ -96,11 +110,11 @@ export async function apiRequest<ResponseBody>(path: string, options: RequestIni
 
       if (response.status === 204) return undefined as ResponseBody;
       return (await response.json()) as ResponseBody;
-    } catch (error) {
-      // If it's a 429 and we have retries, continue loop
-      if (error instanceof ApiError && error.status === 429 && attempt < maxAttempts - 1) {
-        continue;
-      }
+    } 
+    catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      const status = apiError?.status; 
+      if ( status === 429 && attempt < maxAttempts - 1) continue;
       throw error;
     }
   }

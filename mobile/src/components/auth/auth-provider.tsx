@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
-
+import { AppState } from 'react-native';
+import { setSessionRefreshHandler } from '@/lib/api';
 import { getMobileSession, registerWithEmail, signInWithEmail, signOut as signOutRequest } from '@/lib/auth';
 import type { AuthSessionResponse, AuthUser } from '@/types/api';
 
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  async function applySession(session: AuthSessionResponse) {
+  function applySession(session: AuthSessionResponse) {
     const sessionUser = getUserFromSession(session);
     setUser(sessionUser);
     setStatus(sessionUser ? 'authenticated' : 'unauthenticated');
@@ -32,25 +33,69 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   async function refreshSession() {
     const session = await getMobileSession();
-    await applySession(session);
+    applySession(session);
   }
 
   useEffect(() => {
     let isMounted = true;
+    let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
-    void getMobileSession()
-      .then((session) => {
+    const loadSession = async () => {
+      try {
+        const session = await getMobileSession();
         if (!isMounted) return;
-        void applySession(session);
-      })
-      .catch(() => {
+        applySession(session);
+      } 
+      catch {
         if (!isMounted) return;
         setUser(null);
         setStatus('unauthenticated');
-      });
+      }
+    };
+
+    const handleAppStateChange = (nextState: string) => {
+      if (nextState === 'active') void loadSession();
+    };
+
+    void loadSession();
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange,
+    );
+
+    refreshInterval = setInterval(() => {
+      void loadSession();
+    }, 10 * 60 * 1000);
 
     return () => {
       isMounted = false;
+      subscription.remove();
+      if (refreshInterval) clearInterval(refreshInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    setSessionRefreshHandler(async () => {
+      try {
+        const session = await getMobileSession();
+
+        if (!session?.user) {
+          setUser(null);
+          setStatus('unauthenticated');
+          return false;
+        }
+
+        applySession(session);
+        return true;
+      } catch {
+        setUser(null);
+        setStatus('unauthenticated');
+        return false;
+      }
+    });
+
+    return () => {
+      setSessionRefreshHandler(null);
     };
   }, []);
 
@@ -59,11 +104,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     user,
     signIn: async (input) => {
       const session = await signInWithEmail(input);
-      await applySession(session);
+      applySession(session);
     },
     register: async (input) => {
       const session = await registerWithEmail(input);
-      await applySession(session);
+      applySession(session);
     },
     signOut: async () => {
       await signOutRequest();

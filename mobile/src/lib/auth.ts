@@ -49,34 +49,13 @@ async function authFetch(path: string, body?: unknown) {
 }
 
 export async function getMobileSession() {
-  try { 
-    return await authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>; 
-  } 
+  try { return await authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>; } 
   catch (error) {
-    // Always clear cookies on auth failures - the session is invalid/expired
-    if (error instanceof Error) {
-      const msg = error.message.toLowerCase();
-      const statusCode = (error as any).statusCode;
-      
-      // Check for various session-related errors:
-      // - JWT validation errors (exp claim, invalid token, etc)
-      // - Explicit auth errors (expired, invalid, session, auth, unauthorized)
-      // - 401/403 status codes (typical for expired/invalid sessions)
-      const isSessionError = 
-        msg.includes('exp') || 
-        msg.includes('claim') || 
-        msg.includes('jwt') || 
-        msg.includes('token') ||
-        msg.includes('invalid') || 
-        msg.includes('expired') || 
-        msg.includes('session') || 
-        msg.includes('auth') ||
-        msg.includes('unauthorized') ||
-        statusCode === 401 ||
-        statusCode === 403;
-      
-      if (isSessionError) await clearStoredAuthCookies();
-    }
+    const statusCode = error instanceof Error
+      ? (error as any).statusCode
+      : undefined;
+
+    if (statusCode === 401 || statusCode === 403) await clearStoredAuthCookies();
     throw error;
   }
 }
