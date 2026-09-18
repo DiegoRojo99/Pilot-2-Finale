@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
-
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getSeasonDetails } from '@/lib/shows';
-import { formatAirDate, getStillUrl } from '@/lib/tmdb-images';
+import { getStillUrl } from '@/lib/tmdb-images';
 import type { TMDBEpisode } from '@/types/api';
 
 type EpisodeStatus = 'loading' | 'success' | 'error';
@@ -53,13 +51,11 @@ export default function EpisodeDetailScreen() {
   const selectedSeasonNumber = Number(seasonNumber);
   const selectedEpisodeNumber = Number(episodeNumber);
   const episodeKey = `${showId}-${selectedSeasonNumber}-${selectedEpisodeNumber}`;
-  const hasValidParams =
-    Number.isFinite(showId) && Number.isFinite(selectedSeasonNumber) && Number.isFinite(selectedEpisodeNumber);
+  const hasValidParams = Number.isFinite(showId) && Number.isFinite(selectedSeasonNumber) && Number.isFinite(selectedEpisodeNumber);
   const isCurrentEpisodeLoaded = loadedEpisodeKey === episodeKey;
 
   useEffect(() => {
     if (!hasValidParams) return;
-
     let isMounted = true;
 
     void getSeasonDetails(showId, selectedSeasonNumber)
@@ -90,13 +86,7 @@ export default function EpisodeDetailScreen() {
       contentContainerStyle={styles.scrollContent}>
       {status === 'success' && episode && stillUrl ? (
         <ThemedView style={styles.stillFrame}>
-          <Image source={{ uri: stillUrl }} style={styles.still} contentFit="cover" alt={episode.name} />
-          <LinearGradient
-            pointerEvents="none"
-            colors={['transparent', theme.background]}
-            locations={[0, 1]}
-            style={styles.stillFade}
-          />
+          <Image source={{ uri: stillUrl }} style={styles.still} alt={episode.name} />
         </ThemedView>
       ) : null}
 
@@ -112,28 +102,86 @@ export default function EpisodeDetailScreen() {
           </ThemedView>
         ) : null}
 
-        {status === 'success' && episode && isCurrentEpisodeLoaded ? (
-          <>
-            <ThemedView type="backgroundElement" style={[styles.headerCard, { borderColor: theme.border }]}> 
-              <ThemedText type="small" themeColor="textSecondary">
-                Season {episode.season_number} · Episode {episode.episode_number}
-              </ThemedText>
-              <ThemedText type="title">{episode.name || `Episode ${episode.episode_number}`}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {formatAirDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime}m` : ''}
-              </ThemedText>
-            </ThemedView>
-
-            <ThemedView type="backgroundElement" style={[styles.overviewCard, { borderColor: theme.border }]}> 
-              <ThemedText type="subtitle">Overview</ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.overviewText}>
-                {episode.overview || 'No overview available yet.'}
-              </ThemedText>
-            </ThemedView>
-          </>
-        ) : null}
+        {status === 'success' && episode && isCurrentEpisodeLoaded ? 
+        ( <EpisodeDetails episode={episode} /> ) : null}
       </SafeAreaView>
     </ScrollView>
+  );
+}
+
+function EpisodeDetails({ episode }: { episode: TMDBEpisode }) {
+  const theme = useTheme();
+  return (
+    <>
+      <ThemedView>
+        <ThemedText type="title">{episode.name}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Season {episode.season_number} · Episode {episode.episode_number}
+        </ThemedText>
+      </ThemedView>
+      
+      <View style={styles.detailsSection}>
+          {episode.overview && (
+          <>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
+              EPISODE SUMMARY
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 13, lineHeight: 18, color: theme.text, marginBottom: Spacing.md }}>
+              {episode.overview}
+              </ThemedText>
+          </>
+          )}
+          <View style={{ flexDirection: 'row', gap: Spacing.md, flexWrap: 'wrap' }}>
+          {episode.air_date && (
+              <View>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
+                  AIR DATE
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
+                  {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </ThemedText>
+              </View>
+          )}
+          {episode.runtime && (
+              <View>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
+                  RUNTIME
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
+                  {episode.runtime}m
+              </ThemedText>
+              </View>
+          )}
+          {episode.vote_average > 0 && (
+              <View>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
+                  RATING
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
+                  ★ {(episode.vote_average / 2).toFixed(1)}
+              </ThemedText>
+              </View>
+          )}
+          </View>
+      </View>
+
+      {/* <ThemedView type="backgroundElement" style={[styles.headerCard, { borderColor: theme.border }]}> 
+        <ThemedText type="small" themeColor="textSecondary">
+          Season {episode.season_number} · Episode {episode.episode_number}
+        </ThemedText>
+        <ThemedText type="title">{episode.name || `Episode ${episode.episode_number}`}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {formatAirDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime}m` : ''}
+        </ThemedText>
+      </ThemedView>
+      
+      <ThemedView type="backgroundElement" style={[styles.overviewCard, { borderColor: theme.border }]}> 
+        <ThemedText type="subtitle">Overview</ThemedText>
+        <ThemedText themeColor="textSecondary" style={styles.overviewText}>
+          {episode.overview || 'No overview available yet.'}
+        </ThemedText>
+      </ThemedView> */}
+    </>
   );
 }
 
@@ -168,7 +216,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: 0,
     paddingBottom: Spacing.four,
-    gap: Spacing.three,
   },
   stateCard: {
     alignSelf: 'stretch',
@@ -247,5 +294,11 @@ const styles = StyleSheet.create({
   },
   overviewText: {
     lineHeight: 24,
+  },
+  detailsSection: {
+    paddingVertical: Spacing.md,
+  },
+  detailsSubsection: {
+    paddingHorizontal: Spacing.md,
   },
 });
