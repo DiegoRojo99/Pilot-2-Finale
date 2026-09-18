@@ -1,5 +1,6 @@
 import { apiRequest } from '@/lib/api';
-import type { EpisodeLog, EpisodeBatchResponse } from '@/types/api';
+import type { EpisodeBatchResponse } from '@/types/api';
+import type { EpisodeLog } from '@/types/episode';
 
 export function getShowEpisodeLogs(tmdbShowId: number) {
   return apiRequest<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);

@@ -47,9 +47,7 @@ export async function GET(request: Request) {
   if (rateLimited) return rateLimited;
 
   const authResult = await requireAuthenticatedUser();
-  if ("response" in authResult) {
-    return authResult.response;
-  }
+  if ("response" in authResult) return authResult.response;
   const { userId } = authResult.context;
 
   const { searchParams } = new URL(request.url);
@@ -62,9 +60,7 @@ export async function GET(request: Request) {
 
   if (tmdbShowId) {
     const numericTmdbShowId = Number(tmdbShowId);
-    if (!Number.isFinite(numericTmdbShowId)) {
-      return NextResponse.json([]);
-    }
+    if (!Number.isFinite(numericTmdbShowId)) return NextResponse.json([]);
 
     const logs = await fetchLatestEpisodeLogsForShow(userId, numericTmdbShowId, {
       withWatchDate,

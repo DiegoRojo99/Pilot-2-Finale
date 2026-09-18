@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { EpisodeLog } from '@/types/api';
+import { getPosterUrl } from '@/lib/tmdb-images';
+import type { EpisodeLog } from '@/types/episode';
 
 interface DiaryEntryListProps {
   entry: EpisodeLog;
@@ -13,7 +13,6 @@ interface DiaryEntryListProps {
 export function DiaryEntryList({ entry }: DiaryEntryListProps) {
   const theme = useTheme();
   const router = useRouter();
-
   const episodeKey = `S${String(entry.season_number).padStart(2, '0')}E${String(entry.episode_number).padStart(2, '0')}`;
   const ratingDisplay = entry.rating ? `★ ${entry.rating}` : '';
 
@@ -21,15 +20,21 @@ export function DiaryEntryList({ entry }: DiaryEntryListProps) {
     if (!entry.id) return;
     router.push({
       pathname: '/diary/[id]',
-      params: {
-        id: entry.id.toString(),
-      },
+      params: { id: entry.id.toString() },
     });
   };
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
       <View style={[styles.container, { borderBottomColor: theme.border }]}>
+        <View>
+            {entry.poster_path && (
+              <Image
+                source={{ uri: getPosterUrl(entry.poster_path) || '' }}
+                style={{ width: 64, height: 96, borderRadius: 4 }}
+              />
+            )}
+        </View>
         <View style={{ flex: 1 }}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
             {episodeKey}
@@ -60,9 +65,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
     borderBottomWidth: 1,
+    gap: Spacing.md,
   },
   episodeKey: {
     fontFamily: 'monospace',

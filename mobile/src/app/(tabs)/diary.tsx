@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, RefreshControl, StyleSheet, FlatList } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { DiaryEntryList, DiaryEmptyState, DiaryLoadingState, DiaryErrorState } from '@/components/diary';
 import { getAllEpisodeLogs } from '@/lib/episodes';
-import type { EpisodeLog } from '@/types/api';
+import type { EpisodeLog } from '@/types/episode';
 
 interface DiaryDay {
   date: string;
@@ -78,14 +78,8 @@ function AuthenticatedDiary() {
     }, [status, fetchDiary])
   );
 
-  if (status === 'loading') {
-    return <DiaryLoadingState label="Loading your diary..." />;
-  }
-
-  if (status === 'error') {
-    return <DiaryErrorState />;
-  }
-
+  if (status === 'loading') return <DiaryLoadingState label="Loading your diary..." />;
+  if (status === 'error') return <DiaryErrorState />;
   if (entries.length === 0) {
     return (
       <DiaryEmptyState
@@ -128,7 +122,7 @@ function AuthenticatedDiary() {
           </View>
         )}
         keyExtractor={(item) => item.date}
-        scrollEnabled={false}
+        scrollEnabled={true}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
       />
     </>
