@@ -6,7 +6,7 @@ import { Colors } from '@/constants/theme';
 const tabs = [
   { name: 'index', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
   { name: 'my-shows', label: 'My Shows', sf: 'tv', md: 'live_tv' },
-  { name: 'history', label: 'History', sf: 'clock.arrow.circlepath', md: 'history' },
+  { name: 'diary', label: 'Diary', sf: 'book.circle', md: 'note_alt' },
   { name: 'stats', label: 'Stats', sf: 'chart.bar', md: 'bar_chart' },
   { name: 'profile', label: 'Profile', sf: 'person.crop.circle', md: 'account_circle' },
 ] as const;

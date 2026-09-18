@@ -17,7 +17,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 const tabs: Array<{ name: string; href: Href; label: string; icon: string }> = [
   { name: 'discover', href: '/index', label: 'Discover', icon: 'S' },
   { name: 'my-shows', href: '/my-shows', label: 'My Shows', icon: 'TV' },
-  { name: 'history', href: '/history', label: 'History', icon: 'H' },
+  { name: 'diary', href: '/diary', label: 'Diary', icon: 'D' },
   { name: 'stats', href: '/stats', label: 'Stats', icon: 'B' },
   { name: 'profile', href: '/profile', label: 'Profile', icon: 'P' },
 ];
