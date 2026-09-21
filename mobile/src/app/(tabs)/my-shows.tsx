@@ -146,7 +146,7 @@ export default function MyShowsScreen() {
 
   return (
     <View style={[styles.scrollView, { backgroundColor: theme.background }]}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ThemedView style={styles.titleArea}>
           <ThemedText type="title" themeColor="text">
             My Shows
