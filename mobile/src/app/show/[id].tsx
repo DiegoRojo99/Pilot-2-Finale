@@ -711,7 +711,7 @@ export default function ShowDetailScreen() {
   const backdropUrl = getBackdropUrl(show?.backdrop_path ?? null);
 
   return (
-    <>
+    <SafeAreaView edges={['bottom']} style={styles.scrollView}>
       <ScrollView
         style={[styles.scrollView, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.scrollContent}>
@@ -732,7 +732,7 @@ export default function ShowDetailScreen() {
           </ThemedView>
         ) : null}
 
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
           {hasValidShowId && (status === 'loading' || !isCurrentShowLoaded) ? <ShowDetailSkeleton /> : null}
 
           {!hasValidShowId || status === 'error' ? (
@@ -857,7 +857,7 @@ export default function ShowDetailScreen() {
               ) : null}
             </>
           ) : null}
-        </SafeAreaView>
+        </View>
       </ScrollView>
 
       {isDiaryModalOpen && selectedEpisodeForDiary && (
@@ -1009,7 +1009,7 @@ export default function ShowDetailScreen() {
           </View>
         </View>
       )}
-    </>
+    </SafeAreaView>
   );
 }
 

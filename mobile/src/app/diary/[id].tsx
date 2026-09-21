@@ -139,7 +139,7 @@ export default function DiaryEntryDetailScreen() {
   const episodeKey = `S${String(entry.season_number).padStart(2, '0')}E${String(entry.episode_number).padStart(2, '0')}`;
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', "bottom"]}>
         <ThemedView style={styles.container}>
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: theme.border }]}>
@@ -259,50 +259,50 @@ export default function DiaryEntryDetailScreen() {
 function EpisodeDetails({ episode }: { episode: TMDBEpisode }) {
     const theme = useTheme();
     return (
-        <View style={styles.detailsSection}>
-            {episode.overview && (
-            <>
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
-                EPISODE SUMMARY
-                </ThemedText>
-                <ThemedText type="small" style={{ fontSize: 13, lineHeight: 18, color: theme.text, marginBottom: Spacing.md }}>
-                {episode.overview}
-                </ThemedText>
-            </>
-            )}
-            <View style={{ flexDirection: 'row', gap: Spacing.md, flexWrap: 'wrap' }}>
-            {episode.air_date && (
-                <View>
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
-                    AIR DATE
-                </ThemedText>
-                <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
-                    {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </ThemedText>
-                </View>
-            )}
-            {episode.runtime && (
-                <View>
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
-                    RUNTIME
-                </ThemedText>
-                <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
-                    {episode.runtime}m
-                </ThemedText>
-                </View>
-            )}
-            {episode.vote_average > 0 && (
-                <View>
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
-                    RATING
-                </ThemedText>
-                <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
-                    ★ {(episode.vote_average / 2).toFixed(1)}
-                </ThemedText>
-                </View>
-            )}
-            </View>
-        </View>
+      <View style={styles.detailsSection}>
+          {episode.overview && (
+          <>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
+              EPISODE SUMMARY
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 13, lineHeight: 18, color: theme.text, marginBottom: Spacing.md }}>
+              {episode.overview}
+              </ThemedText>
+          </>
+          )}
+          <View style={{ flexDirection: 'row', gap: Spacing.md, flexWrap: 'wrap' }}>
+          {episode.air_date && (
+              <View>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
+                  AIR DATE
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
+                  {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </ThemedText>
+              </View>
+          )}
+          {episode.runtime && (
+              <View>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
+                  RUNTIME
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
+                  {episode.runtime}m
+              </ThemedText>
+              </View>
+          )}
+          {episode.vote_average > 0 && (
+              <View>
+              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
+                  RATING
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
+                  ★ {(episode.vote_average / 2).toFixed(1)}
+              </ThemedText>
+              </View>
+          )}
+          </View>
+      </View>
     );
 }
 
