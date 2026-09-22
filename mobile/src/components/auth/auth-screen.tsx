@@ -18,7 +18,7 @@ export function AuthScreen() {
         <View style={styles.authContainer}>
             <View style={styles.logoContainer}>
                 <Image
-                    source={require('@/assets/images/logo.png')}
+                    source={require('@/assets/images/transparent-logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
