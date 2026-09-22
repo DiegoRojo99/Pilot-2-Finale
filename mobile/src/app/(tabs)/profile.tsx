@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
-import { AuthForm } from '@/components/auth/auth-form';
 import { useAuth } from '@/components/auth/auth-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -13,11 +12,11 @@ import { Screen } from '@/components/ui/screen';
 import { requestAccountDeletion } from '@/lib/auth';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { AuthScreen } from '@/components/auth/auth-screen';
 
 export default function ProfileScreen() {
   const auth = useAuth();
   const theme = useTheme();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [confirmation, setConfirmation] = useState('');
   const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -54,23 +53,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (auth.status === 'unauthenticated') {
-    return (
-      <Screen>
-        <ThemedView style={styles.header}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Account
-          </ThemedText>
-          <ThemedText type="title">{mode === 'login' ? 'Sign in' : 'Create account'}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
-            Your library, episode logs, stats, and achievements are saved to your account.
-          </ThemedText>
-        </ThemedView>
-
-        <AuthForm mode={mode} onSwitchMode={() => setMode((value) => (value === 'login' ? 'register' : 'login'))} />
-      </Screen>
-    );
-  }
+  if (auth.status === 'unauthenticated') return <AuthScreen />;
 
   return (
     <Screen>
