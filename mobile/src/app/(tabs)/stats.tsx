@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
+    marginBottom: Spacing.lg,
   },
   content: {
     padding: Spacing.lg,
