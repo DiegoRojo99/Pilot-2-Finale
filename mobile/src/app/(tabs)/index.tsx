@@ -4,13 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { PosterRail } from '@/components/show/poster-rail';
-import { ShowResultCard } from '@/components/show/show-result-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getTopRatedShows, getTrendingShows, searchShows } from '@/lib/shows';
 import type { TMDBShow } from '@/types/api';
+import { ShowCard } from '@/components/show/show-card';
 
 type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
 type SuggestionsStatus = 'loading' | 'success' | 'error';
@@ -150,7 +150,7 @@ export default function HomeScreen() {
         {searchResults.length > 0 ? (
           <ThemedView style={styles.resultsList}>
             {searchResults.slice(0, 12).map((show) => (
-              <ShowResultCard key={show.id} show={show} onPress={openShow} />
+              <ShowCard key={show.id} show={show} onShowPress={openShow} />
             ))}
           </ThemedView>
         ) : null}

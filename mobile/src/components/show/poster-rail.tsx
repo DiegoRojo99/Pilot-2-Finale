@@ -1,13 +1,12 @@
-import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import type { ComponentProps } from 'react';
+import { ShowCard } from './show-card';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getPosterUrl, getYear } from '@/lib/tmdb-images';
 import type { TMDBShow } from '@/types/api';
 
 type PosterRailProps = {
@@ -27,37 +26,9 @@ export function PosterRail({ title, icon, shows, onShowPress }: PosterRailProps)
         <ThemedText type="subtitle">{title}</ThemedText>
       </ThemedView>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {shows.slice(0, 15).map((show) => {
-          const posterUrl = getPosterUrl(show.poster_path);
-
-          return (
-            <Pressable
-              key={show.id}
-              accessibilityRole="button"
-              onPress={() => onShowPress?.(show)}
-              style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}> 
-                {posterUrl ? (
-                  <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" alt={`${show.name} poster`} />
-                ) : (
-                  <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      No poster
-                    </ThemedText>
-                  </ThemedView>
-                )}
-                <ThemedView type="backgroundElement" style={styles.infoPanel}>
-                  <ThemedText type="smallBold" numberOfLines={2}>
-                    {show.name}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
-                  </ThemedText>
-                </ThemedView>
-              </ThemedView>
-            </Pressable>
-          );
-        })}
+        {shows.slice(0, 15).map((show) => (
+          <ShowCard key={show.id} show={show} onShowPress={onShowPress} />
+        ))}
       </ScrollView>
     </ThemedView>
   );
@@ -72,37 +43,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  pressed: {
-    opacity: 0.75,
-  },
   content: {
     gap: Spacing.three,
     paddingRight: Spacing.four,
-  },
-  card: {
-    width: 132,
-    padding: Spacing.one,
-    borderRadius: Spacing.three,
-    borderWidth: 1,
-  },
-  poster: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: Spacing.two,
-  },
-  posterPlaceholder: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: Spacing.two,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.one,
-  },
-  infoPanel: {
-    gap: Spacing.half,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-    borderBottomLeftRadius: Spacing.two,
-    borderBottomRightRadius: Spacing.two,
   },
 });
