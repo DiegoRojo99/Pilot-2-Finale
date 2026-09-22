@@ -96,7 +96,7 @@ export default function HomeScreen() {
       contentContainerStyle={styles.scrollContent}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.header}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="title" themeColor="textSecondary">
             Pilot 2 Finale
           </ThemedText>
           <ThemedText type="title" style={styles.title}>
@@ -107,7 +107,7 @@ export default function HomeScreen() {
           </ThemedText>
         </ThemedView>
 
-        <ThemedView type="backgroundElement" style={[styles.searchCard, { borderColor: theme.border }]}> 
+        <ThemedView style={styles.searchCard}> 
           <TextInput
             value={query}
             onChangeText={handleQueryChange}
@@ -126,7 +126,7 @@ export default function HomeScreen() {
           ) : null}
 
           {searchStatus === 'loading' ? (
-            <ThemedView type="backgroundElement" style={styles.inlineStatus}>
+            <ThemedView style={styles.inlineStatus}>
               <ActivityIndicator color={theme.accent} />
               <ThemedText type="small" themeColor="textSecondary">
                 Searching...
@@ -148,51 +148,50 @@ export default function HomeScreen() {
         </ThemedView>
 
         {searchResults.length > 0 ? (
-          <ThemedView style={styles.resultsList}>
-            {searchResults.slice(0, 12).map((show) => (
-              <ShowCard key={show.id} show={show} onShowPress={openShow} />
-            ))}
-          </ThemedView>
+          <PosterRail
+            title="Search Results"
+            icon={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+            shows={searchResults}
+            onShowPress={openShow}
+          />
         ) : null}
 
-        {searchStatus === 'idle' ? (
-          <ThemedView style={styles.suggestions}>
-            {suggestionsStatus === 'loading' ? (
-              <ThemedView type="backgroundElement" style={[styles.emptyCard, { borderColor: theme.border }]}> 
-                <ActivityIndicator color={theme.accent} />
-                <ThemedText type="small" themeColor="textSecondary">
-                  Loading suggestions...
-                </ThemedText>
-              </ThemedView>
-            ) : null}
+        <ThemedView style={styles.suggestions}>
+          {suggestionsStatus === 'loading' ? (
+            <ThemedView style={styles.emptyCard}> 
+              <ActivityIndicator color={theme.accent} />
+              <ThemedText type="small" themeColor="textSecondary">
+                Loading suggestions...
+              </ThemedText>
+            </ThemedView>
+          ) : null}
 
-            {suggestionsStatus === 'error' ? (
-              <ThemedView type="backgroundElement" style={[styles.emptyCard, { borderColor: theme.border }]}> 
-                <ThemedText type="subtitle">Start with a title</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Suggestions are unavailable right now, but search is ready when you know what to watch next.
-                </ThemedText>
-              </ThemedView>
-            ) : null}
+          {suggestionsStatus === 'error' ? (
+            <ThemedView style={styles.emptyCard}> 
+              <ThemedText type="subtitle">Start with a title</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Suggestions are unavailable right now, but search is ready when you know what to watch next.
+              </ThemedText>
+            </ThemedView>
+          ) : null}
 
-            {suggestionsStatus === 'success' ? (
-              <>
-                <PosterRail
-                  title="Trending This Week"
-                  icon={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' }}
-                  shows={trendingShows}
-                  onShowPress={openShow}
-                />
-                <PosterRail
-                  title="Top Rated"
-                  icon={{ ios: 'star.fill', android: 'star', web: 'star' }}
-                  shows={topRatedShows}
-                  onShowPress={openShow}
-                />
-              </>
-            ) : null}
-          </ThemedView>
-        ) : null}
+          {suggestionsStatus === 'success' ? (
+            <>
+              <PosterRail
+                title="Trending This Week"
+                icon={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' }}
+                shows={trendingShows}
+                onShowPress={openShow}
+              />
+              <PosterRail
+                title="Top Rated"
+                icon={{ ios: 'star.fill', android: 'star', web: 'star' }}
+                shows={topRatedShows}
+                onShowPress={openShow}
+              />
+            </>
+          ) : null}
+        </ThemedView>
       </SafeAreaView>
     </ScrollView>
   );
@@ -228,7 +227,7 @@ const styles = StyleSheet.create({
   searchCard: {
     alignSelf: 'stretch',
     gap: Spacing.three,
-    padding: Spacing.three,
+    paddingTop: Spacing.two,
     borderRadius: Spacing.four,
     borderWidth: 1,
   },
