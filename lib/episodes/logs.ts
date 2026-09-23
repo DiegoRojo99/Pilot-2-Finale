@@ -68,6 +68,7 @@ const EPISODE_LOG_WITH_SHOW_SELECT = {
       seasonNumber: true,
       episodeNumber: true,
       name: true,
+      stillPath: true,
       show: {
         select: {
           name: true,
@@ -92,6 +93,7 @@ function mapEpisodeLogWithShow(row: {
     seasonNumber: number;
     episodeNumber: number;
     name: string | null;
+    stillPath: string | null;
     show: {
       name: string;
       posterPath: string | null;
@@ -100,6 +102,7 @@ function mapEpisodeLogWithShow(row: {
 }): EpisodeLog {
   return {
     ...mapEpisodeLog(row),
+    still_path: row.episode.stillPath,
     show_name: row.episode.show.name,
     poster_path: row.episode.show.posterPath,
   };
@@ -274,8 +277,10 @@ export async function fetchEpisodeLogsForUser(userId: string, options?: EpisodeL
     take: limit,
     skip: offset,
   });
-
-  return rows.map(mapEpisodeLogWithShow);
+  
+  const episodeLogsWithShow = rows.map(mapEpisodeLogWithShow);
+  console.log(episodeLogsWithShow);
+  return episodeLogsWithShow;
 }
 
 export async function userHasShowInList(userId: string, tmdbShowId: number): Promise<boolean> {

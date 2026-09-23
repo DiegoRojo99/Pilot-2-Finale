@@ -10,6 +10,7 @@ import {
 import { reconcileUserShowStatus } from "@/lib/shows";
 import { readJson, defaultRateLimit } from "@/lib/core";
 import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
+import { EpisodeLog } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -58,20 +59,17 @@ export async function GET(request: Request) {
   const limit = Number.isFinite(limitRaw) ? limitRaw : 50;
   const offset = Number.isFinite(offsetRaw) ? offsetRaw : 0;
 
-  if (tmdbShowId) {
+  let logs: EpisodeLog[] = [];
+  if (!tmdbShowId) logs = await fetchEpisodeLogsForUser(userId, { withWatchDate, limit, offset });
+  else {
     const numericTmdbShowId = Number(tmdbShowId);
-    if (!Number.isFinite(numericTmdbShowId)) return NextResponse.json([]);
-
-    const logs = await fetchLatestEpisodeLogsForShow(userId, numericTmdbShowId, {
+    if (!Number.isFinite(numericTmdbShowId)) return NextResponse.json(logs);
+    logs = await fetchLatestEpisodeLogsForShow(userId, numericTmdbShowId, {
       withWatchDate,
       limit,
       offset,
     });
-
-    return NextResponse.json(logs);
   }
-
-  const logs = await fetchEpisodeLogsForUser(userId, { withWatchDate, limit, offset });
 
   return NextResponse.json(logs);
 }

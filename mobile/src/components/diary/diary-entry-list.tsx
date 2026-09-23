@@ -1,20 +1,39 @@
-import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { getPosterUrl } from '@/lib/tmdb-images';
+import { getBackdropUrl } from '@/lib/tmdb-images';
 import type { EpisodeLog } from '@/types/episode';
 
 interface DiaryEntryListProps {
   entry: EpisodeLog;
 }
 
+function renderStars(rating: number | null | undefined) {
+  if (!rating || rating <= 0) return '';
+  const starsRating = rating / 2;
+
+  // Clamp rating to 0-5
+  const clampedRating = Math.min(Math.max(starsRating, 0), 5);
+  const fullStars = Math.floor(clampedRating);
+  const hasHalf = clampedRating % 1 >= 0.5;
+  
+  let stars = '★'.repeat(fullStars);
+  if (hasHalf) stars += '☆';
+  
+  // Fill remaining with empty stars
+  const emptyCount = Math.max(0, 5 - Math.ceil(starsRating));
+  stars += '☆'.repeat(emptyCount);
+  
+  return stars;
+}
+
 export function DiaryEntryList({ entry }: DiaryEntryListProps) {
-  const theme = useTheme();
   const router = useRouter();
   const episodeKey = `S${String(entry.season_number).padStart(2, '0')}E${String(entry.episode_number).padStart(2, '0')}`;
-  const ratingDisplay = entry.rating ? `★ ${entry.rating}` : '';
+  const still = entry.still_path ? getBackdropUrl(entry.still_path) : null;
+  const stars = renderStars(entry.rating);
 
   const handlePress = () => {
     if (!entry.id) return;
@@ -25,55 +44,126 @@ export function DiaryEntryList({ entry }: DiaryEntryListProps) {
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-      <View style={[styles.container, { borderBottomColor: theme.border }]}>
-        <View>
-            {entry.poster_path && (
-              <Image
-                source={{ uri: getPosterUrl(entry.poster_path) || '' }}
-                style={{ width: 64, height: 96, borderRadius: 4 }}
-              />
-            )}
-        </View>
-        <View style={{ flex: 1 }}>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
-            {episodeKey}
-          </ThemedText>
-          <ThemedText type="subtitle" numberOfLines={1} style={{ marginTop: Spacing.xs }}>
-            {entry.show_name}
-          </ThemedText>
-          {entry.episode_name && (
-            <ThemedText type="small" numberOfLines={1} themeColor="textSecondary" style={{ marginTop: Spacing.xs }}>
-              {entry.episode_name}
-            </ThemedText>
-          )}
-        </View>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={styles.touchable}>
+      <ThemedView type="backgroundElement" style={styles.card}>
+        {/* Menu Button - Top Right */}
+        <Pressable style={styles.menuButton}>
+          <ThemedText style={styles.menuIcon}>⋮</ThemedText>
+        </Pressable>
 
-        {/* Rating on the right */}
-        {ratingDisplay && (
-          <ThemedText style={{ color: theme.accent, fontWeight: 'bold', fontSize: 14, marginLeft: Spacing.md }}>
-            {ratingDisplay}
-          </ThemedText>
-        )}
-      </View>
+        <View style={styles.contentRow}>
+          {/* Still Image */}
+          <View style={styles.stillContainer}>
+            {still ? (
+              <Image
+                source={{ uri: still }}
+                style={styles.still}
+              />
+            ) : (
+              <ThemedView type="backgroundSelected" style={styles.still}>
+                <ThemedText type="xs" themeColor="textSecondary">No image</ThemedText>
+              </ThemedView>
+            )}
+          </View>
+
+          {/* Main Content */}
+          <View style={styles.textContent}>
+            {/* Episode Name - Large */}
+            <ThemedText type="subtitle" style={styles.showName} numberOfLines={1}>
+              {entry.episode_name || 'Episode'}
+            </ThemedText>
+
+            {/* Show and Episode Info */}
+            <View style={styles.episodeInfo}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
+                {entry.show_name}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
+                {' · '}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.episodeKey}>
+                {episodeKey}
+              </ThemedText>
+            </View>
+
+            {/* Rating and Duration */}
+            <View style={styles.ratingDuration}>
+              {stars && (
+                <ThemedText style={styles.stars}>
+                  {stars} {entry.rating?.toFixed(1)}/10
+                </ThemedText>
+              )}
+            </View>
+          </View>
+        </View>
+      </ThemedView>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  touchable: {
+    marginHorizontal: Spacing.md,
+    marginVertical: Spacing.sm,
+    borderRadius: 12,
+  },
+  card: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  contentRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 0,
+  },
+  stillContainer: {
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+  still: {
+    width: 104,
+    height: 96,
+    borderRadius: 0,
+  },
+  textContent: {
+    flex: 1,
+    justifyContent: 'flex-start',
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderBottomWidth: 1,
-    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingRight: 48,
+  },
+  showName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  episodeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: 2,
   },
   episodeKey: {
-    fontFamily: 'monospace',
-    fontSize: 11,
+    fontWeight: '500',
+    fontSize: 12,
+  },
+  ratingDuration: {
+    marginBottom: 0,
+  },
+  stars: {
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 0.5,
+  },
+  menuButton: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    zIndex: 10,
+  },
+  menuIcon: {
+    fontSize: 20,
+    fontWeight: '300',
   },
 });

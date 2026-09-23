@@ -7,9 +7,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { DiaryEntryList, DiaryEmptyState, DiaryLoadingState, DiaryErrorState } from '@/components/diary';
+import { DiaryEmptyState, DiaryLoadingState, DiaryErrorState } from '@/components/diary';
 import { getAllEpisodeLogs } from '@/lib/episodes';
 import type { EpisodeLog } from '@/types/episode';
+import { DiaryDayItem } from '@/components/diary/diary-day-item';
 
 interface DiaryDay {
   date: string;
@@ -65,11 +66,8 @@ function AuthenticatedDiary() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    try {
-      await fetchDiary();
-    } finally {
-      setIsRefreshing(false);
-    }
+    try { await fetchDiary(); } 
+    finally { setIsRefreshing(false); }
   };
 
   useFocusEffect(
@@ -94,32 +92,7 @@ function AuthenticatedDiary() {
       <FlatList
         data={days}
         renderItem={({ item: day }) => (
-          <View key={day.date}>
-            {/* Date Separator */}
-            <View
-              style={{
-                paddingVertical: Spacing.md,
-                paddingHorizontal: Spacing.lg,
-                backgroundColor: theme.backgroundElement,
-              }}
-            >
-              <ThemedText
-                type="subtitle"
-                style={{
-                  fontSize: 14,
-                  fontWeight: '700',
-                  color: theme.accent,
-                }}
-              >
-                {day.date}
-              </ThemedText>
-            </View>
-
-            {/* Entries for this day */}
-            {day.entries.map((entry) => (
-              <DiaryEntryList key={entry.id} entry={entry} />
-            ))}
-          </View>
+          <DiaryDayItem day={day} />
         )}
         keyExtractor={(item) => item.date}
         scrollEnabled={true}
@@ -130,17 +103,12 @@ function AuthenticatedDiary() {
 }
 
 export default function DiaryScreen() {
-  const theme = useTheme();
-
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <ThemedView style={styles.container}>
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <View style={[styles.header]}>
           <ThemedText type="title" style={{ fontSize: 28, fontWeight: '800' }}>
-            My Diary
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Your episode watching journey
+            Diary
           </ThemedText>
         </View>
 
@@ -161,8 +129,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    paddingTop: Spacing.sm,
     borderBottomWidth: 1,
-    marginBottom: Spacing.lg,
   },
 });

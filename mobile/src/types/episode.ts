@@ -13,6 +13,7 @@ export interface EpisodeLog {
   notes: string | null;
   show_name?: string;
   poster_path?: string | null;
+  still_path?: string | null;
 }
 
 export type EpisodeStatsPeriod = "l7d" | "l30d" | "ly";
