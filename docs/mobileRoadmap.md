@@ -218,7 +218,7 @@ Acceptance Checks:
 - [ ] Episode progress matches the web app after refresh.
 - [ ] The next unwatched episode resolves correctly for active shows.
 
-## Phase 6: History, Stats, And Achievements
+## Phase 6: Diary
 
 Status: in progress
 
@@ -229,6 +229,22 @@ Tasks:
 - [x] Add mobile API function for chronological episode logs.
 - [x] Build the History screen using chronological episode logs.
 - [x] Add filters or grouping if the existing data shape supports it cleanly.
+- [x] Add helpful empty states for new users with no logs yet.
+- [ ] Add a calendar view to view logs by date
+
+Acceptance Checks:
+
+- [x] Recently watched episodes appear correctly on mobile.
+- [ ] Achievements load and represent current user progress.
+
+## Phase 7: Stats And Achievements
+
+Status: in progress
+
+Purpose: bring the existing insight surfaces to mobile after core tracking works.
+
+Tasks:
+
 - [x] Add mobile API function for `/api/episodes/stats`.
 - [x] Build the Stats screen using `/api/episodes/stats` and related app data.
 - [ ] Add mobile API function for `/api/achievements`.
@@ -238,11 +254,10 @@ Tasks:
 
 Acceptance Checks:
 
-- [x] Recently watched episodes appear correctly on mobile.
 - [x] Stats match the web app for the same account.
 - [ ] Achievements load and represent current user progress.
 
-## Phase 7: Mobile Quality Pass
+## Phase 8: Mobile Quality Pass
 
 Status: not started
 
@@ -276,7 +291,7 @@ Acceptance Checks:
 - [ ] Lists scroll smoothly with realistic account data.
 - [ ] Key interactive elements meet mobile touch target expectations.
 
-## Phase 8: Testing And Release Readiness
+## Phase 9: Testing And Release Readiness
 
 Status: not started
 
@@ -313,7 +328,7 @@ Acceptance Checks:
 - [ ] Release configuration is documented and reproducible.
 - [ ] The MVP has a smoke-test checklist covering auth, discovery, library, and episode logging.
 
-## Phase 9: Post-MVP Enhancements
+## Phase 10: Post-MVP Enhancements
 
 Status: backlog
 
