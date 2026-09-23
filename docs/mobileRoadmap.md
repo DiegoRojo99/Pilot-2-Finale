@@ -12,7 +12,7 @@ Pilot 2 Finale already has a mobile-first web experience and a fresh Expo app un
 
 ## Phase 0: Foundation And Decisions
 
-Status: complete
+Status: mostly complete (waiting on production decisions)
 
 Purpose: confirm the app architecture before feature work begins.
 
@@ -144,22 +144,22 @@ Acceptance Checks:
 
 ## Phase 4: My Shows And Status Management
 
-Status: not started
+Status: in progress
 
 Purpose: make the personal library useful for daily tracking.
 
 Tasks:
 
-- [ ] Add mobile API functions for `/api/my-shows`.
-- [ ] Add mobile API functions for `/api/my-shows/:tmdbId`.
+- [x] Add mobile API functions for `/api/my-shows`.
+- [x] Add mobile API functions for `/api/my-shows/:tmdbId`.
 - [x] Build the My Shows screen with status filters.
 - [x] Add filters for Watching, Want to Watch, Watched, On Hold, and Dropped.
 - [x] Render show cards with poster and title.
 - [x] Render current status on show cards.
 - [x] Render progress summary on show cards.
 - [x] Render next episode when available.
-- [ ] Support updating a show's status from mobile.
-- [ ] Support removing a show from the user's tracker.
+- [x] Support updating a show's status from mobile.
+- [x] Support removing a show from the user's tracker.
 - [ ] Add pull-to-refresh for library views.
 - [ ] Add optimistic updates for status changes where safe.
 - [ ] Keep behavior consistent with existing `/api/my-shows` routes.
@@ -196,13 +196,13 @@ Tasks:
 - [x] Add skeleton loading state for episode detail.
 - [ ] Extract show detail hero into a reusable component.
 - [ ] Extract episode detail hero into a reusable component if it grows.
-- [ ] Add mobile API functions for episode logs.
-- [ ] Fetch episode logs for the selected show.
-- [ ] Replace placeholder `0/n` season progress with real watched counts.
-- [ ] Show watched/unwatched state on episode rows.
-- [ ] Add status controls to the show detail screen.
-- [ ] Build an episode logging flow with watched date.
-- [ ] Add optional episode rating.
+- [x] Add mobile API functions for episode logs.
+- [x] Fetch episode logs for the selected show.
+- [x] Replace placeholder `0/n` season progress with real watched counts.
+- [x] Show watched/unwatched state on episode rows.
+- [x] Add status controls to the show detail screen.
+- [x] Build an episode logging flow with watched date.
+- [x] Add optional episode rating.
 - [ ] Add optional episode notes.
 - [ ] Support editing an existing episode log.
 - [ ] Support deleting an episode log.
@@ -220,26 +220,26 @@ Acceptance Checks:
 
 ## Phase 6: History, Stats, And Achievements
 
-Status: not started
+Status: in progress
 
 Purpose: bring the existing insight surfaces to mobile after core tracking works.
 
 Tasks:
 
-- [ ] Add mobile API function for chronological episode logs.
-- [ ] Build the History screen using chronological episode logs.
-- [ ] Add filters or grouping if the existing data shape supports it cleanly.
-- [ ] Add mobile API function for `/api/episodes/stats`.
-- [ ] Build the Stats screen using `/api/episodes/stats` and related app data.
+- [x] Add mobile API function for chronological episode logs.
+- [x] Build the History screen using chronological episode logs.
+- [x] Add filters or grouping if the existing data shape supports it cleanly.
+- [x] Add mobile API function for `/api/episodes/stats`.
+- [x] Build the Stats screen using `/api/episodes/stats` and related app data.
 - [ ] Add mobile API function for `/api/achievements`.
 - [ ] Build the Achievements screen using `/api/achievements`.
-- [ ] Add helpful empty states for new users with no logs yet.
-- [ ] Keep stats compact and glanceable for phone screens.
+- [x] Add helpful empty states for new users with no logs yet.
+- [x] Keep stats compact and glanceable for phone screens.
 
 Acceptance Checks:
 
-- [ ] Recently watched episodes appear correctly on mobile.
-- [ ] Stats match the web app for the same account.
+- [x] Recently watched episodes appear correctly on mobile.
+- [x] Stats match the web app for the same account.
 - [ ] Achievements load and represent current user progress.
 
 ## Phase 7: Mobile Quality Pass
@@ -285,6 +285,8 @@ Purpose: prepare the mobile app for real users.
 Tasks:
 
 - [x] Add mobile typecheck command usage to the development workflow.
+- [x] Configure app name.
+- [x] Configure Android package name.
 - [ ] Fix existing starter lint issues or remove starter files.
 - [ ] Add lint/typecheck commands to CI if CI exists.
 - [ ] Add unit tests for API client helpers.
@@ -297,8 +299,6 @@ Tasks:
 - [ ] Add integration or component tests for episode logging.
 - [ ] Create development build for Android.
 - [ ] Create development build for iOS.
-- [x] Configure app name.
-- [x] Configure Android package name.
 - [ ] Configure final app icon assets.
 - [ ] Configure final splash screen assets.
 - [ ] Configure iOS bundle identifier.
@@ -344,11 +344,11 @@ These run alongside feature phases when they become relevant.
 
 The first usable mobile beta should include:
 
-- [ ] Sign in, register, and sign out.
-- [ ] Discover with search, trending, top-rated, and add-to-tracker.
-- [ ] My Shows with status filters and status updates.
-- [ ] Show detail with episode list and episode logging.
-- [ ] History and basic stats.
+- [x] Sign in, register, and sign out.
+- [x] Discover with search, trending, top-rated, and add-to-tracker.
+- [x] My Shows with status filters and status updates.
+- [x] Show detail with episode list and episode logging.
+- [x] History and basic stats.
 - [ ] Device install through development or preview builds.
 
 Achievements, advanced stats, notifications, offline queueing, and app store release can follow after the main tracking loop feels solid.
