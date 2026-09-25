@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, readJson, defaultRateLimit } from "@/lib/core";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { readJson } from "@/lib/http";
-import { fetchUserShowByTmdbId, fetchUserShowsByUserId } from "@/lib/data/user-shows";
-import { defaultRateLimit } from "@/lib/rate-limit";
-import { upsertShowCatalog } from "@/lib/show-catalog";
-import { refreshUserShowProgress } from "@/lib/user-show-status";
+import { fetchUserShowByTmdbId, fetchUserShowsByUserId, upsertShowCatalog, refreshUserShowProgress, updateNextEpisodeToWatch } from "@/lib/shows";
 import { recomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 import type { ShowStatus } from "@/types";
 
@@ -38,6 +34,7 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
   if (status && !VALID_STATUSES.includes(status as ShowStatus)) return NextResponse.json([]);
 
+  // Fetch shows with updated next episode data
   const shows = await fetchUserShowsByUserId(userId, status ? (status as ShowStatus) : undefined, {
     preferUserNameWhenShowIsPlaceholder: true,
   });
@@ -90,6 +87,7 @@ export async function POST(request: Request) {
       },
     });
 
+    await updateNextEpisodeToWatch(userId, body.tmdb_id);
     await refreshUserShowProgress(userId, body.tmdb_id);
     await recomputeAchievementProgressForUser(userId);
 

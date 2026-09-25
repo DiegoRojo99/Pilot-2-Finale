@@ -15,6 +15,7 @@ function readEnvValue(name) {
 
 module.exports = ({ config }) => ({
   ...config,
+  plugins: [...(config.plugins ?? []), 'expo-secure-store'],
   extra: {
     ...config.extra,
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || readEnvValue('EXPO_PUBLIC_API_BASE_URL'),

@@ -1,0 +1,304 @@
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { PosterRail } from '@/components/show/poster-rail';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { getTopRatedShows, getTrendingShows, searchShows } from '@/lib/shows';
+import type { TMDBShow } from '@/types/api';
+import { ShowCard } from '@/components/show/show-card';
+
+type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
+type SuggestionsStatus = 'loading' | 'success' | 'error';
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+  const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
+  const [searchResults, setSearchResults] = useState<TMDBShow[]>([]);
+  const [resultCount, setResultCount] = useState(0);
+  const [suggestionsStatus, setSuggestionsStatus] = useState<SuggestionsStatus>('loading');
+  const [trendingShows, setTrendingShows] = useState<TMDBShow[]>([]);
+  const [topRatedShows, setTopRatedShows] = useState<TMDBShow[]>([]);
+  const theme = useTheme();
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+
+    if (value.trim().length < 2) {
+      setSearchStatus('idle');
+      setSearchResults([]);
+      setResultCount(0);
+    }
+  }
+
+  function openShow(show: TMDBShow) {
+    router.push({ pathname: '/show/[id]', params: { id: String(show.id) } });
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void Promise.all([getTrendingShows(), getTopRatedShows()])
+      .then(([trendingData, topRatedData]) => {
+        if (!isMounted) return;
+        setTrendingShows(trendingData.results);
+        setTopRatedShows(topRatedData.results);
+        setSuggestionsStatus('success');
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSuggestionsStatus('error');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 2) return;
+
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      setSearchStatus('loading');
+
+      void searchShows(trimmedQuery)
+        .then((data) => {
+          if (!isMounted) return;
+          setSearchResults(data.results);
+          setResultCount(data.total_results);
+          setSearchStatus('success');
+        })
+        .catch(() => {
+          if (!isMounted) return;
+          setSearchResults([]);
+          setResultCount(0);
+          setSearchStatus('error');
+        });
+    }, 400);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [query]);
+
+  return (
+    <SafeAreaView edges={['top']} style={styles.safeAreaWrapper}>
+      <ScrollView
+        style={[styles.scrollView, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.scrollContent}>
+        <View style={styles.safeArea}>
+        <ThemedText type="title">
+          Discover
+        </ThemedText>
+
+        <ThemedView style={[styles.searchCard, { borderColor: theme.border, backgroundColor: theme.surfaceBackground }]}> 
+          <View style={styles.searchInputContainer}>
+            <View style={styles.iconWrapper}>
+              <Ionicons name="search" size={20} color={theme.textSecondary} />
+            </View>
+            <TextInput
+              value={query}
+              onChangeText={handleQueryChange}
+              placeholder="Search shows"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              style={[styles.searchInput, { color: theme.text }]}
+            />
+          </View>
+
+          {searchStatus === 'loading' ? (
+            <ThemedView style={[styles.inlineStatus, { backgroundColor: theme.surfaceBackground}]}>
+              <ActivityIndicator color={theme.accent} />
+              <ThemedText type="small" themeColor="textSecondary">
+                Searching...
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
+          {searchStatus === 'error' ? (
+            <ThemedText type="small" themeColor="danger">
+              Search is unavailable right now. Check your connection and try again.
+            </ThemedText>
+          ) : null}
+
+          {searchStatus === 'success' ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {resultCount} result{resultCount === 1 ? '' : 's'} found
+            </ThemedText>
+          ) : null}
+        </ThemedView>
+
+        {searchResults.length > 0 ? (
+          <PosterRail
+            title="Search Results"
+            icon="magnifyingglass"
+            shows={searchResults}
+            onShowPress={openShow}
+          />
+        ) : null}
+
+        <ThemedView style={styles.suggestions}>
+          {suggestionsStatus === 'loading' ? (
+            <ThemedView style={[styles.emptyCard, { borderColor: theme.border }]}> 
+              <ActivityIndicator color={theme.accent} />
+              <ThemedText type="small" themeColor="textSecondary">
+                Loading suggestions...
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
+          {suggestionsStatus === 'error' ? (
+            <ThemedView style={[styles.emptyCard, { borderColor: theme.border }]}> 
+              <ThemedText type="subtitle">Start with a title</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Suggestions are unavailable right now, but search is ready when you know what to watch next.
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
+          {suggestionsStatus === 'success' ? (
+            <>
+              <View style={styles.sectionHeader}>
+                <ThemedText type="subtitle">Trending Now</ThemedText>
+                <Pressable onPress={() => router.push('/discover/trending-all')}>
+                  <ThemedText type="small" themeColor="accent">See All</ThemedText>
+                </Pressable>
+              </View>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.posterRow}
+              >
+                {trendingShows.slice(0, 10).map((show) => (
+                  <View key={show.id} style={styles.posterItem}>
+                    <ShowCard show={show} onShowPress={openShow} />
+                  </View>
+                ))}
+              </ScrollView>
+
+              <View style={styles.sectionHeader}>
+                <ThemedText type="subtitle">Top Rated</ThemedText>
+                <Pressable onPress={() => router.push('/discover/top-rated-all')}>
+                  <ThemedText type="small" themeColor="accent">See All</ThemedText>
+                </Pressable>
+              </View>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.posterRow}
+              >
+                {topRatedShows.slice(0, 10).map((show) => (
+                  <View key={show.id} style={styles.posterItem}>
+                    <ShowCard show={show} onShowPress={openShow} />
+                  </View>
+                ))}
+              </ScrollView>
+            </>
+          ) : null}
+        </ThemedView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeAreaWrapper: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+  },
+  safeArea: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
+  },
+  header: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+  },
+  title: {
+    fontWeight: 'bold',
+  },
+  searchCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  searchIcon: {
+    marginRight: Spacing.one,
+  },
+  iconWrapper: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
+  },
+  searchHint: {
+    marginTop: Spacing.one,
+  },
+  inlineStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  suggestions: {
+    alignSelf: 'stretch',
+    gap: Spacing.four,
+  },
+  emptyCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    borderWidth: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  posterRow: {
+    marginHorizontal: -Spacing.four,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.two,
+  },
+  posterItem: {
+    marginRight: Spacing.three,
+  },
+});

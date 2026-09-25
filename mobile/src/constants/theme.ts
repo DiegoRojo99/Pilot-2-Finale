@@ -9,18 +9,32 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    default: '#f8fafc',
+    text: '#0f172a',
+    background: '#f8fafc',
+    backgroundElement: '#e2e8f0',
+    backgroundSelected: '#cbd5e1',
+    surfaceBackground: '#f1f5f9',
+    textSecondary: '#475569',
+    border: '#cbd5e1',
+    accent: '#0284c7',
+    accentText: '#f8fafc',
+    danger: '#e11d48',
+    success: '#059669',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    default: '#020617',
+    text: '#f8fafc',
+    background: '#020617',
+    backgroundElement: '#0f172a',
+    backgroundSelected: '#1e293b',
+    surfaceBackground: '#1a202c',
+    textSecondary: '#94a3b8',
+    border: '#334155',
+    accent: '#38bdf8',
+    accentText: '#020617',
+    danger: '#fb7185',
+    success: '#34d399',
   },
 } as const;
 
@@ -28,30 +42,46 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: 'Montserrat',
+    serif: 'Montserrat',
+    rounded: 'Montserrat',
+    mono: 'Montserrat',
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  android: {
+    sans: 'Montserrat',
+    serif: 'Montserrat',
+    rounded: 'Montserrat',
+    mono: 'Montserrat',
   },
   web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+    sans: 'Montserrat, sans-serif',
+    serif: 'Montserrat, sans-serif',
+    rounded: 'Montserrat, sans-serif',
+    mono: 'Montserrat, monospace',
   },
-});
+  default: {
+    sans: 'Montserrat',
+    serif: 'Montserrat',
+    rounded: 'Montserrat',
+    mono: 'Montserrat',
+  },
+}) as {
+  sans: string;
+  serif: string;
+  rounded: string;
+  mono: string;
+};
 
 export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  '2xl': 32,
+  '3xl': 48,
+  '4xl': 64,
+  // Legacy support
   half: 2,
   one: 4,
   two: 8,
@@ -59,6 +89,10 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+  seven: 128,
+  eight: 256,
+  nine: 512,
+  ten: 1024,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { readJson } from "@/lib/http";
-import { enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
-import { syncShowEpisodeCatalog } from "@/lib/episode-catalog";
-import { reconcileUserShowStatus } from "@/lib/user-show-status";
+import { readJson, enforceRateLimit, getClientAddress } from "@/lib/core";
+import { syncShowEpisodeCatalog } from "@/lib/episodes";
+import { reconcileUserShowStatus } from "@/lib/shows";
 
 export const runtime = "nodejs";
 

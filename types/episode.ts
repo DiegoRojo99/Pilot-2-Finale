@@ -12,6 +12,7 @@ export interface EpisodeLog {
   rating: number | null;
   notes: string | null;
   show_name?: string;
+  still_path?: string | null;
   poster_path?: string | null;
 }
 

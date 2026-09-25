@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { fetchEpisodeBatchForUser } from "@/lib/data/episode-batch";
-import { readJson } from "@/lib/http";
-import { defaultRateLimit } from "@/lib/rate-limit";
+import { fetchEpisodeBatchForUser } from "@/lib/episodes"
+import { readJson, defaultRateLimit } from "@/lib/core"
 import type { EpisodeBatchResponse } from "@/types";
 
 export const runtime = "nodejs";

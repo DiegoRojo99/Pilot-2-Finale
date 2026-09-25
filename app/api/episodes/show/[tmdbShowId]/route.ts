@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { fetchLatestEpisodeLogsForShow } from "@/lib/data/episode-logs";
-import { defaultRateLimit } from "@/lib/rate-limit";
+import { fetchLatestEpisodeLogsForShow } from "@/lib/episodes"
+import { defaultRateLimit } from "@/lib/core"
 
 export const runtime = "nodejs";
 

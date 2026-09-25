@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 import type { UserAchievementProgressView, UserAchievementProgressWithAchievement } from "@/types";
 import { recomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 import type { AchievementTier, Prisma } from "@prisma/client";

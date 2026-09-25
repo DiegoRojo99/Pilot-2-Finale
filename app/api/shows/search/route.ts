@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { defaultRateLimit, enforceRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { defaultRateLimit, enforceRateLimit, getClientAddress } from "@/lib/core";
 import { tmdbFetch } from "@/lib/tmdb";
 
 export const runtime = "nodejs";

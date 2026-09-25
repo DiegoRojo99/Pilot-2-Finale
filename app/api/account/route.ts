@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core";
 
 export const runtime = "nodejs";
 

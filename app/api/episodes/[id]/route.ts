@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { deleteEpisodeLogById, updateEpisodeLogById } from "@/lib/data/episode-logs";
-import { defaultRateLimit } from "@/lib/rate-limit";
-import { reconcileUserShowStatus } from "@/lib/user-show-status";
+import { deleteEpisodeLogById, updateEpisodeLogById } from "@/lib/episodes";
+import { reconcileUserShowStatus, updateNextEpisodeToWatch } from "@/lib/shows";
+import { defaultRateLimit } from "@/lib/core";
 import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 
 export const runtime = "nodejs";
@@ -37,6 +37,8 @@ export async function DELETE(
   const tmdbShowId = await deleteEpisodeLogById(userId, Number(id));
 
   if (!tmdbShowId) return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
+  
+  await updateNextEpisodeToWatch(userId, tmdbShowId);
   await reconcileUserShowStatus(userId, tmdbShowId);
   await safeRecomputeAchievementProgressForUser(userId);
   return NextResponse.json({ success: true });
@@ -73,6 +75,7 @@ export async function PATCH(
 
   if (!updated) return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
 
+  await updateNextEpisodeToWatch(userId, updated.tmdb_show_id);
   await reconcileUserShowStatus(userId, updated.tmdb_show_id);
   await safeRecomputeAchievementProgressForUser(userId);
 
