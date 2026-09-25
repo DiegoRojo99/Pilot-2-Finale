@@ -92,7 +92,7 @@ function AuthenticatedDiary() {
       <FlatList
         data={days}
         renderItem={({ item: day }) => (
-          <DiaryDayItem day={day} />
+          <DiaryDayItem day={day} onEntryUpdated={() => void fetchDiary()} />
         )}
         keyExtractor={(item) => item.date}
         scrollEnabled={true}

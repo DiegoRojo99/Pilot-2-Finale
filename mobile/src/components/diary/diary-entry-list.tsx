@@ -1,13 +1,18 @@
-import { View, TouchableOpacity, StyleSheet, Image, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getBackdropUrl } from '@/lib/tmdb-images';
+import { deleteEpisodeLog } from '@/lib/episodes';
+import { DiaryEntryBottomSheet } from '@/components/diary/diary-entry-bottom-sheet';
 import type { EpisodeLog } from '@/types/episode';
 
 interface DiaryEntryListProps {
   entry: EpisodeLog;
+  onEntryUpdated?: () => void;
 }
 
 function renderStars(rating: number | null | undefined) {
@@ -29,13 +34,19 @@ function renderStars(rating: number | null | undefined) {
   return stars;
 }
 
-export function DiaryEntryList({ entry }: DiaryEntryListProps) {
+export function DiaryEntryList({ entry, onEntryUpdated }: DiaryEntryListProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
   const episodeKey = `S${String(entry.season_number).padStart(2, '0')}E${String(entry.episode_number).padStart(2, '0')}`;
   const still = entry.still_path ? getBackdropUrl(entry.still_path) : null;
   const stars = renderStars(entry.rating);
 
   const handlePress = () => {
+    setShowBottomSheet(true);
+  };
+
+  const handleEdit = () => {
     if (!entry.id) return;
     router.push({
       pathname: '/diary/[id]',
@@ -43,61 +54,84 @@ export function DiaryEntryList({ entry }: DiaryEntryListProps) {
     });
   };
 
+  const handleDelete = () => {
+    Alert.alert('Delete Entry', 'Are you sure you want to delete this diary entry?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteEpisodeLog(entry.id);
+            onEntryUpdated?.();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete entry');
+          }
+        },
+      },
+    ]);
+  };
+
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={styles.touchable}>
-      <ThemedView type="backgroundElement" style={styles.card}>
-        {/* Menu Button - Top Right */}
-        <Pressable style={styles.menuButton}>
-          <ThemedText style={styles.menuIcon}>⋮</ThemedText>
-        </Pressable>
-
-        <View style={styles.contentRow}>
-          {/* Still Image */}
-          <View style={styles.stillContainer}>
-            {still ? (
-              <Image
-                source={{ uri: still }}
-                style={styles.still}
-              />
-            ) : (
-              <ThemedView type="backgroundSelected" style={styles.still}>
-                <ThemedText type="xs" themeColor="textSecondary">No image</ThemedText>
-              </ThemedView>
-            )}
-          </View>
-
-          {/* Main Content */}
-          <View style={styles.textContent}>
-            {/* Episode Name - Large */}
-            <ThemedText type="subtitle" style={styles.showName} numberOfLines={1}>
-              {entry.episode_name || 'Episode'}
-            </ThemedText>
-
-            {/* Show and Episode Info */}
-            <View style={styles.episodeInfo}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
-                {entry.show_name}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
-                {' · '}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.episodeKey}>
-                {episodeKey}
-              </ThemedText>
-            </View>
-
-            {/* Rating and Duration */}
-            <View style={styles.ratingDuration}>
-              {stars && (
-                <ThemedText style={styles.stars}>
-                  {stars} {entry.rating?.toFixed(1)}/10
-                </ThemedText>
+    <>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={styles.touchable}>
+        <ThemedView type="backgroundElement" style={styles.card}>
+          <View style={styles.contentRow}>
+            {/* Still Image */}
+            <View style={styles.stillContainer}>
+              {still ? (
+                <Image
+                  source={{ uri: still }}
+                  style={styles.still}
+                />
+              ) : (
+                <ThemedView type="backgroundSelected" style={styles.still}>
+                  <ThemedText type="xs" themeColor="textSecondary">No image</ThemedText>
+                </ThemedView>
               )}
             </View>
+
+            {/* Main Content */}
+            <View style={styles.textContent}>
+              {/* Episode Name - Large */}
+              <ThemedText type="subtitle" style={styles.showName} numberOfLines={1}>
+                {entry.episode_name || 'Episode'}
+              </ThemedText>
+
+              {/* Show and Episode Info */}
+              <View style={styles.episodeInfo}>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
+                  {entry.show_name}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
+                  {' · '}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.episodeKey}>
+                  {episodeKey}
+                </ThemedText>
+              </View>
+
+              {/* Rating and Duration */}
+              <View style={styles.ratingDuration}>
+                {stars && (
+                  <ThemedText style={styles.stars}>
+                    {stars} {entry.rating?.toFixed(1)}/10
+                  </ThemedText>
+                )}
+              </View>
+            </View>
           </View>
-        </View>
-      </ThemedView>
-    </TouchableOpacity>
+        </ThemedView>
+      </TouchableOpacity>
+
+      <DiaryEntryBottomSheet
+        isVisible={showBottomSheet}
+        entry={entry}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onClose={() => setShowBottomSheet(false)}
+      />
+    </>
   );
 }
 
@@ -130,7 +164,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingRight: 48,
   },
   showName: {
     fontSize: 14,
@@ -153,17 +186,5 @@ const styles = StyleSheet.create({
   stars: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  menuButton: {
-    position: 'absolute',
-    top: Spacing.sm,
-    right: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    zIndex: 10,
-  },
-  menuIcon: {
-    fontSize: 20,
-    fontWeight: '300',
   },
 });

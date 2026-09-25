@@ -27,7 +27,7 @@ function getRelativeDate(dateStr: string): string {
   return dateStr;
 }
 
-export function DiaryDayItem({ day }: { day: DiaryDay }) {
+export function DiaryDayItem({ day, onEntryUpdated }: { day: DiaryDay; onEntryUpdated?: () => void }) {
     const theme = useTheme();
     const { date, entries } = day;
     const displayDate = getRelativeDate(date);
@@ -50,7 +50,7 @@ export function DiaryDayItem({ day }: { day: DiaryDay }) {
 
             {/* Entries for this day */}
             {entries.map((entry) => (
-                <DiaryEntryList key={entry.id} entry={entry} />
+                <DiaryEntryList key={entry.id} entry={entry} onEntryUpdated={onEntryUpdated} />
             ))}
         </View>
     );

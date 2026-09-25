@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -116,6 +116,14 @@ export default function DiaryEntryDetailScreen() {
     ]);
   };
 
+  const handleMenuPress = () => {
+    Alert.alert('Options', '', [
+      { text: 'Edit entry', onPress: handleSave },
+      { text: 'Delete', onPress: handleDelete, style: 'destructive' },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
@@ -137,173 +145,173 @@ export default function DiaryEntryDetailScreen() {
   }
 
   const episodeKey = `S${String(entry.season_number).padStart(2, '0')}E${String(entry.episode_number).padStart(2, '0')}`;
+  const backdropUrl = episodeDetails?.still_path
+    ? `https://image.tmdb.org/t/p/w500${episodeDetails.still_path}`
+    : null;
+
+  function renderStars(rating: number | null | undefined): string {
+    if (!rating || rating <= 0) return '';
+    const starsRating = rating / 2;
+    const clampedRating = Math.min(Math.max(starsRating, 0), 5);
+    const fullStars = Math.floor(clampedRating);
+    const hasHalf = clampedRating % 1 >= 0.5;
+
+    let stars = '★'.repeat(fullStars);
+    if (hasHalf) stars += '☆';
+
+    const emptyCount = Math.max(0, 5 - Math.ceil(starsRating));
+    stars += '☆'.repeat(emptyCount);
+
+    return stars;
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top', "bottom"]}>
-        <ThemedView style={styles.container}>
-            {/* Header */}
-            <View style={[styles.header, { borderBottomColor: theme.border }]}>
-                <ThemedText type="title" style={{ fontSize: 20, marginBottom: Spacing.xs }}>
-                    {entry.show_name}
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+      <ThemedView style={styles.container}>
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <ThemedText style={{ fontSize: 20, fontWeight: '600' }}>‹</ThemedText>
+          </TouchableOpacity>
+          <ThemedText type="subtitle" style={{ fontSize: 16, fontWeight: '600', flex: 1, marginLeft: Spacing.md }}>
+            Diary
+          </ThemedText>
+          <Pressable onPress={handleMenuPress}>
+            <ThemedText style={{ fontSize: 18 }}>⋮</ThemedText>
+          </Pressable>
+        </View>
+
+        {/* Content */}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Backdrop Image */}
+          <View style={styles.backdropContainer}>
+            {backdropUrl ? (
+              <Image
+                source={{ uri: backdropUrl }}
+                style={styles.backdrop}
+              />
+            ) : (
+              <ThemedView type="backgroundSelected" style={styles.backdrop}>
+                <ThemedText themeColor="textSecondary">No image</ThemedText>
+              </ThemedView>
+            )}
+          </View>
+
+          {/* Episode Info */}
+          <View style={styles.infoSection}>
+            <ThemedText type="subtitle" style={[styles.showName, { color: theme.text }]}>
+              {entry.show_name}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.episodeKey}>
+              {episodeKey} · {entry.episode_name || `Episode ${entry.episode_number}`}
+            </ThemedText>
+
+            {/* Rating */}
+            <View style={styles.ratingSection}>
+              <ThemedText style={[styles.stars, { color: theme.accent }]}>
+                {renderStars(Number(rating))}
+              </ThemedText>
+              {rating && (
+                <ThemedText style={[styles.ratingNumber, { color: theme.text }]}>
+                  {rating} / 10
                 </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
-                    {episodeKey}
-                    {entry.episode_name && ` • ${entry.episode_name}`}
-                </ThemedText>
+              )}
             </View>
+          </View>
 
-            {/* Content */}
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                
-                {/* Episode Image */}
-                {episodeDetails?.still_path && (
-                    <View>
-                        <Image
-                            source={{ uri: `https://image.tmdb.org/t/p/w500${episodeDetails.still_path}` }}
-                            style={{ width: '100%', height: 200, borderRadius: 8 }}
-                        /> 
-                    </View>
-                )}
+          {/* Divider */}
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-                {/* Episode Details */}
-                {episodeDetails && <EpisodeDetails episode={episodeDetails} />}
+          {/* Watched Date Section */}
+          <View style={styles.section}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+              WATCHED
+            </ThemedText>
+            <TextInput
+              value={watchedDate}
+              onChangeText={setWatchedDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={theme.textSecondary}
+              style={[
+                styles.input,
+                {
+                  borderColor: theme.border,
+                  color: theme.text,
+                  backgroundColor: 'transparent',
+                },
+              ]}
+              editable={!saving}
+            />
+          </View>
 
-                {/* Watched Date */}
-                <View style={[styles.section, styles.detailsSubsection]}>
-                    <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
-                    WATCHED DATE
-                    </ThemedText>
-                    <TextInput
-                        value={watchedDate}
-                        onChangeText={setWatchedDate}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor={theme.textSecondary}
-                        style={[
-                            styles.dateInput,
-                            {
-                            borderColor: theme.border,
-                            color: theme.text,
-                            backgroundColor: theme.backgroundElement,
-                            },
-                        ]}
-                        editable={!saving}
-                    />
-                </View>
+          {/* My Thoughts Section */}
+          <View style={styles.section}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+              MY THOUGHTS
+            </ThemedText>
+            <TextInput
+              style={[
+                styles.notesInput,
+                {
+                  borderColor: theme.border,
+                  color: theme.text,
+                  backgroundColor: 'transparent',
+                },
+              ]}
+              placeholder="Write your thoughts about this episode..."
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              value={notes}
+              onChangeText={setNotes}
+              editable={!saving}
+            />
+          </View>
 
-                {/* Rating Input */}
-                <View style={[styles.section, styles.detailsSubsection]}>
-                    <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
-                    RATING
-                    </ThemedText>
-                    <TextInput
-                        style={[styles.ratingInput, {
-                            borderColor: theme.border,
-                            color: theme.text,
-                            backgroundColor: theme.backgroundElement,
-                        }]}
-                        placeholder="Leave empty for no rating"
-                        placeholderTextColor={theme.textSecondary}
-                        keyboardType="decimal-pad"
-                        value={rating}
-                        onChangeText={setRating}
-                        editable={!saving}
-                    />
-                </View>
+          {/* Rating Input (hidden but functional) */}
+          <TextInput
+            style={{ display: 'none' }}
+            placeholder="Leave empty for no rating"
+            placeholderTextColor={theme.textSecondary}
+            keyboardType="decimal-pad"
+            value={rating}
+            onChangeText={setRating}
+            editable={!saving}
+          />
 
-                {/* Notes Input */}
-                {/* <View style={[styles.section, styles.detailsSubsection]}>
-                    <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
-                    NOTES
-                    </ThemedText>
-                    <TextInput
-                        style={[styles.notesInput, { borderColor: theme.border, color: theme.text }]}
-                        placeholder="Add your thoughts about this episode..."
-                        placeholderTextColor={theme.textSecondary}
-                        multiline
-                        value={notes}
-                        onChangeText={setNotes}
-                        editable={!saving}
-                    />
-                </View> */}
+          {/* Edit Button */}
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={saving}
+            style={[
+              styles.editButton,
+              { backgroundColor: theme.accent, opacity: saving ? 0.5 : 1 },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm }}>
+              {saving && <ActivityIndicator color={theme.accentText} size="small" />}
+              <ThemedText type="small" style={{ color: theme.accentText, fontWeight: '600', fontSize: 14 }}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
 
-                {/* Action Buttons */}
-                <View style={styles.actionButtonsContainer}>
-                    <TouchableOpacity
-                        onPress={handleSave}
-                        disabled={saving || !hasChanges}
-                        style={[
-                            styles.saveButton, 
-                            { backgroundColor: theme.accent, opacity: saving || !hasChanges ? 0.5 : 1 },
-                        ]}
-                    >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm }}>
-                        {saving && <ActivityIndicator color={theme.accentText} size="small" />}
-                        <ThemedText type="small" style={{ color: theme.accentText, fontWeight: '600', fontSize: 13 }}>
-                        {saving ? 'Saving...' : 'Save Changes'}
-                        </ThemedText>
-                    </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={handleDelete} disabled={saving} style={[styles.deleteButton, { opacity: saving ? 0.5 : 1 }]}>
-                    <ThemedText type="small" style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>
-                        Delete Entry
-                    </ThemedText>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </ThemedView>
+          {/* Navigation Buttons */}
+          <View style={styles.navigationContainer}>
+            <TouchableOpacity style={[styles.navButton, { borderColor: theme.border }]}>
+              <ThemedText style={{ color: theme.text, fontWeight: '600' }}>
+                ‹ Previous
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.navButton, { borderColor: theme.border }]}>
+              <ThemedText style={{ color: theme.text, fontWeight: '600' }}>
+                Next ›
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </ThemedView>
     </SafeAreaView>
   );
-}
-
-function EpisodeDetails({ episode }: { episode: TMDBEpisode }) {
-    const theme = useTheme();
-    return (
-      <View style={styles.detailsSection}>
-          {episode.overview && (
-          <>
-              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11, marginBottom: Spacing.xs }}>
-              EPISODE SUMMARY
-              </ThemedText>
-              <ThemedText type="small" style={{ fontSize: 13, lineHeight: 18, color: theme.text, marginBottom: Spacing.md }}>
-              {episode.overview}
-              </ThemedText>
-          </>
-          )}
-          <View style={{ flexDirection: 'row', gap: Spacing.md, flexWrap: 'wrap' }}>
-          {episode.air_date && (
-              <View>
-              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
-                  AIR DATE
-              </ThemedText>
-              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
-                  {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </ThemedText>
-              </View>
-          )}
-          {episode.runtime && (
-              <View>
-              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
-                  RUNTIME
-              </ThemedText>
-              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
-                  {episode.runtime}m
-              </ThemedText>
-              </View>
-          )}
-          {episode.vote_average > 0 && (
-              <View>
-              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }}>
-                  RATING
-              </ThemedText>
-              <ThemedText type="small" style={{ fontSize: 12, marginTop: Spacing.xs }}>
-                  ★ {(episode.vote_average / 2).toFixed(1)}
-              </ThemedText>
-              </View>
-          )}
-          </View>
-      </View>
-    );
 }
 
 const styles = StyleSheet.create({
@@ -311,63 +319,101 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
-  section: {
+  backdropContainer: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
     marginBottom: Spacing.md,
   },
-  dateInput: {
-    borderWidth: 1,
-    borderRadius: 6,
+  backdrop: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+  },
+  infoSection: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  showName: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  episodeKey: {
     fontSize: 13,
-    fontFamily: 'monospace',
+    fontWeight: '500',
   },
-  saveButton: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: 6,
+  ratingSection: {
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  deleteButton: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: 6,
-    alignItems: 'center',
-    backgroundColor: '#EF4444',
+  stars: {
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 4,
   },
-  detailsSection: {
-    padding: Spacing.md,
+  ratingNumber: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  detailsSubsection: {
+  divider: {
+    height: 1,
+    marginHorizontal: Spacing.md,
+    marginVertical: Spacing.md,
+  },
+  section: {
     paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.lg,
   },
-  ratingInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: Spacing.md,
-    fontSize: 16,
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+  },
+  input: {
+    borderBottomWidth: 1,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: 0,
+    fontSize: 14,
   },
   notesInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: Spacing.md,
+    borderBottomWidth: 1,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: 0,
     fontSize: 14,
-    minHeight: 100,
+    minHeight: 80,
     textAlignVertical: 'top',
   },
-  actionButtonsContainer: {
-    flexDirection: 'column',
-    gap: Spacing.sm,
-    margin: Spacing.md,
+  editButton: {
+    marginHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  navigationContainer: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  navButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
