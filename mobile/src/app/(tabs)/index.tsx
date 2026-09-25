@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-
+import { Ionicons } from '@expo/vector-icons';
 import { PosterRail } from '@/components/show/poster-rail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -95,35 +95,26 @@ export default function HomeScreen() {
       style={[styles.scrollView, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.scrollContent}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.header}>
-          <ThemedText type="title" themeColor="textSecondary">
-            Pilot 2 Finale
-          </ThemedText>
-          <ThemedText type="title" style={styles.title}>
-            Find the next show for your watchlist.
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Search TV series, compare the basics, and start building your tracker.
-          </ThemedText>
-        </ThemedView>
+        <ThemedText type="title">
+          Discover
+        </ThemedText>
 
-        <ThemedView style={styles.searchCard}> 
-          <TextInput
-            value={query}
-            onChangeText={handleQueryChange}
-            placeholder="Search TV shows"
-            placeholderTextColor={theme.textSecondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            style={[styles.searchInput, { color: theme.text, borderColor: theme.border }]}
-          />
-
-          {query.trim().length < 2 ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              Type at least 2 characters to search for a show.
-            </ThemedText>
-          ) : null}
+        <ThemedView style={[styles.searchCard, { borderColor: theme.border, backgroundColor: theme.surfaceBackground }]}> 
+          <View style={styles.searchInputContainer}>
+            <View style={styles.iconWrapper}>
+              <Ionicons name="search" size={20} color={theme.textSecondary} />
+            </View>
+            <TextInput
+              value={query}
+              onChangeText={handleQueryChange}
+              placeholder="Search shows"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              style={[styles.searchInput, { color: theme.text }]}
+            />
+          </View>
 
           {searchStatus === 'loading' ? (
             <ThemedView style={styles.inlineStatus}>
@@ -150,7 +141,7 @@ export default function HomeScreen() {
         {searchResults.length > 0 ? (
           <PosterRail
             title="Search Results"
-            icon={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+            icon="magnifyingglass"
             shows={searchResults}
             onShowPress={openShow}
           />
@@ -158,7 +149,7 @@ export default function HomeScreen() {
 
         <ThemedView style={styles.suggestions}>
           {suggestionsStatus === 'loading' ? (
-            <ThemedView style={styles.emptyCard}> 
+            <ThemedView style={[styles.emptyCard, { borderColor: theme.border }]}> 
               <ActivityIndicator color={theme.accent} />
               <ThemedText type="small" themeColor="textSecondary">
                 Loading suggestions...
@@ -167,7 +158,7 @@ export default function HomeScreen() {
           ) : null}
 
           {suggestionsStatus === 'error' ? (
-            <ThemedView style={styles.emptyCard}> 
+            <ThemedView style={[styles.emptyCard, { borderColor: theme.border }]}> 
               <ThemedText type="subtitle">Start with a title</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 Suggestions are unavailable right now, but search is ready when you know what to watch next.
@@ -177,18 +168,49 @@ export default function HomeScreen() {
 
           {suggestionsStatus === 'success' ? (
             <>
-              <PosterRail
-                title="Trending This Week"
-                icon={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' }}
-                shows={trendingShows}
-                onShowPress={openShow}
-              />
-              <PosterRail
-                title="Top Rated"
-                icon={{ ios: 'star.fill', android: 'star', web: 'star' }}
-                shows={topRatedShows}
-                onShowPress={openShow}
-              />
+              <View style={styles.sectionHeader}>
+                <ThemedText type="subtitle">Trending Now</ThemedText>
+                <Pressable onPress={() => {}}>
+                  <ThemedText type="small" themeColor="accent">See All</ThemedText>
+                </Pressable>
+              </View>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.posterRow}
+              >
+                {trendingShows.slice(0, 10).map((show) => (
+                  <Pressable 
+                    key={show.id} 
+                    onPress={() => openShow(show)}
+                    style={styles.posterItem}
+                  >
+                    <ShowCard show={show} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              <View style={styles.sectionHeader}>
+                <ThemedText type="subtitle">Top Rated</ThemedText>
+                <Pressable onPress={() => {}}>
+                  <ThemedText type="small" themeColor="accent">See All</ThemedText>
+                </Pressable>
+              </View>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.posterRow}
+              >
+                {topRatedShows.slice(0, 10).map((show) => (
+                  <Pressable 
+                    key={show.id} 
+                    onPress={() => openShow(show)}
+                    style={styles.posterItem}
+                  >
+                    <ShowCard show={show} />
+                  </Pressable>
+                ))}
+              </ScrollView>
             </>
           ) : null}
         </ThemedView>
@@ -211,41 +233,52 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
     gap: Spacing.four,
-    paddingTop: Spacing.five,
+    paddingTop: Spacing.three,
     paddingBottom: Spacing.two,
   },
   header: {
+    alignSelf: 'stretch',
     gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
   },
   title: {
-    maxWidth: 360,
-  },
-  subtitle: {
-    maxWidth: 420,
-    lineHeight: 22,
+    fontWeight: 'bold',
   },
   searchCard: {
     alignSelf: 'stretch',
-    gap: Spacing.three,
-    paddingTop: Spacing.two,
-    borderRadius: Spacing.four,
-    borderWidth: 1,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
+    gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  searchIcon: {
+    marginRight: Spacing.one,
+  },
+  iconWrapper: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: Spacing.two,
     fontSize: 16,
+  },
+  searchHint: {
+    marginTop: Spacing.one,
   },
   inlineStatus: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-  },
-  resultsList: {
-    alignSelf: 'stretch',
-    gap: Spacing.three,
   },
   suggestions: {
     alignSelf: 'stretch',
@@ -257,5 +290,18 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Spacing.four,
     borderWidth: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  posterRow: {
+    marginHorizontal: -Spacing.four,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.two,
+  },
+  posterItem: {
+    marginRight: Spacing.three,
   },
 });

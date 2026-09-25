@@ -128,6 +128,8 @@ Tasks:
 - [x] Extract TMDB image/date helpers into reusable utilities.
 - [x] Add show detail navigation from search results.
 - [x] Add show detail navigation from trending and top-rated results.
+- [x] Redesign search bar and remove landing page text.
+- [ ] Add see all navigation from trending and top-rated results.
 - [ ] Add empty state for searches that return zero results.
 - [ ] Add retry action for failed search requests.
 - [ ] Add pull-to-refresh or manual refresh for suggestion rails.
