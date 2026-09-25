@@ -5,6 +5,7 @@ import { AuthProvider } from '@/components/auth/auth-provider';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>

@@ -42,28 +42,35 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: 'Montserrat',
+    serif: 'Montserrat',
+    rounded: 'Montserrat',
+    mono: 'Montserrat',
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  android: {
+    sans: 'Montserrat',
+    serif: 'Montserrat',
+    rounded: 'Montserrat',
+    mono: 'Montserrat',
   },
   web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+    sans: 'Montserrat, sans-serif',
+    serif: 'Montserrat, sans-serif',
+    rounded: 'Montserrat, sans-serif',
+    mono: 'Montserrat, monospace',
   },
-});
+  default: {
+    sans: 'Montserrat',
+    serif: 'Montserrat',
+    rounded: 'Montserrat',
+    mono: 'Montserrat',
+  },
+}) as {
+  sans: string;
+  serif: string;
+  rounded: string;
+  mono: string;
+};
 
 export const Spacing = {
   xs: 4,
