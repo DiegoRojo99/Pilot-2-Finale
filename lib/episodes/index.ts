@@ -11,6 +11,7 @@ export {
   userHasShowInList,
   deleteEpisodeLogsForShowSeasonEpisode,
   fetchEpisodeLogsForShowSeasonEpisode,
+  findNextUnwatchedEpisode,
 } from './logs';
 
 export { 

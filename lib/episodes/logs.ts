@@ -475,3 +475,54 @@ export async function deleteEpisodeLogsForShowSeasonEpisode(
 
   return deleted.count;
 }
+
+/**
+ * Find the next unwatched episode for a user in a show
+ * Returns the episode ID of the first unwatched episode in chronological order,
+ * or null if all episodes are watched or no episodes exist
+ */
+export async function findNextUnwatchedEpisode(
+  userId: string,
+  tmdbShowId: number,
+): Promise<number | null> {
+  // Get all watched episode IDs for this user in this show
+  const watchedEntries = await prisma.watchEntry.findMany({
+    where: {
+      userId,
+      episode: {
+        tmdbShowId,
+      },
+    },
+    select: {
+      episodeId: true,
+    },
+  });
+
+  const watchedEpisodeIds = new Set(watchedEntries.map((e) => e.episodeId));
+
+  // Get all episodes for this show, ordered chronologically
+  const episodes = await prisma.episode.findMany({
+    where: {
+      tmdbShowId,
+    },
+    select: {
+      id: true,
+      seasonNumber: true,
+      episodeNumber: true,
+    },
+    orderBy: [
+      { seasonNumber: "asc" },
+      { episodeNumber: "asc" },
+    ],
+  });
+
+  // Find the first unwatched episode
+  for (const episode of episodes) {
+    if (!watchedEpisodeIds.has(episode.id)) {
+      return episode.id;
+    }
+  }
+
+  // All episodes are watched
+  return null;
+}

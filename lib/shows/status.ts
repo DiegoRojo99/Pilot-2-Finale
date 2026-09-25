@@ -1,5 +1,6 @@
 import type { ShowStatus } from "@/types";
 import { prisma } from "@/lib/core";
+import { findNextUnwatchedEpisode } from "@/lib/episodes";
 
 type ProgressSnapshot = {
   totalEpisodes: number;
@@ -140,4 +141,22 @@ export async function reconcileUserShowStatus(userId: string, tmdbShowId: number
       },
     });
   }
+}
+
+/**
+ * Updates the nextEpisodeToWatchId for a user show
+ * Finds the first unwatched episode and stores its ID for quick retrieval
+ */
+export async function updateNextEpisodeToWatch(userId: string, tmdbShowId: number) {
+  const nextEpisodeId = await findNextUnwatchedEpisode(userId, tmdbShowId);
+  await prisma.userShow.updateMany({
+    where: {
+      userId,
+      tmdbId: tmdbShowId,
+    },
+    data: {
+      nextEpisodeToWatchId: nextEpisodeId,
+      updatedAt: new Date(),
+    },
+  });
 }
