@@ -37,23 +37,21 @@ function renderStars(rating: number | null | undefined): string {
 export default function DiaryDayEntry({ group, deletingLogId, onEdit, onDelete }: DiaryDayEntryProps) {
   return (
     <>
-      {/* Date Separator */}
-      <div className="pt-4 px-4 sm:px-5">
+        {/* Date Separator */}
         <h3 className="text-base font-bold text-slate-100">{group.label}</h3>
-      </div>
 
-      {/* Entries */}
-      <div className="space-y-2 px-4 sm:px-5">
-        {group.logs.map((log) => (
-          <DiaryEntryCard
-            key={log.id}
-            log={log}
-            isDeleting={deletingLogId === log.id}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
+        {/* Entries */}
+        <div className="space-y-2 pb-4">
+            {group.logs.map((log) => (
+                <DiaryEntryCard
+                    key={log.id}
+                    log={log}
+                    isDeleting={deletingLogId === log.id}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                />
+            ))}
+        </div>
     </>
   );
 }

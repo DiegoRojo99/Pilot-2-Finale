@@ -85,7 +85,7 @@ export default function HistoryPage() {
       {isLoading && <PageLoader />}
       {error && <ErrorMessage message="Failed to load history" onRetry={() => void refetch()} />}
       {data && (
-        <div className="space-y-4">
+        <>
           {data.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-800/40 px-4 py-16 text-slate-500">
               <CheckSquare className="h-12 w-12 opacity-30" />
@@ -115,7 +115,7 @@ export default function HistoryPage() {
               ))}
             </div>
           )}
-        </div>
+        </>
       )}
 
       <EpisodeDiaryModal
