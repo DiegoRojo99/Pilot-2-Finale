@@ -44,13 +44,16 @@ model UserShow {
   remainingEpisodesCount Int        @default(0) @map("remaining_episodes_count")
   watchedRuntimeMinutes  Int        @default(0) @map("watched_runtime_minutes")
   remainingRuntimeMinutes Int       @default(0) @map("remaining_runtime_minutes")
+  nextEpisodeToWatchId   Int?       @map("next_episode_to_watch_id")
   addedAt                DateTime   @default(now()) @map("added_at") @db.Timestamptz(6)
   updatedAt              DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
   show                   Show       @relation(fields: [tmdbId], references: [tmdbId], onDelete: Restrict)
+  nextEpisodeToWatch     Episode?   @relation(fields: [nextEpisodeToWatchId], references: [id], onDelete: SetNull)
 
   @@unique([userId, tmdbId], map: "idx_user_shows_user_tmdb_unique")
   @@index([userId, status], map: "idx_user_shows_user_status")
   @@index([status], map: "idx_user_shows_status")
+  @@index([nextEpisodeToWatchId], map: "idx_user_shows_next_episode")
   @@map("user_shows")
 }
 
@@ -70,6 +73,7 @@ model Episode {
   updatedAt    DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
   show         Show         @relation(fields: [tmdbShowId], references: [tmdbId], onDelete: Cascade)
   watchEntries WatchEntry[]
+  userShowsNextEpisode UserShow[]
 
   @@unique([tmdbShowId, seasonNumber, episodeNumber], map: "uq_episodes_show_season_episode")
   @@index([tmdbShowId, seasonNumber, episodeNumber], map: "idx_episodes_show_season_episode")

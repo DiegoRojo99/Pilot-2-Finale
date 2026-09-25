@@ -1,15 +1,5 @@
-ALTER TABLE shows ADD COLUMN IF NOT EXISTS total_runtime_minutes INTEGER NOT NULL DEFAULT 0;
-UPDATE shows SET total_runtime_minutes = COALESCE(total_runtime_minutes, 0);
-
-ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS watched_episodes_count INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS remaining_episodes_count INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS watched_runtime_minutes INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE user_shows ADD COLUMN IF NOT EXISTS remaining_runtime_minutes INTEGER NOT NULL DEFAULT 0;
-
-UPDATE user_shows SET watched_episodes_count = COALESCE(watched_episodes_count, 0);
-UPDATE user_shows SET remaining_episodes_count = COALESCE(remaining_episodes_count, 0);
-UPDATE user_shows SET watched_runtime_minutes = COALESCE(watched_runtime_minutes, 0);
-UPDATE user_shows SET remaining_runtime_minutes = COALESCE(remaining_runtime_minutes, 0);
+-- The shows table columns were already added in the baseline migration
+-- Just ensure the genres and show_genres tables exist
 
 CREATE TABLE IF NOT EXISTS genres (
   id INTEGER PRIMARY KEY,
