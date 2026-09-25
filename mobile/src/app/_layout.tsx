@@ -12,6 +12,22 @@ export default function TabLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
+            name="discover/trending-all"
+            options={{
+              headerShown: true,
+              headerTitle: 'Trending Now',
+              headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+            }}
+          />
+          <Stack.Screen
+            name="discover/top-rated-all"
+            options={{
+              headerShown: true,
+              headerTitle: 'Top Rated',
+              headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+            }}
+          />
+          <Stack.Screen
             name="show/[id]"
             options={{
               headerShown: true,

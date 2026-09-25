@@ -94,7 +94,7 @@ export default function HomeScreen() {
     <ScrollView
       style={[styles.scrollView, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.scrollContent}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ThemedText type="title">
           Discover
         </ThemedText>
@@ -170,7 +170,7 @@ export default function HomeScreen() {
             <>
               <View style={styles.sectionHeader}>
                 <ThemedText type="subtitle">Trending Now</ThemedText>
-                <Pressable onPress={() => {}}>
+                <Pressable onPress={() => router.push('/discover/trending-all')}>
                   <ThemedText type="small" themeColor="accent">See All</ThemedText>
                 </Pressable>
               </View>
@@ -188,7 +188,7 @@ export default function HomeScreen() {
 
               <View style={styles.sectionHeader}>
                 <ThemedText type="subtitle">Top Rated</ThemedText>
-                <Pressable onPress={() => {}}>
+                <Pressable onPress={() => router.push('/discover/top-rated-all')}>
                   <ThemedText type="small" themeColor="accent">See All</ThemedText>
                 </Pressable>
               </View>
