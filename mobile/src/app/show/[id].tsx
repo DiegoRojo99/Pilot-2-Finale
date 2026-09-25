@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import Slider from '@react-native-community/slider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -290,7 +291,7 @@ export default function ShowDetailScreen() {
   const [isDiaryModalOpen, setIsDiaryModalOpen] = useState(false);
   const [selectedEpisodeForDiary, setSelectedEpisodeForDiary] = useState<TMDBEpisode | null>(null);
   const [diaryDate, setDiaryDate] = useState(''); // Format: 'YYYY-MM-DD'
-  const [diaryRating, setDiaryRating] = useState('');
+  const [diaryRating, setDiaryRating] = useState<number>(0);
   const [isDiarySaving, setIsDiarySaving] = useState(false);
   const [bulkMarkConfirm, setBulkMarkConfirm] = useState<{ seasonNumber: number; count: number; seasonData?: TMDBSeason } | null>(null);
   const [isBulkMarking, setIsBulkMarking] = useState(false);
@@ -381,7 +382,7 @@ export default function ShowDetailScreen() {
     if (isCurrentlyWatched || isLoadingSeasonForBulk || isBulkMarking || isMarkingPrevious) {
       setSelectedEpisodeForDiary(episode);
       setDiaryDate(new Date().toISOString().split('T')[0]);
-      setDiaryRating('');
+      setDiaryRating(0);
       setIsDiaryModalOpen(true);
       return;
     }
@@ -417,7 +418,7 @@ export default function ShowDetailScreen() {
     // No previous unwatched episodes, just open diary modal
     setSelectedEpisodeForDiary(episode);
     setDiaryDate(new Date().toISOString().split('T')[0]);
-    setDiaryRating('');
+    setDiaryRating(0);
     setIsDiaryModalOpen(true);
   };
 
@@ -445,7 +446,6 @@ export default function ShowDetailScreen() {
     }
     // Add to watched
     else {
-      const parsedRating = diaryRating.trim() === '' ? null : Number(diaryRating);
       const watchedAt = diaryDate ? new Date(diaryDate).toISOString() : new Date().toISOString();
       const newLog: EpisodeLog = {
         id: Date.now(),
@@ -456,7 +456,7 @@ export default function ShowDetailScreen() {
         watched_at: watchedAt,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        rating: parsedRating,
+        rating: diaryRating > 0 ? diaryRating : null,
         notes: null,
       };
       setEpisodeLogs((prev) => [...prev, newLog]);
@@ -464,7 +464,6 @@ export default function ShowDetailScreen() {
     
     setIsDiarySaving(true);
     try {
-      const parsedRating = diaryRating.trim() === '' ? undefined : Number(diaryRating);
       const watchedAt = isCurrentlyWatched ? null : (diaryDate ? new Date(diaryDate).toISOString() : new Date().toISOString());
       
       await logEpisode({
@@ -474,7 +473,7 @@ export default function ShowDetailScreen() {
         episode_number: selectedEpisodeForDiary.episode_number,
         episode_name: selectedEpisodeForDiary.name,
         watched_at: watchedAt,
-        rating: parsedRating,
+        rating: diaryRating > 0 ? diaryRating : undefined,
       });
       
       setIsDiaryModalOpen(false);
@@ -593,7 +592,7 @@ export default function ShowDetailScreen() {
         runtime: 0,
       } as TMDBEpisode);
       setDiaryDate(new Date().toISOString().split('T')[0]);
-      setDiaryRating('');
+      setDiaryRating(0);
       setIsDiaryModalOpen(true);
     } catch (error) {
       console.error('Error marking previous episodes:', error);
@@ -622,7 +621,7 @@ export default function ShowDetailScreen() {
       runtime: 0,
     } as TMDBEpisode);
     setDiaryDate(new Date().toISOString().split('T')[0]);
-    setDiaryRating('');
+    setDiaryRating(0);
     setIsDiaryModalOpen(true);
   };
 
@@ -890,34 +889,22 @@ export default function ShowDetailScreen() {
 
               <View>
                 <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Rating 0-10 (optional)</ThemedText>
-                <View 
-                  style={[
-                    styles.modalInput,
-                    { 
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                      paddingHorizontal: Spacing.two,
-                    }
-                  ]}
-                >
-                  <TextInput
-                    style={[
-                      styles.ratingInput,
-                      { color: theme.text }
-                    ]}
-                    placeholder="0-10"
-                    placeholderTextColor={theme.textSecondary}
+                <View style={{ gap: Spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                    <ThemedText type="small" style={{ fontSize: 14, fontWeight: '600' }}>
+                      {diaryRating > 0 ? diaryRating.toFixed(1) : '0.0'} / 10
+                    </ThemedText>
+                  </View>
+                  <Slider
+                    style={{ width: '100%', height: 40 }}
+                    minimumValue={0}
+                    maximumValue={10}
                     value={diaryRating}
-                    onChangeText={(text) => {
-                      if (text === '') setDiaryRating('');
-                      else {
-                        const num = Number(text);
-                        if (isNaN(num) || num < 0 || num > 10) return;
-                        setDiaryRating(text);
-                      }
-                    }}
-                    keyboardType="decimal-pad"
-                    maxLength={4}
+                    onValueChange={setDiaryRating}
+                    step={0.1}
+                    minimumTrackTintColor={theme.accent}
+                    maximumTrackTintColor={theme.border}
+                    thumbTintColor={theme.accent}
                   />
                 </View>
               </View>
@@ -930,7 +917,7 @@ export default function ShowDetailScreen() {
                   setIsDiaryModalOpen(false);
                   setSelectedEpisodeForDiary(null);
                   setDiaryDate(new Date().toISOString().split('T')[0]);
-                  setDiaryRating('');
+                  setDiaryRating(0);
                 }}
                 disabled={isDiarySaving}
               >

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Slider from '@react-native-community/slider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -21,10 +22,12 @@ export default function DiaryEntryDetailScreen() {
   const [episodeDetails, setEpisodeDetails] = useState<TMDBEpisode | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [rating, setRating] = useState<string>('');
+  const [rating, setRating] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
   const [watchedDate, setWatchedDate] = useState<string>('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [previousEntry, setPreviousEntry] = useState<EpisodeLog | null>(null);
+  const [nextEntry, setNextEntry] = useState<EpisodeLog | null>(null);
 
   useEffect(() => {
     const fetchEntry = async () => {
@@ -35,7 +38,10 @@ export default function DiaryEntryDetailScreen() {
         const found = logs.find((log) => log.id === entryId);
         if (found) {
           setEntry(found);
-          setRating(found.rating?.toString() ?? '');
+          const currentIndex = logs.findIndex((log) => log.id === entryId);
+          if (currentIndex > 0) setPreviousEntry(logs[currentIndex - 1]);
+          if (currentIndex < logs.length - 1) setNextEntry(logs[currentIndex + 1]);
+          setRating(found.rating ?? 0);
           setNotes(found.notes ?? '');
           setWatchedDate(found.watched_at ? found.watched_at.split('T')[0] : new Date().toISOString().split('T')[0]);
 
@@ -61,7 +67,7 @@ export default function DiaryEntryDetailScreen() {
 
   useEffect(() => {
     if (!entry) return;
-    const ratingChanged = (entry.rating?.toString() ?? '') !== rating;
+    const ratingChanged = (entry.rating ?? 0) !== rating;
     const notesChanged = (entry.notes ?? '') !== notes;
     const dateChanged = (entry.watched_at?.split('T')[0] ?? new Date().toISOString().split('T')[0]) !== watchedDate;
     setHasChanges(ratingChanged || notesChanged || dateChanged);
@@ -70,8 +76,7 @@ export default function DiaryEntryDetailScreen() {
   const handleSave = async () => {
     if (!entry) return;
 
-    const ratingNum = rating ? Number(rating) : null;
-    if (rating && (!ratingNum || ratingNum < 0 || ratingNum > 10 || !Number.isFinite(ratingNum))) {
+    if (rating && (rating < 0 || rating > 10 || !Number.isFinite(rating))) {
       Alert.alert('Invalid Rating', 'Rating must be between 0 and 10');
       return;
     }
@@ -79,7 +84,7 @@ export default function DiaryEntryDetailScreen() {
     setSaving(true);
     try {
       await updateEpisodeLog(entry.id, {
-        rating: ratingNum,
+        rating: rating > 0 ? rating : null,
         notes: notes || undefined,
         watched_at: watchedDate ? `${watchedDate}T00:00:00.000Z` : null,
       });
@@ -165,6 +170,16 @@ export default function DiaryEntryDetailScreen() {
     return stars;
   }
 
+  function goToPreviousEntry() {
+    if (!previousEntry) return;
+    router.push(`/diary/${previousEntry.id}`);
+  }
+
+  function goToNextEntry() {
+    if (!nextEntry) return;
+    router.push(`/diary/${nextEntry.id}`);
+  }
+
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
       <ThemedView style={styles.container}>
@@ -208,14 +223,25 @@ export default function DiaryEntryDetailScreen() {
 
             {/* Rating */}
             <View style={styles.ratingSection}>
-              <ThemedText style={[styles.stars, { color: theme.accent }]}>
-                {renderStars(Number(rating))}
-              </ThemedText>
-              {rating && (
-                <ThemedText style={[styles.ratingNumber, { color: theme.text }]}>
-                  {rating} / 10
+              <View style={styles.ratingDisplay}>
+                <ThemedText style={[styles.stars, { color: theme.accent }]}>
+                  {renderStars(rating)}
                 </ThemedText>
-              )}
+                <ThemedText style={[styles.ratingNumber, { color: theme.text }]}>
+                  {rating ? rating.toFixed(1) : '0.0'} / 10
+                </ThemedText>
+              </View>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={10}
+                value={rating}
+                onValueChange={setRating}
+                step={0.1}
+                minimumTrackTintColor={theme.accent}
+                maximumTrackTintColor={theme.border}
+                thumbTintColor={theme.accent}
+              />
             </View>
           </View>
 
@@ -267,21 +293,10 @@ export default function DiaryEntryDetailScreen() {
             />
           </View>
 
-          {/* Rating Input (hidden but functional) */}
-          <TextInput
-            style={{ display: 'none' }}
-            placeholder="Leave empty for no rating"
-            placeholderTextColor={theme.textSecondary}
-            keyboardType="decimal-pad"
-            value={rating}
-            onChangeText={setRating}
-            editable={!saving}
-          />
-
           {/* Edit Button */}
           <TouchableOpacity
             onPress={handleSave}
-            disabled={saving}
+            disabled={saving || !hasChanges}
             style={[
               styles.editButton,
               { backgroundColor: theme.accent, opacity: saving ? 0.5 : 1 },
@@ -297,12 +312,20 @@ export default function DiaryEntryDetailScreen() {
 
           {/* Navigation Buttons */}
           <View style={styles.navigationContainer}>
-            <TouchableOpacity style={[styles.navButton, { borderColor: theme.border }]}>
+            <TouchableOpacity
+              style={[styles.navButton, { borderColor: theme.border }, !previousEntry && { opacity: 0.5 }]}
+              disabled={!previousEntry}
+              onPress={goToPreviousEntry}
+            >
               <ThemedText style={{ color: theme.text, fontWeight: '600' }}>
                 ‹ Previous
               </ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.navButton, { borderColor: theme.border }]}>
+            <TouchableOpacity
+              style={[styles.navButton, { borderColor: theme.border }, !nextEntry && { opacity: 0.5 }]}
+              disabled={!nextEntry}
+              onPress={goToNextEntry}
+            >
               <ThemedText style={{ color: theme.text, fontWeight: '600' }}>
                 Next ›
               </ThemedText>
@@ -353,9 +376,12 @@ const styles = StyleSheet.create({
   },
   ratingSection: {
     marginTop: Spacing.sm,
-    gap: Spacing.xs,
+    gap: Spacing.md,
+  },
+  ratingDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.md,
   },
   stars: {
     fontSize: 18,
@@ -365,6 +391,10 @@ const styles = StyleSheet.create({
   ratingNumber: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  slider: {
+    width: '100%',
+    height: 40,
   },
   divider: {
     height: 1,
