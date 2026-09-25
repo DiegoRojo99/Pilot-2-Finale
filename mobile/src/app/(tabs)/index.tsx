@@ -117,7 +117,7 @@ export default function HomeScreen() {
           </View>
 
           {searchStatus === 'loading' ? (
-            <ThemedView style={styles.inlineStatus}>
+            <ThemedView style={[styles.inlineStatus, { backgroundColor: theme.surfaceBackground}]}>
               <ActivityIndicator color={theme.accent} />
               <ThemedText type="small" themeColor="textSecondary">
                 Searching...
@@ -180,13 +180,9 @@ export default function HomeScreen() {
                 style={styles.posterRow}
               >
                 {trendingShows.slice(0, 10).map((show) => (
-                  <Pressable 
-                    key={show.id} 
-                    onPress={() => openShow(show)}
-                    style={styles.posterItem}
-                  >
-                    <ShowCard show={show} />
-                  </Pressable>
+                  <View key={show.id} style={styles.posterItem}>
+                    <ShowCard show={show} onShowPress={openShow} />
+                  </View>
                 ))}
               </ScrollView>
 
@@ -202,13 +198,9 @@ export default function HomeScreen() {
                 style={styles.posterRow}
               >
                 {topRatedShows.slice(0, 10).map((show) => (
-                  <Pressable 
-                    key={show.id} 
-                    onPress={() => openShow(show)}
-                    style={styles.posterItem}
-                  >
-                    <ShowCard show={show} />
-                  </Pressable>
+                  <View key={show.id} style={styles.posterItem}>
+                    <ShowCard show={show} onShowPress={openShow} />
+                  </View>
                 ))}
               </ScrollView>
             </>
