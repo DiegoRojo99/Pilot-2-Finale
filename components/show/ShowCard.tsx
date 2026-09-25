@@ -26,6 +26,7 @@ export function UserShowCard({ show }: UserShowCardProps) {
     ? `S${String(nextEpisode.season_number).padStart(2, "0")} E${String(nextEpisode.episode_number).padStart(2, "0")}`
     : null;
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
+  const remainingAfterNext = Math.max(show.remaining_episodes_count - 1, 0);
   const primaryStatusLabel = nextEpisodeLabel ?? "Completed";
   const secondaryStatusLabel = nextEpisodeName ?? (isCompleted ? "All episodes watched" : "Start watching");
 
@@ -85,6 +86,9 @@ export function UserShowCard({ show }: UserShowCardProps) {
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-blue-400">
                 {primaryStatusLabel}
+                {nextEpisode && remainingAfterNext > 0 ? (
+                  <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNext}</span>
+                ) : null}
               </p>
               <p className="mt-1 truncate text-xs text-slate-400">{secondaryStatusLabel}</p>
             </div>

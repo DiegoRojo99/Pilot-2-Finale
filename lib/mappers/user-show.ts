@@ -38,6 +38,7 @@ export function mapUserShow(
     vote_average: row.show.voteAverage,
     number_of_seasons: row.show.numberOfSeasons,
     number_of_episodes: row.show.numberOfEpisodes,
+    remaining_episodes_count: row.remainingEpisodesCount,
     added_at: row.addedAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     next_episode: nextEpisode,

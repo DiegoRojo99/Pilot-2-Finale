@@ -21,6 +21,7 @@ function getNextEpisodeSummary(show: UserShow) {
     ? `S${String(nextEpisode.season_number).padStart(2, '0')} E${String(nextEpisode.episode_number).padStart(2, '0')}`
     : null;
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
+  const remainingAfterNext = Math.max((show.remaining_episodes_count ?? 0) - 1, 0);
 
   if (!nextEpisode && !isCompleted) {
     // Show is in progress but we don't have next episode data yet
@@ -35,7 +36,7 @@ function getNextEpisodeSummary(show: UserShow) {
   return {
     primary: nextEpisodeLabel ?? 'Completed',
     secondary: nextEpisodeName ?? (isCompleted ? 'All episodes watched' : 'Start watching'),
-    extra: null,
+    extra: nextEpisode && remainingAfterNext > 0 ? `+${remainingAfterNext}` : null,
     isLoading: false,
   };
 }

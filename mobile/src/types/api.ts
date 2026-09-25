@@ -52,6 +52,7 @@ export type UserShow = {
   vote_average: number;
   number_of_seasons: number;
   number_of_episodes: number;
+  remaining_episodes_count: number;
   added_at: string;
   updated_at: string;
   next_episode?: ShowNextEpisode | null;
