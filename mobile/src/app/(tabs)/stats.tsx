@@ -15,6 +15,7 @@ import {
   TimeSpentSection,
   PendingSection,
   FooterNoteSection,
+  EpisodesTrendSection,
 } from '@/components/stats/sections';
 
 function AuthenticatedStats() {
@@ -69,6 +70,7 @@ function AuthenticatedStats() {
       contentContainerStyle={styles.content}
     >
       <OverviewStatsSection stats={stats} />
+      <EpisodesTrendSection />
       <TimeSpentSection stats={stats} period={period} setPeriod={setPeriod} formatMinutes={formatMinutes} />
       <PendingSection stats={stats} formatMinutes={formatMinutes} />
       <FooterNoteSection />

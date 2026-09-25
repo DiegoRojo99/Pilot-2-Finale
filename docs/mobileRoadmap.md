@@ -249,6 +249,8 @@ Tasks:
 
 - [x] Add mobile API function for `/api/episodes/stats`.
 - [x] Build the Stats screen using `/api/episodes/stats` and related app data.
+- [x] Build graph trend line for watched episodes.
+- [ ] Build a genre breakdown pie chart.
 - [ ] Add mobile API function for `/api/achievements`.
 - [ ] Build the Achievements screen using `/api/achievements`.
 - [x] Add helpful empty states for new users with no logs yet.

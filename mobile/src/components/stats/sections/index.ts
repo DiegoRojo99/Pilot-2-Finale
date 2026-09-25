@@ -5,3 +5,4 @@ export { BasicStatsSection } from './BasicStatsSection';
 export { TimeSpentSection } from './TimeSpentSection';
 export { PendingSection } from './PendingSection';
 export { FooterNoteSection } from './FooterNoteSection';
+export { EpisodesTrendSection } from './EpisodesTrendSection';

@@ -1,0 +1,142 @@
+import type { EpisodeLog } from '@/types/episode';
+
+export interface TrendDataPoint {
+  label: string;
+  count: number;
+}
+
+export function groupEpisodesByTrend(
+  logs: EpisodeLog[],
+  periodType: 'l7d' | 'l8w' | 'ly'
+): TrendDataPoint[] {
+  if (!logs.length) return [];
+
+  // Filter logs to only include valid watched_at dates
+  const validLogs = logs.filter(log => log.watched_at);
+  if (!validLogs.length) return [];
+
+  const now = new Date();
+  let startDate = new Date();
+
+  // Determine start date based on period
+  if (periodType === 'l7d') {
+    startDate.setDate(now.getDate() - 7);
+  } else if (periodType === 'l8w') {
+    startDate.setDate(now.getDate() - 56); // 8 weeks
+  } else {
+    // ly - last year
+    startDate.setFullYear(now.getFullYear() - 1);
+  }
+
+  // Filter logs within the period
+  const periodLogs = validLogs.filter(log => {
+    const logDate = new Date(log.watched_at!);
+    return logDate >= startDate && logDate <= now;
+  });
+
+  if (periodType === 'l7d') {
+    return groupByDay(periodLogs, startDate, now);
+  } else if (periodType === 'l8w') {
+    return groupByWeek(periodLogs, startDate, now);
+  } else {
+    return groupByMonth(periodLogs, startDate, now);
+  }
+}
+
+function groupByDay(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDataPoint[] {
+  const grouped: Record<string, number> = {};
+
+  // Initialize all days with 0
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    const key = current.toISOString().split('T')[0];
+    grouped[key] = 0;
+    current.setDate(current.getDate() + 1);
+  }
+
+  // Count episodes for each day
+  logs.forEach(log => {
+    const logDate = new Date(log.watched_at!);
+    const key = logDate.toISOString().split('T')[0];
+    if (key in grouped) {
+      grouped[key]++;
+    }
+  });
+
+  // Convert to sorted array with short labels (e.g., "Mon", "Tue")
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return Object.entries(grouped).map(([dateStr, count]) => {
+    const date = new Date(dateStr);
+    return {
+      label: dayNames[date.getDay()],
+      count,
+    };
+  });
+}
+
+function groupByWeek(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDataPoint[] {
+  const grouped: Record<number, number> = {};
+
+  // Get week numbers
+  const getWeekNumber = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  // Initialize 8 weeks with 0
+  for (let i = 0; i < 8; i++) {
+    grouped[i] = 0;
+  }
+
+  // Count episodes per week
+  logs.forEach(log => {
+    const logDate = new Date(log.watched_at!);
+    const weeksDiff = Math.floor((endDate.getTime() - logDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    if (weeksDiff >= 0 && weeksDiff < 8) {
+      grouped[7 - weeksDiff]++;
+    }
+  });
+
+  // Convert to labels
+  return Object.entries(grouped).map(([_, count], index) => {
+    return {
+      label: `W${index + 1}`,
+      count,
+    };
+  });
+}
+
+function groupByMonth(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDataPoint[] {
+  const grouped: Record<string, number> = {};
+
+  // Initialize months
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+    grouped[key] = 0;
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  // Count episodes per month
+  logs.forEach(log => {
+    const logDate = new Date(log.watched_at!);
+    const key = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
+    if (key in grouped) {
+      grouped[key]++;
+    }
+  });
+
+  // Convert to labels (e.g., "Jan", "Feb")
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return Object.entries(grouped).map(([dateStr, count]) => {
+    const [, monthStr] = dateStr.split('-');
+    const monthNum = parseInt(monthStr, 10) - 1;
+    return {
+      label: monthNames[monthNum],
+      count,
+    };
+  });
+}
