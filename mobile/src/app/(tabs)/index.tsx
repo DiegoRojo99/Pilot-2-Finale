@@ -91,10 +91,11 @@ export default function HomeScreen() {
   }, [query]);
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.scrollContent}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeAreaWrapper}>
+      <ScrollView
+        style={[styles.scrollView, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.scrollContent}>
+        <View style={styles.safeArea}>
         <ThemedText type="title">
           Discover
         </ThemedText>
@@ -206,12 +207,17 @@ export default function HomeScreen() {
             </>
           ) : null}
         </ThemedView>
-      </SafeAreaView>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeAreaWrapper: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   scrollView: {
     flex: 1,
   },
@@ -220,7 +226,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   safeArea: {
-    flex: 1,
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,

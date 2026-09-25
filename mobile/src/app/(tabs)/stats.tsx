@@ -169,7 +169,7 @@ export default function StatsScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <ThemedView style={styles.container}>
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <View style={styles.header}>
           <ThemedText type="title" style={{ fontSize: 28, fontWeight: '800' }}>
             My Stats
           </ThemedText>
@@ -196,7 +196,6 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
-    borderBottomWidth: 1,
     marginBottom: Spacing.lg,
   },
   content: {

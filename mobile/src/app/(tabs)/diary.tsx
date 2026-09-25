@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    borderBottomWidth: 1,
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
 });
