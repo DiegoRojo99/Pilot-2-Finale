@@ -29,6 +29,7 @@ export interface UserShow {
   number_of_episodes: number;
   added_at: string;
   updated_at: string;
+  next_episode?: ShowNextEpisode | null;
 }
 
 export interface UserShowWithShowRow {
@@ -48,6 +49,13 @@ export interface UserShowWithShowRow {
     numberOfSeasons: number;
     numberOfEpisodes: number;
   };
+  nextEpisodeToWatch?: {
+    id: number;
+    tmdbEpisodeId: number | null;
+    seasonNumber: number;
+    episodeNumber: number;
+    name: string | null;
+  } | null;
 }
 
 export interface ShowNextEpisode {

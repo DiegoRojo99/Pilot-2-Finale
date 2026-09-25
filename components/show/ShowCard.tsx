@@ -9,42 +9,23 @@ import { logEpisode } from "@/lib/api";
 import { getPosterUrl, formatYear } from "@/lib/utils";
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import type { ShowProgress, TMDBShow, UserShow } from "@/types";
+import type { TMDBShow, UserShow } from "@/types";
 
 type UserShowCardProps = {
   show: UserShow;
-  progress?: ShowProgress;
 };
 
-export function UserShowCard({ show, progress }: UserShowCardProps) {
+export function UserShowCard({ show }: UserShowCardProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
 
-  const shouldHideEpisodeInfo = !progress;
-  const watchedUniqueCount = progress?.watched_unique_count ?? 0;
-  const totalEpisodes = progress?.number_of_episodes ?? show.number_of_episodes;
-  const remainingEpisodes = Math.max(totalEpisodes - watchedUniqueCount, 0);
-  const nextEpisodeFromProgress = progress?.next_episode ?? null;
-  const isCompletedByCount = !!progress && totalEpisodes > 0 && watchedUniqueCount >= totalEpisodes;
-  const isCompleted = (show.status === "watched" || isCompletedByCount) && !nextEpisodeFromProgress;
-  const shouldSuggestFirstEpisode = !!progress && !nextEpisodeFromProgress && !isCompleted && watchedUniqueCount === 0 && totalEpisodes > 0;
-  const nextEpisode =
-    nextEpisodeFromProgress ??
-    (shouldSuggestFirstEpisode
-      ? {
-          tmdb_episode_id: null,
-          season_number: 1,
-          episode_number: 1,
-          episode_name: null,
-          has_reliable_next: false,
-        }
-      : null);
+  const nextEpisode = show.next_episode ?? null;
+  const isCompleted = show.status === "watched" && !nextEpisode;
   const nextEpisodeLabel = nextEpisode
     ? `S${String(nextEpisode.season_number).padStart(2, "0")} E${String(nextEpisode.episode_number).padStart(2, "0")}`
     : null;
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
-  const remainingAfterNextEpisode = Math.max(remainingEpisodes - (nextEpisode ? 1 : 0), 0);
   const primaryStatusLabel = nextEpisodeLabel ?? "Completed";
   const secondaryStatusLabel = nextEpisodeName ?? (isCompleted ? "All episodes watched" : "Start watching");
 
@@ -70,7 +51,6 @@ export function UserShowCard({ show, progress }: UserShowCardProps) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["episode-logs"] });
-      void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
       void queryClient.invalidateQueries({ queryKey: ["my-shows"] });
       void queryClient.invalidateQueries({ queryKey: ["stats"] });
       setIsEpisodeDiaryModalOpen(false);
@@ -103,26 +83,12 @@ export function UserShowCard({ show, progress }: UserShowCardProps) {
           <h3 className="truncate text-sm font-semibold text-slate-100">{show.name}</h3>
           <div className="mt-3 flex items-end justify-between gap-3">
             <div className="min-w-0">
-              {shouldHideEpisodeInfo || (!nextEpisode && !isCompleted) ? (
-                <>
-                  <p className="truncate text-sm font-semibold text-blue-400">Loading episode...</p>
-                  <p className="mt-1 truncate text-xs text-slate-400">Fetching watch progress</p>
-                </>
-              ) : (
-                <>
-                  <p className="truncate text-sm font-semibold text-blue-400">
-                    {primaryStatusLabel}
-                    {nextEpisode ? 
-                      remainingAfterNextEpisode > 0 ? 
-                        <span className="ml-2 text-xs font-medium text-slate-500">+{remainingAfterNextEpisode}</span> : 
-                        <span className="ml-2 text-xs font-medium text-slate-500">Last Episode</span> : 
-                      null}
-                  </p>
-                  <p className="mt-1 truncate text-xs text-slate-400">{secondaryStatusLabel}</p>
-                </>
-              )}
+              <p className="truncate text-sm font-semibold text-blue-400">
+                {primaryStatusLabel}
+              </p>
+              <p className="mt-1 truncate text-xs text-slate-400">{secondaryStatusLabel}</p>
             </div>
-            {nextEpisode && !shouldHideEpisodeInfo ? (
+            {nextEpisode ? (
               <button
                 type="button"
                 onClick={(event) => {

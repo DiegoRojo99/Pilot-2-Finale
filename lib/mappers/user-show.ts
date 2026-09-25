@@ -18,6 +18,14 @@ export function mapUserShow(
       ? (row.name as string)
       : row.show.name;
 
+  const nextEpisode = row.nextEpisodeToWatch ? {
+    tmdb_episode_id: row.nextEpisodeToWatch.tmdbEpisodeId,
+    season_number: row.nextEpisodeToWatch.seasonNumber,
+    episode_number: row.nextEpisodeToWatch.episodeNumber,
+    episode_name: row.nextEpisodeToWatch.name,
+    has_reliable_next: true,
+  } : null;
+
   return {
     id: row.id,
     tmdb_id: row.tmdbId,
@@ -32,5 +40,6 @@ export function mapUserShow(
     number_of_episodes: row.show.numberOfEpisodes,
     added_at: row.addedAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
+    next_episode: nextEpisode,
   };
 }

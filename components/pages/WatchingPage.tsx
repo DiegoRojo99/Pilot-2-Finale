@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Tv } from "lucide-react";
-import { getMyShows, getShowEpisodeLogsBatch, syncShowEpisodeCatalogBatch } from "@/lib/api";
+import { getMyShows } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { UserShowCard } from "@/components/show/ShowCard";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
@@ -13,7 +13,6 @@ import { STATUS_LABELS, type ShowStatus } from "@/types";
 const STATUS_OPTIONS: ShowStatus[] = ["watching", "want_to_watch", "watched", "on_hold", "dropped"];
 
 export default function WatchingPage() {
-  const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState<ShowStatus>("watching");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -22,38 +21,6 @@ export default function WatchingPage() {
     queryFn: () => getMyShows(selectedStatus),
     staleTime: 30_000,
   });
-
-  const showIds = (data ?? []).map((show) => show.tmdb_id);
-  const { data: logsBatch } = useQuery({
-    queryKey: ["episode-logs-batch", selectedStatus, showIds.join(",")],
-    queryFn: () => getShowEpisodeLogsBatch(showIds),
-    enabled: showIds.length > 0,
-    staleTime: 30_000,
-  });
-
-  useEffect(() => {
-    if (!logsBatch || showIds.length === 0) return;
-
-    const showsMissingNextEpisode = showIds.filter((showId) => {
-      const progress = logsBatch.progressByShowId?.[showId];
-      if (!progress || progress.next_episode) return false;
-
-      // Sync when totals are unknown or when there are unwatched episodes but no next-episode resolution.
-      return progress.number_of_episodes <= 0 || progress.watched_unique_count < progress.number_of_episodes;
-    });
-
-    if (showsMissingNextEpisode.length === 0) return;
-
-    const idsToSync = showsMissingNextEpisode.slice(0, 10);
-    void syncShowEpisodeCatalogBatch(idsToSync)
-      .then(() => {
-        void queryClient.invalidateQueries({ queryKey: ["episode-logs-batch"] });
-        void refetch();
-      })
-      .catch((error) => {
-        console.error("[WatchingPage] catalog sync failed", error);
-      });
-  }, [logsBatch, showIds, refetch, queryClient]);
 
   const statusMessages: Record<ShowStatus, string> = {
     watching: "No shows being watched. Search and add some!",
@@ -115,7 +82,6 @@ export default function WatchingPage() {
                 <UserShowCard
                   key={show.tmdb_id}
                   show={show}
-                  progress={logsBatch ? logsBatch.progressByShowId?.[show.tmdb_id] : undefined}
                 />
               ))}
             </div>

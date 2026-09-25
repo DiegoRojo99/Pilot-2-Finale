@@ -2,52 +2,27 @@ import { AuthGate } from '@/components/auth/auth-gate';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getShowEpisodeLogsBatch } from '@/lib/episodes';
 import { getMyShows } from '@/lib/shows';
 import { UserShowCard } from '@/components/show/user-show-card';
-import type { ShowProgress, UserShow } from '@/types/api';
+import type { UserShow } from '@/types/api';
 
 function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
   const theme = useTheme();
   const [allShows, setAllShows] = useState<UserShow[]>([]);
   const [shows, setShows] = useState<UserShow[]>([]);
-  const [progressByShowId, setProgressByShowId] = useState<Record<number, ShowProgress>>({});
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastProgressFetch, setLastProgressFetch] = useState<number>(0);
-
-  const fetchProgress = async (showIds: number[], force: boolean = false) => {
-    if (showIds.length === 0) return;
-    
-    // Debounce: don't fetch if we fetched less than 5 seconds ago (unless forced)
-    const now = Date.now();
-    if (!force && now - lastProgressFetch < 5000) {
-      return;
-    }
-
-    try {
-      const logsBatch = await getShowEpisodeLogsBatch(showIds);
-      setProgressByShowId(logsBatch.progressByShowId);
-      setLastProgressFetch(now);
-    } catch (error) {
-      console.error('[fetchProgress] Failed to load progress:', error);
-    }
-  };
 
   const fetchShows = async () => {
     try {
       const data = await getMyShows();
       setAllShows(data);
       setStatus('success');
-
-      const showIds = data.map((show) => show.tmdb_id);
-      await fetchProgress(showIds, true);
     } 
     catch (error) {
       setStatus('error');
@@ -67,16 +42,6 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
     };
   }, []);
 
-  // Refetch progress when screen gains focus, with debounce
-  useFocusEffect(() => {
-    // Only fetch if initial load is complete and we have shows
-    if (status === 'success') {
-      const showIds = allShows.map((show) => show.tmdb_id);
-      if (showIds.length > 0) {
-        void fetchProgress(showIds, false); // Let debounce decide
-      }
-    }
-  });
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -94,34 +59,58 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
 
   if (status === 'loading') {
     return (
-      <Card style={styles.centerCard}>
-        <ActivityIndicator color={theme.accent} />
-        <ThemedText type="small" themeColor="textSecondary">
-          Loading your shows...
-        </ThemedText>
-      </Card>
+      <ScrollView
+        scrollEnabled={false}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
+        style={{ flex: 1 }}
+      >
+        <ThemedView style={styles.list}>
+          <Card style={styles.centerCard}>
+            <ActivityIndicator color={theme.accent} />
+            <ThemedText type="small" themeColor="textSecondary">
+              Loading your shows...
+            </ThemedText>
+          </Card>
+        </ThemedView>
+      </ScrollView>
     );
   }
 
   if (status === 'error') {
     return (
-      <Card>
-        <ThemedText type="subtitle">Could not load shows</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Your session may have expired. Try signing out and back in from Profile.
-        </ThemedText>
-      </Card>
+      <ScrollView
+        scrollEnabled={false}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
+        style={{ flex: 1 }}
+      >
+        <ThemedView style={styles.list}>
+          <Card>
+            <ThemedText type="subtitle">Could not load shows</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Your session may have expired. Try signing out and back in from Profile.
+            </ThemedText>
+          </Card>
+        </ThemedView>
+      </ScrollView>
     );
   }
 
   if (shows.length === 0) {
     return (
-      <Card>
-        <ThemedText type="subtitle">No shows yet</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Search for a show in Discover and add it to start building your library.
-        </ThemedText>
-      </Card>
+      <ScrollView
+        scrollEnabled={false}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
+        style={{ flex: 1 }}
+      >
+        <ThemedView style={styles.list}>
+          <Card>
+            <ThemedText type="subtitle">No shows yet</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Search for a show in Discover and add it to start building your library.
+            </ThemedText>
+          </Card>
+        </ThemedView>
+      </ScrollView>
     );
   }
 
@@ -133,7 +122,7 @@ function AuthenticatedMyShows({ selectedStatus }: { selectedStatus: string }) {
     >
       <ThemedView style={styles.list}>
         {shows.map((show) => (
-          <UserShowCard key={show.id} show={show} progress={progressByShowId[show.tmdb_id]} />
+          <UserShowCard key={show.id} show={show} />
         ))}
       </ThemedView>
     </ScrollView>

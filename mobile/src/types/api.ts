@@ -54,6 +54,7 @@ export type UserShow = {
   number_of_episodes: number;
   added_at: string;
   updated_at: string;
+  next_episode?: ShowNextEpisode | null;
 };
 
 export type ShowNextEpisode = {

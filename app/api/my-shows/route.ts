@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
   if (status && !VALID_STATUSES.includes(status as ShowStatus)) return NextResponse.json([]);
 
+  // Fetch shows with updated next episode data
   const shows = await fetchUserShowsByUserId(userId, status ? (status as ShowStatus) : undefined, {
     preferUserNameWhenShowIsPlaceholder: true,
   });

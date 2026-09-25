@@ -7,43 +7,26 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getPosterUrl } from '@/lib/tmdb-images';
-import type { ShowProgress, UserShow } from '@/types/api';
+import type { UserShow } from '@/types/api';
 
 type UserShowCardProps = {
   show: UserShow;
-  progress?: ShowProgress;
 };
 
-function getNextEpisodeSummary(show: UserShow, progress?: ShowProgress) {
-  const shouldHideEpisodeInfo = !progress;
-  const watchedUniqueCount = progress?.watched_unique_count ?? 0;
-  const totalEpisodes = progress?.number_of_episodes ?? show.number_of_episodes;
-  const remainingEpisodes = Math.max(totalEpisodes - watchedUniqueCount, 0);
-  const nextEpisodeFromProgress = progress?.next_episode ?? null;
-  const isCompletedByCount = !!progress && totalEpisodes > 0 && watchedUniqueCount >= totalEpisodes;
-  const isCompleted = (show.status === 'watched' || isCompletedByCount) && !nextEpisodeFromProgress;
-  const shouldSuggestFirstEpisode =
-    !!progress && !nextEpisodeFromProgress && !isCompleted && watchedUniqueCount === 0 && totalEpisodes > 0;
+function getNextEpisodeSummary(show: UserShow) {
+  const nextEpisode = show.next_episode;
+  const isCompleted = show.status === 'watched' && !nextEpisode;
   
-  const nextEpisode = nextEpisodeFromProgress ?? (shouldSuggestFirstEpisode
-    ? {
-        tmdb_episode_id: null,
-        season_number: 1,
-        episode_number: 1,
-        episode_name: null,
-        has_reliable_next: false,
-      }
-    : null);
   const nextEpisodeLabel = nextEpisode
     ? `S${String(nextEpisode.season_number).padStart(2, '0')} E${String(nextEpisode.episode_number).padStart(2, '0')}`
     : null;
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
-  const remainingAfterNextEpisode = Math.max(remainingEpisodes - (nextEpisode ? 1 : 0), 0);
 
-  if (shouldHideEpisodeInfo || (!nextEpisode && !isCompleted)) {
+  if (!nextEpisode && !isCompleted) {
+    // Show is in progress but we don't have next episode data yet
     return {
-      primary: 'Loading episode...',
-      secondary: 'Fetching watch progress',
+      primary: 'Start watching',
+      secondary: 'S01 E01',
       extra: null,
       isLoading: true,
     };
@@ -52,15 +35,15 @@ function getNextEpisodeSummary(show: UserShow, progress?: ShowProgress) {
   return {
     primary: nextEpisodeLabel ?? 'Completed',
     secondary: nextEpisodeName ?? (isCompleted ? 'All episodes watched' : 'Start watching'),
-    extra: nextEpisode ? remainingAfterNextEpisode > 0 ? `+${remainingAfterNextEpisode}` : "Last Episode" : null,
+    extra: null,
     isLoading: false,
   };
 }
 
-export function UserShowCard({ show, progress }: UserShowCardProps) {
+export function UserShowCard({ show }: UserShowCardProps) {
   const theme = useTheme();
   const posterUrl = getPosterUrl(show.poster_path);
-  const nextEpisodeSummary = getNextEpisodeSummary(show, progress);
+  const nextEpisodeSummary = getNextEpisodeSummary(show);
   const router = useRouter();
   const goToShow = () => { router.push(`/show/${show.tmdb_id}`); };
 

@@ -18,6 +18,15 @@ export async function fetchUserShowsByUserId(
     },
     include: {
       show: true,
+      nextEpisodeToWatch: {
+        select: {
+          id: true,
+          tmdbEpisodeId: true,
+          seasonNumber: true,
+          episodeNumber: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       updatedAt: "desc",
@@ -41,6 +50,15 @@ export async function fetchUserShowByTmdbId(
     },
     include: {
       show: true,
+      nextEpisodeToWatch: {
+        select: {
+          id: true,
+          tmdbEpisodeId: true,
+          seasonNumber: true,
+          episodeNumber: true,
+          name: true,
+        },
+      },
     },
   });
 
