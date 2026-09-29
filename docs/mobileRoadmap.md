@@ -146,7 +146,7 @@ Acceptance Checks:
 
 ## Phase 4: My Shows And Status Management
 
-Status: in progress
+Status: complete
 
 Purpose: make the personal library useful for daily tracking.
 
