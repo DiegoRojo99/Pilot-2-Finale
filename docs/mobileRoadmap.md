@@ -80,7 +80,7 @@ Acceptance Checks:
 
 ## Phase 2: Authentication And Session Handling
 
-Status: in progress
+Status: complete
 
 Purpose: make the mobile app usable with real user accounts.
 
@@ -99,13 +99,13 @@ Tasks:
 - [x] Handle failed refreshes gracefully.
 - [x] Handle offline startup gracefully.
 - [x] Add auth cookies to mobile API requests for user-scoped endpoints.
-- [ ] Verify API requests send the required auth state for user-scoped endpoints on device.
+- [x] Verify API requests send the required auth state for user-scoped endpoints on device.
 - [x] Add mobile account deletion request UI after auth is connected.
 
 Acceptance Checks:
 
 - [x] A user can register, sign in, close the app, reopen it, and remain signed in on device.
-- [ ] Authenticated API routes return only the signed-in user's data.
+- [x] Authenticated API routes return only the signed-in user's data.
 - [x] Signing out clears local session state and protected data from the UI.
 
 ## Phase 3: Discover And Add Shows
@@ -129,12 +129,12 @@ Tasks:
 - [x] Add show detail navigation from search results.
 - [x] Add show detail navigation from trending and top-rated results.
 - [x] Redesign search bar and remove landing page text.
-- [ ] Add see all navigation from trending and top-rated results.
-- [ ] Add empty state for searches that return zero results.
-- [ ] Add retry action for failed search requests.
-- [ ] Add pull-to-refresh or manual refresh for suggestion rails.
-- [ ] Show whether a result is already in the user's tracker.
-- [ ] Add shows to `want_to_watch` by default, matching the web behavior.
+- [x] Add see all navigation from trending and top-rated results.
+- [x] Add empty state for searches that return zero results.
+- [x] Add retry action for failed search requests.
+- [x] Add pull-to-refresh or manual refresh for suggestion rails.
+- [x] Show whether a result is already in the user's tracker.
+- [x] Add shows to `want_to_watch` by default, matching the web behavior.
 - [ ] Cache discovery responses long enough to avoid wasteful repeat requests.
 - [ ] Consider replacing `ScrollView` result lists with `FlatList` if lists become large.
 
@@ -162,19 +162,19 @@ Tasks:
 - [x] Render next episode when available.
 - [x] Support updating a show's status from mobile.
 - [x] Support removing a show from the user's tracker.
-- [ ] Add pull-to-refresh for library views.
-- [ ] Add optimistic updates for status changes where safe.
-- [ ] Keep behavior consistent with existing `/api/my-shows` routes.
+- [x] Add pull-to-refresh for library views.
+- [x] Add optimistic updates for status changes where safe.
+- [x] Keep behavior consistent with existing `/api/my-shows` routes.
 
 Acceptance Checks:
 
 - [x] Users can view each status bucket on mobile.
-- [ ] Status changes persist and are reflected after refresh.
-- [ ] Deleting a show removes it from the current list without leaking stale data.
+- [x] Status changes persist and are reflected after refresh.
+- [x] Deleting a show removes it from the current list without leaking stale data.
 
 ## Phase 5: Show Detail And Episode Logging
 
-Status: in progress
+Status: mostly complete
 
 Purpose: deliver the core tracking workflow.
 
@@ -205,10 +205,10 @@ Tasks:
 - [x] Add status controls to the show detail screen.
 - [x] Build an episode logging flow with watched date.
 - [x] Add optional episode rating.
-- [ ] Add optional episode notes.
-- [ ] Support editing an existing episode log.
-- [ ] Support deleting an episode log.
-- [ ] Add clear progress feedback after logging an episode.
+- [x] Add optional episode notes.
+- [x] Support editing an existing episode log.
+- [x] Support deleting an episode log.
+- [x] Add clear progress feedback after logging an episode.
 - [ ] Trigger or consume catalog sync behavior when next-episode data is missing.
 
 Acceptance Checks:
@@ -216,11 +216,41 @@ Acceptance Checks:
 - [x] Users can browse show details from mobile.
 - [x] Users can expand seasons and view episode rows from mobile.
 - [x] Users can open episode detail screens from mobile.
-- [ ] Users can log, edit, and delete an episode from mobile.
-- [ ] Episode progress matches the web app after refresh.
-- [ ] The next unwatched episode resolves correctly for active shows.
+- [x] Users can log, edit, and delete an episode from mobile.
+- [x] Episode progress matches the web app after refresh.
+- [x] The next unwatched episode resolves correctly for active shows.
 
-## Phase 6: Diary
+## Phase 6: Unreleased Episodes & Release Calendar
+
+Status: not started
+
+Purpose: gracefully handle unreleased, future-dated, and catalog-gap edge cases; surface upcoming releases as a key feature.
+
+Tasks:
+
+- [ ] Add backend logic to tag episodes as unreleased (air date in future or missing).
+- [ ] Filter out unreleased episodes from watchable episode lists on show detail.
+- [ ] Show visual indicator (e.g., "Coming Soon") on unreleased episodes instead of checkbox.
+- [ ] Handle seasons with zero fetched episodes (incomplete catalog data).
+- [ ] Display message like "Season data not yet available" when season episodes are missing.
+- [ ] Build a "Next Episodes" screen showing upcoming episode releases across tracked shows.
+- [ ] Rank next episodes by air date (earliest first).
+- [ ] Show episode metadata: show name, season, episode number, title, air date.
+- [ ] Add filters to next episodes by show status (e.g., only Watching or Want to Watch).
+- [ ] Add filters to next episodes by air date range (this week, this month, etc.).
+- [ ] Show count of unreleased episodes per show on My Shows cards.
+- [ ] Integrate next episodes into Discover or My Shows as a prominent feature or dedicated tab.
+- [ ] Add notifications or reminders for upcoming episodes (optional for MVP, can move to Phase 10).
+- [ ] Handle TMDB catalog refreshes that add new episode data mid-season.
+
+Acceptance Checks:
+
+- [ ] Users cannot accidentally log episodes with future air dates.
+- [ ] Shows with missing or incomplete season data display a clear message.
+- [ ] Users can browse upcoming releases across their library from a dedicated view.
+- [ ] Next episode data updates correctly after catalog refresh.
+
+## Phase 7: Diary
 
 Status: in progress
 
@@ -239,7 +269,7 @@ Acceptance Checks:
 - [x] Recently watched episodes appear correctly on mobile.
 - [ ] Achievements load and represent current user progress.
 
-## Phase 7: Stats And Achievements
+## Phase 8: Stats And Achievements
 
 Status: in progress
 
@@ -261,7 +291,37 @@ Acceptance Checks:
 - [x] Stats match the web app for the same account.
 - [ ] Achievements load and represent current user progress.
 
-## Phase 8: Mobile Quality Pass
+## Phase 9: Efficiency Improvements
+
+Status: not started
+
+Purpose: optimize core workflows to ensure diary updates and episode logging feel responsive and snappy on real devices.
+
+Tasks:
+
+- [ ] Profile diary update flow (editing watched date, rating, and notes).
+- [ ] Profile episode logging flow (capturing initial log on show detail).
+- [ ] Identify bottlenecks: form rendering, date picker, rating slider, API calls, state updates.
+- [ ] Optimize date picker performance (lazy load or memoize date selection components).
+- [ ] Optimize rating slider re-renders (memoize callbacks, debounce value changes if needed).
+- [ ] Implement optimistic updates for diary edits (update UI before server confirms).
+- [ ] Implement optimistic updates for episode logs (update watched state before server confirms).
+- [ ] Cache episode data aggressively to avoid redundant fetches during logging workflows.
+- [ ] Use React Query mutation batching for bulk episode operations.
+- [ ] Debounce text input (notes) to reduce re-renders during typing.
+- [ ] Add loading indicators and disable buttons during mutations to prevent double-submission.
+- [ ] Profile show detail and season expansion performance with large season lists.
+- [ ] Consider virtualizing long episode lists if needed (FlatList instead of ScrollView).
+- [ ] Add performance metrics or analytics to track diary/logging user experience.
+
+Acceptance Checks:
+
+- [ ] Diary update flow completes visibly within 1-2 seconds on average devices.
+- [ ] Episode logging from show detail feels snappy (no noticeable lag in UI response).
+- [ ] Optimistic updates reduce perceived latency and improve user confidence.
+- [ ] Large watchlists and long episode lists scroll smoothly without frame drops.
+
+## Phase 10: Mobile Quality Pass
 
 Status: not started
 
@@ -295,7 +355,7 @@ Acceptance Checks:
 - [ ] Lists scroll smoothly with realistic account data.
 - [ ] Key interactive elements meet mobile touch target expectations.
 
-## Phase 9: Testing And Release Readiness
+## Phase 11: Testing And Release Readiness
 
 Status: not started
 
@@ -332,7 +392,7 @@ Acceptance Checks:
 - [ ] Release configuration is documented and reproducible.
 - [ ] The MVP has a smoke-test checklist covering auth, discovery, library, and episode logging.
 
-## Phase 10: Post-MVP Enhancements
+## Phase 12: Post-MVP Enhancements
 
 Status: backlog
 

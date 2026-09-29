@@ -130,6 +130,5 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
-    marginBottom: Spacing.lg,
   },
 });

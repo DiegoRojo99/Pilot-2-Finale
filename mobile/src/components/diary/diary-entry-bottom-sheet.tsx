@@ -114,7 +114,7 @@ export function DiaryEntryBottomSheet({
               <ThemedText 
                 style={[
                   styles.rating,
-                  { color: theme.accent }
+                  { color: theme.textSecondary }
                 ]}
               >
                 {renderStars(entry.rating)} {entry.rating?.toFixed(1)}/10
@@ -233,7 +233,6 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: 14,
     fontWeight: '600',
-    marginTop: Spacing.xs,
   },
   actionsSection: {
     gap: Spacing.md,

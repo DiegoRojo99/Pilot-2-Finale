@@ -55,7 +55,7 @@ export function EpisodeDiaryModal({
           </label>
 
           <label className="block text-sm">
-            <span className="mb-1 block text-slate-300">Rating 0-10 (optional)</span>
+            <span className="mb-1 block text-slate-300">Rating (optional)</span>
             <input
               type="number"
               min={0}

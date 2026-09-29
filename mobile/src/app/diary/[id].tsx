@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { RatingSlider } from '@/components/ui/rating-slider';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAllEpisodeLogs, updateEpisodeLog, deleteEpisodeLog } from '@/lib/episodes';
@@ -69,7 +69,8 @@ export default function DiaryEntryDetailScreen() {
     if (!entry) return;
     const ratingChanged = (entry.rating ?? 0) !== rating;
     const notesChanged = (entry.notes ?? '') !== notes;
-    const dateChanged = (entry.watched_at?.split('T')[0] ?? new Date().toISOString().split('T')[0]) !== watchedDate;
+    const originalDate = entry.watched_at?.split('T')[0] ?? '';
+    const dateChanged = originalDate !== watchedDate;
     setHasChanges(ratingChanged || notesChanged || dateChanged);
   }, [rating, notes, watchedDate, entry]);
 
@@ -185,14 +186,15 @@ export default function DiaryEntryDetailScreen() {
       <ThemedView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.push('/diary')} style={styles.backButton}>
             <ThemedText style={{ fontSize: 20, fontWeight: '600' }}>‹</ThemedText>
+            <ThemedText type="subtitle" style={styles.backText}>
+              Diary
+            </ThemedText>
           </TouchableOpacity>
-          <ThemedText type="subtitle" style={{ fontSize: 16, fontWeight: '600', flex: 1, marginLeft: Spacing.md }}>
-            Diary
-          </ThemedText>
-          <Pressable onPress={handleMenuPress}>
-            <ThemedText style={{ fontSize: 18 }}>⋮</ThemedText>
+          <View style={{ flex: 1 }}></View>
+          <Pressable onPress={handleMenuPress} style={styles.menuButton}>
+            <ThemedText style={styles.menuButtonText}>⋮</ThemedText>
           </Pressable>
         </View>
 
@@ -223,24 +225,14 @@ export default function DiaryEntryDetailScreen() {
 
             {/* Rating */}
             <View style={styles.ratingSection}>
-              <View style={styles.ratingDisplay}>
-                <ThemedText style={[styles.stars, { color: theme.accent }]}>
-                  {renderStars(rating)}
-                </ThemedText>
-                <ThemedText style={[styles.ratingNumber, { color: theme.text }]}>
-                  {rating ? rating.toFixed(1) : '0.0'} / 10
-                </ThemedText>
-              </View>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={10}
+              <RatingSlider
                 value={rating}
                 onValueChange={setRating}
+                min={0}
+                max={10}
                 step={0.1}
-                minimumTrackTintColor={theme.accent}
-                maximumTrackTintColor={theme.border}
-                thumbTintColor={theme.accent}
+                label="EPISODE RATING"
+                displayValue={`${rating ? rating.toFixed(1) : '0.0'} / 10`}
               />
             </View>
           </View>
@@ -342,28 +334,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
   },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: Spacing.md,
+  },
+  menuButton: {
+    padding: Spacing.sm,
+    alignItems: 'flex-end',
+  },
+  menuButtonText: {
+    fontSize: 18,
+  },
   scrollContent: {
     paddingBottom: Spacing.lg,
   },
   backdropContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
     marginBottom: Spacing.md,
   },
   backdrop: {
     width: '100%',
-    height: 180,
-    borderRadius: 12,
+    height: 204,
   },
   infoSection: {
     paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.md,
+    marginVertical: Spacing.md,
     gap: Spacing.sm,
   },
   showName: {
@@ -377,24 +383,6 @@ const styles = StyleSheet.create({
   ratingSection: {
     marginTop: Spacing.sm,
     gap: Spacing.md,
-  },
-  ratingDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  stars: {
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 4,
-  },
-  ratingNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  slider: {
-    width: '100%',
-    height: 40,
   },
   divider: {
     height: 1,

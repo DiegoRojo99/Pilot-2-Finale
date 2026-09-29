@@ -33,7 +33,7 @@ export function DiaryDayItem({ day, onEntryUpdated }: { day: DiaryDay; onEntryUp
     const displayDate = getRelativeDate(date);
 
     return (
-        <View key={date}>
+        <View key={date} style={{ marginBottom: Spacing.xl }}>
             {/* Date Separator */}
             <View style={[styles.dateSeparator, { backgroundColor: theme.background }]}>
                 <ThemedText
@@ -58,8 +58,6 @@ export function DiaryDayItem({ day, onEntryUpdated }: { day: DiaryDay; onEntryUp
 
 const styles = StyleSheet.create({
   dateSeparator: {
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.sm,
     paddingHorizontal: Spacing.lg,
   },
 });

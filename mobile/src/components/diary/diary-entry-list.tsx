@@ -36,7 +36,6 @@ function renderStars(rating: number | null | undefined) {
 
 export function DiaryEntryList({ entry, onEntryUpdated }: DiaryEntryListProps) {
   const router = useRouter();
-  const theme = useTheme();
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const episodeKey = `S${String(entry.season_number).padStart(2, '0')}E${String(entry.episode_number).padStart(2, '0')}`;
   const still = entry.still_path ? getBackdropUrl(entry.still_path) : null;

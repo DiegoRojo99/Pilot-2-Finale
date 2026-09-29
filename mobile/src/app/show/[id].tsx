@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import Slider from '@react-native-community/slider';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +15,7 @@ import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes'
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary } from '@/types/api';
 import { type EpisodeLog } from '@/types/episode';
+import { RatingSlider } from '@/components/ui/rating-slider';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
@@ -55,14 +56,15 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
         
         <ThemedView style={styles.episodeContentContainer}>
           <ThemedView style={styles.episodeTopRow}>
-            <ThemedText type="small" themeColor="textSecondary" style={{ marginRight: Spacing.one }}>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 13, fontFamily: 'monospace' }}>
               {String(episode.episode_number).padStart(2, '0')}
             </ThemedText>
             <ThemedText 
               type="small" 
               style={{ 
                 flex: 1,
-                color: isWatched ? theme.textSecondary : theme.text 
+                color: isWatched ? theme.textSecondary : theme.text,
+                fontSize: 13
               }}
               numberOfLines={1}
             >
@@ -72,15 +74,29 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
           
           <ThemedView style={styles.episodeMeta}>
             {episode.air_date && (
-              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
-                {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </ThemedText>
+              <View style={styles.episodeMetaItem}>
+                <Ionicons name="calendar" size={11} color={theme.textSecondary} />
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+                  {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </ThemedText>
+              </View>
             )}
             {episode.vote_average > 0 && (
-              <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
-                ⭐ {episode.vote_average.toFixed(1)}
-              </ThemedText>
+              <View style={styles.episodeMetaItem}>
+                <Ionicons name="star" size={11} color="#fbbf24" />
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+                  {episode.vote_average.toFixed(1)}
+                </ThemedText>
+              </View>
             )}
+            {episode.runtime ? (
+              <View style={styles.episodeMetaItem}>
+                <Ionicons name="time" size={11} color={theme.textSecondary} />
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+                  {episode.runtime}m
+                </ThemedText>
+              </View>
+            ) : null}
           </ThemedView>
         </ThemedView>
       </TouchableOpacity>
@@ -677,7 +693,7 @@ export default function ShowDetailScreen() {
         season_number: ep.season_number,
         episode_number: ep.episode_number,
         episode_name: ep.name,
-        watched_at: new Date().toISOString(),
+        watched_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         rating: null,
@@ -693,7 +709,7 @@ export default function ShowDetailScreen() {
           season_number: ep.season_number,
           episode_number: ep.episode_number,
           episode_name: ep.name,
-          watched_at: new Date().toISOString(),
+          watched_at: null,
         })),
       });
 
@@ -863,13 +879,20 @@ export default function ShowDetailScreen() {
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
           <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
             <ThemedText type="smallBold">Log Episode Watch</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
-              {show?.name} - S{String(selectedEpisodeForDiary.season_number).padStart(2, '0')} E{String(selectedEpisodeForDiary.episode_number).padStart(2, '0')} - {selectedEpisodeForDiary.name}
-            </ThemedText>
-
+            <View style={styles.episodeDetails}>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
+                {show?.name} - S{String(selectedEpisodeForDiary.season_number).padStart(2, '0')} E{String(selectedEpisodeForDiary.episode_number).padStart(2, '0')}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
+                {selectedEpisodeForDiary.name}
+              </ThemedText>
+            </View>
+            
             <View style={styles.modalInputs}>
               <View>
-                <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Watched date (optional)</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+                  WATCHED
+                </ThemedText>
                 <TextInput
                   style={[
                     styles.modalInput,
@@ -888,25 +911,12 @@ export default function ShowDetailScreen() {
               </View>
 
               <View>
-                <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Rating 0-10 (optional)</ThemedText>
-                <View style={{ gap: Spacing.md }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-                    <ThemedText type="small" style={{ fontSize: 14, fontWeight: '600' }}>
-                      {diaryRating > 0 ? diaryRating.toFixed(1) : '0.0'} / 10
-                    </ThemedText>
-                  </View>
-                  <Slider
-                    style={{ width: '100%', height: 40 }}
-                    minimumValue={0}
-                    maximumValue={10}
-                    value={diaryRating}
-                    onValueChange={setDiaryRating}
-                    step={0.1}
-                    minimumTrackTintColor={theme.accent}
-                    maximumTrackTintColor={theme.border}
-                    thumbTintColor={theme.accent}
-                  />
-                </View>
+                <RatingSlider
+                  value={diaryRating}
+                  onValueChange={setDiaryRating}
+                  label="MY RATING"
+                  displayValue={`${diaryRating.toFixed(1)} / 10`}
+                />
               </View>
             </View>
 
@@ -1128,6 +1138,11 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: Spacing.three,
   },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
   backdropFrame: {
     width: '100%',
     aspectRatio: 16 / 13,
@@ -1330,7 +1345,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    marginLeft: 4,
+  },
+  episodeMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   episodeCheckbox: {
     width: 24,
@@ -1349,6 +1368,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+  },
+  episodeDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginTop: Spacing.one,
+    marginBottom: Spacing.one,
   },
   modalContent: {
     borderRadius: Spacing.four,
