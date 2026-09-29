@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { isNumericId, defaultRateLimit } from "@/lib/core";
 import { tmdbFetch } from "@/lib/tmdb";
+import { decorateEpisodesWithReleaseStatus } from "@/lib/episodes";
+import type { TMDBSeason } from "@/types/tmdb";
 
 export const runtime = "nodejs";
 
@@ -18,7 +20,13 @@ export async function GET(
       return NextResponse.json({ error: "Invalid show ID or season number" }, { status: 400 });
     }
 
-    const data = await tmdbFetch(`/tv/${id}/season/${seasonNumber}`);
+    const data = await tmdbFetch<TMDBSeason>(`/tv/${id}/season/${seasonNumber}`);
+    
+    // Decorate episodes with release status
+    if (data.episodes && Array.isArray(data.episodes)) {
+      data.episodes = decorateEpisodesWithReleaseStatus(data.episodes);
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
     console.error("TMDB season error:", error);

@@ -39,6 +39,7 @@ export interface TMDBEpisode {
   still_path: string | null;
   vote_average: number;
   runtime: number | null;
+  isUnreleased?: boolean; // Added by API when decorating episodes
 }
 
 export interface TMDBSearchResult {
