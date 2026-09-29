@@ -69,7 +69,8 @@ export default function DiaryEntryDetailScreen() {
     if (!entry) return;
     const ratingChanged = (entry.rating ?? 0) !== rating;
     const notesChanged = (entry.notes ?? '') !== notes;
-    const dateChanged = (entry.watched_at?.split('T')[0] ?? new Date().toISOString().split('T')[0]) !== watchedDate;
+    const originalDate = entry.watched_at?.split('T')[0] ?? '';
+    const dateChanged = originalDate !== watchedDate;
     setHasChanges(ratingChanged || notesChanged || dateChanged);
   }, [rating, notes, watchedDate, entry]);
 
@@ -185,14 +186,15 @@ export default function DiaryEntryDetailScreen() {
       <ThemedView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.push('/diary')} style={styles.backButton}>
             <ThemedText style={{ fontSize: 20, fontWeight: '600' }}>‹</ThemedText>
+            <ThemedText type="subtitle" style={styles.backText}>
+              Diary
+            </ThemedText>
           </TouchableOpacity>
-          <ThemedText type="subtitle" style={{ fontSize: 16, fontWeight: '600', flex: 1, marginLeft: Spacing.md }}>
-            Diary
-          </ThemedText>
-          <Pressable onPress={handleMenuPress}>
-            <ThemedText style={{ fontSize: 18 }}>⋮</ThemedText>
+          <View style={{ flex: 1 }}></View>
+          <Pressable onPress={handleMenuPress} style={styles.menuButton}>
+            <ThemedText style={styles.menuButtonText}>⋮</ThemedText>
           </Pressable>
         </View>
 
@@ -224,24 +226,48 @@ export default function DiaryEntryDetailScreen() {
             {/* Rating */}
             <View style={styles.ratingSection}>
               <View style={styles.ratingDisplay}>
-                <ThemedText style={[styles.stars, { color: theme.accent }]}>
-                  {renderStars(rating)}
+                <ThemedText type="small" themeColor="textSecondary" style={styles.ratingLabel}>
+                  EPISODE RATING
                 </ThemedText>
                 <ThemedText style={[styles.ratingNumber, { color: theme.text }]}>
                   {rating ? rating.toFixed(1) : '0.0'} / 10
                 </ThemedText>
               </View>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={10}
-                value={rating}
-                onValueChange={setRating}
-                step={0.1}
-                minimumTrackTintColor={theme.accent}
-                maximumTrackTintColor={theme.border}
-                thumbTintColor={theme.accent}
-              />
+              
+              {/* Slider with tick marks */}
+              <View style={styles.sliderWrapper}>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={10}
+                  value={rating}
+                  onValueChange={setRating}
+                  step={0.1}
+                  minimumTrackTintColor={theme.accent}
+                  maximumTrackTintColor={theme.border}
+                  thumbTintColor={theme.accent}
+                />
+              </View>
+
+              {/* Scale labels */}
+              <View style={styles.scaleLabels}>
+                <ThemedText style={[styles.scaleLabel, { color: theme.textSecondary }]}>0</ThemedText>
+                <View style={styles.tickMarksContainer}>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.tickMark,
+                        {
+                          backgroundColor: theme.border,
+                          height: i % 5 === 0 ? 8 : 4,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <ThemedText style={[styles.scaleLabel, { color: theme.textSecondary }]}>10</ThemedText>
+              </View>
             </View>
           </View>
 
@@ -342,28 +368,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
   },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: Spacing.md,
+  },
+  menuButton: {
+    padding: Spacing.sm,
+    alignItems: 'flex-end',
+  },
+  menuButtonText: {
+    fontSize: 18,
+  },
   scrollContent: {
     paddingBottom: Spacing.lg,
   },
   backdropContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
     marginBottom: Spacing.md,
   },
   backdrop: {
     width: '100%',
-    height: 180,
-    borderRadius: 12,
+    height: 204,
   },
   infoSection: {
     paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.md,
+    marginVertical: Spacing.md,
     gap: Spacing.sm,
   },
   showName: {
@@ -380,21 +420,49 @@ const styles = StyleSheet.create({
   },
   ratingDisplay: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.md,
   },
-  stars: {
-    fontSize: 18,
+  ratingLabel: {
+    fontSize: 14,
     fontWeight: '600',
-    letterSpacing: 4,
   },
   ratingNumber: {
     fontSize: 14,
     fontWeight: '600',
   },
+  sliderWrapper: {
+    paddingHorizontal: Spacing.md,
+    justifyContent: 'center',
+  },
   slider: {
     width: '100%',
     height: 40,
+  },
+  scaleLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+    marginLeft: 12,
+    marginRight: 5,
+    marginTop: -40,
+  },
+  scaleLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  tickMarksContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    height: 12,
+  },
+  tickMark: {
+    width: 1,
+    opacity: 0.6,
   },
   divider: {
     height: 1,
