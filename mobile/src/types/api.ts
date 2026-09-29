@@ -107,6 +107,7 @@ export type TMDBEpisode = {
   still_path: string | null;
   vote_average: number;
   runtime: number | null;
+  isUnreleased?: boolean;
 };
 
 export type TMDBSeason = {

@@ -21,14 +21,15 @@ export async function GET(
     }
 
     const data = await tmdbFetch<TMDBSeason>(`/tv/${id}/season/${seasonNumber}`);
+    if (!data.episodes) return NextResponse.json({ error: "No episodes found for this season" }, { status: 404 });
+    if (!Array.isArray(data.episodes)) return NextResponse.json({ error: "Invalid episodes data for this season" }, { status: 404 });
+    if (data.episodes.length === 0) return NextResponse.json({ error: "No episodes found for this season" }, { status: 404 });
     
     // Decorate episodes with release status
-    if (data.episodes && Array.isArray(data.episodes)) {
-      data.episodes = decorateEpisodesWithReleaseStatus(data.episodes);
-    }
-    
+    data.episodes = decorateEpisodesWithReleaseStatus(data.episodes);
     return NextResponse.json(data);
-  } catch (error) {
+  } 
+  catch (error) {
     console.error("TMDB season error:", error);
     return NextResponse.json({ error: "Failed to fetch season details" }, { status: 500 });
   }
