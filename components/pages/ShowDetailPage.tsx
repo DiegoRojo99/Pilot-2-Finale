@@ -534,6 +534,81 @@ export default function ShowDetailPage() {
     },
   });
 
+  const markAllSeasonEpisodes = async (seasonNumber: number) => {
+    if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
+    let seasonData: TMDBSeason;
+
+    try { seasonData = await getCachedSeasonDetails(seasonNumber); } 
+    catch { return; }
+    if (!seasonData?.episodes?.length) return;
+
+    const episodesToLog = seasonData.episodes
+      .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
+      .map((episode) => ({
+        episode: episode.episode_number,
+        name: episode.name,
+        tmdbEpisodeId: episode.id,
+      }));
+
+    if (episodesToLog.length === 0) return;
+    bulkLogEpisodesMutation.mutate({
+      season: seasonNumber,
+      episodes: episodesToLog,
+    });
+  };
+
+  const handleToggleEpisode = async (
+    seasonNumber: number,
+    episodeNumber: number,
+    name: string,
+    tmdbEpisodeId?: number
+  ) => {
+    if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
+
+    // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
+    let seasonData: TMDBSeason;
+
+    try {
+      seasonData = await getCachedSeasonDetails(seasonNumber);
+    } 
+    catch {
+      setSelectedEpisodeForDiary({
+        seasonNumber,
+        episodeNumber,
+        episodeName: name,
+        tmdbEpisodeId,
+      });
+      setIsEpisodeDiaryModalOpen(true);
+      return;
+    }
+
+    if (!seasonData) return;
+    const episodes = seasonData.episodes || [];
+    const unwatchedBefore = episodes.filter(
+      (ep) =>
+        ep.episode_number < episodeNumber &&
+        !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+    );
+
+    if (unwatchedBefore.length > 0) {
+      setMarkAllConfirm({
+        season: seasonNumber,
+        episode: episodeNumber,
+        tmdbEpisodeId,
+        episodeName: name,
+        unwatchedCount: unwatchedBefore.length,
+      });
+    } else {
+      setSelectedEpisodeForDiary({
+        seasonNumber,
+        episodeNumber,
+        episodeName: name,
+        tmdbEpisodeId,
+      });
+      setIsEpisodeDiaryModalOpen(true);
+    }
+  };
+
   const isBulkAddingEpisodes = bulkLogEpisodesMutation.isPending;
   const isCreatingEpisodeLog = createEpisodeLogMutation.isPending;
   const isStatusUpdating = statusMutation.isPending || removeMutation.isPending;
@@ -651,79 +726,8 @@ export default function ShowDetailPage() {
                     seasonName={season.name}
                     watchedSet={watchedSet}
                     disabled={!userShow || isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating}
-                    onMarkSeasonAll={async (seasonNumber) => {
-                      if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
-
-                      let seasonData: TMDBSeason;
-
-                      try {
-                        seasonData = await getCachedSeasonDetails(seasonNumber);
-                      } catch {
-                        return;
-                      }
-
-                      if (!seasonData?.episodes?.length) return;
-
-                      const episodesToLog = seasonData.episodes
-                        .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
-                        .map((episode) => ({
-                          episode: episode.episode_number,
-                          name: episode.name,
-                          tmdbEpisodeId: episode.id,
-                        }));
-
-                      if (episodesToLog.length === 0) return;
-
-                      bulkLogEpisodesMutation.mutate({
-                        season: seasonNumber,
-                        episodes: episodesToLog,
-                      });
-                    }}
-                    onToggleEpisode={async (seasonNumber, episodeNumber, name, tmdbEpisodeId) => {
-                      if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
-
-                      // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
-                      let seasonData: TMDBSeason;
-
-                      try {
-                        seasonData = await getCachedSeasonDetails(seasonNumber);
-                      } catch {
-                        setSelectedEpisodeForDiary({
-                          seasonNumber,
-                          episodeNumber,
-                          episodeName: name,
-                          tmdbEpisodeId,
-                        });
-                        setIsEpisodeDiaryModalOpen(true);
-                        return;
-                      }
-
-                      if (!seasonData) return;
-                      const episodes = seasonData.episodes || [];
-                      const unwatchedBefore = episodes.filter(
-                        (ep) =>
-                          ep.episode_number < episodeNumber &&
-                          !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
-                      );
-
-                      if (unwatchedBefore.length > 0) {
-                        setMarkAllConfirm({
-                          season: seasonNumber,
-                          episode: episodeNumber,
-                          tmdbEpisodeId,
-                          episodeName: name,
-                          unwatchedCount: unwatchedBefore.length,
-                        });
-                      } else {
-                        setSelectedEpisodeForDiary({
-                          seasonNumber,
-                          episodeNumber,
-                          episodeName: name,
-                          tmdbEpisodeId,
-                        });
-                        setIsEpisodeDiaryModalOpen(true);
-                      }
-                    }}
+                    onMarkSeasonAll={markAllSeasonEpisodes}
+                    onToggleEpisode={handleToggleEpisode}
                   />
                 ))}
               </>
