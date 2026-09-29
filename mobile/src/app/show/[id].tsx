@@ -677,7 +677,7 @@ export default function ShowDetailScreen() {
         season_number: ep.season_number,
         episode_number: ep.episode_number,
         episode_name: ep.name,
-        watched_at: new Date().toISOString(),
+        watched_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         rating: null,
@@ -693,7 +693,7 @@ export default function ShowDetailScreen() {
           season_number: ep.season_number,
           episode_number: ep.episode_number,
           episode_name: ep.name,
-          watched_at: new Date().toISOString(),
+          watched_at: null,
         })),
       });
 
