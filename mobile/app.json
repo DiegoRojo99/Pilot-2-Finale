@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pilot 2 Finale",
     "slug": "pilot-2-finale-mobile",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pilot2finale",
@@ -13,7 +13,7 @@
     "android": {
       "package": "com.pilot2finale.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0f172a"
       },
       "predictiveBackGestureEnabled": false
@@ -29,7 +29,7 @@
         {
           "backgroundColor": "#0f172a",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 192
         }
       ]
     ],
@@ -38,7 +38,6 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiBaseUrl": "https://pilot-2-finale.vercel.app",
       "router": {},
       "eas": {
         "projectId": "f7c92730-1d83-4588-8e0a-f7e6c4b0c4ee"
