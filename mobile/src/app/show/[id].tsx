@@ -15,6 +15,7 @@ import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes'
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary } from '@/types/api';
 import { type EpisodeLog } from '@/types/episode';
+import { RatingSlider } from '@/components/ui/rating-slider';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
@@ -863,13 +864,20 @@ export default function ShowDetailScreen() {
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
           <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
             <ThemedText type="smallBold">Log Episode Watch</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
-              {show?.name} - S{String(selectedEpisodeForDiary.season_number).padStart(2, '0')} E{String(selectedEpisodeForDiary.episode_number).padStart(2, '0')} - {selectedEpisodeForDiary.name}
-            </ThemedText>
-
+            <View style={styles.episodeDetails}>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
+                {show?.name} - S{String(selectedEpisodeForDiary.season_number).padStart(2, '0')} E{String(selectedEpisodeForDiary.episode_number).padStart(2, '0')}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
+                {selectedEpisodeForDiary.name}
+              </ThemedText>
+            </View>
+            
             <View style={styles.modalInputs}>
               <View>
-                <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Watched date (optional)</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+                  WATCHED
+                </ThemedText>
                 <TextInput
                   style={[
                     styles.modalInput,
@@ -888,25 +896,12 @@ export default function ShowDetailScreen() {
               </View>
 
               <View>
-                <ThemedText type="small" style={{ marginBottom: Spacing.one }}>Rating 0-10 (optional)</ThemedText>
-                <View style={{ gap: Spacing.md }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-                    <ThemedText type="small" style={{ fontSize: 14, fontWeight: '600' }}>
-                      {diaryRating > 0 ? diaryRating.toFixed(1) : '0.0'} / 10
-                    </ThemedText>
-                  </View>
-                  <Slider
-                    style={{ width: '100%', height: 40 }}
-                    minimumValue={0}
-                    maximumValue={10}
-                    value={diaryRating}
-                    onValueChange={setDiaryRating}
-                    step={0.1}
-                    minimumTrackTintColor={theme.accent}
-                    maximumTrackTintColor={theme.border}
-                    thumbTintColor={theme.accent}
-                  />
-                </View>
+                <RatingSlider
+                  value={diaryRating}
+                  onValueChange={setDiaryRating}
+                  label="MY RATING"
+                  displayValue={`${diaryRating.toFixed(1)} / 10`}
+                />
               </View>
             </View>
 
@@ -1127,6 +1122,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 58,
     borderRadius: Spacing.three,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
   },
   backdropFrame: {
     width: '100%',
@@ -1349,6 +1349,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+  },
+  episodeDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginTop: Spacing.one,
+    marginBottom: Spacing.one,
   },
   modalContent: {
     borderRadius: Spacing.four,

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { RatingSlider } from '@/components/ui/rating-slider';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAllEpisodeLogs, updateEpisodeLog, deleteEpisodeLog } from '@/lib/episodes';
@@ -225,49 +225,15 @@ export default function DiaryEntryDetailScreen() {
 
             {/* Rating */}
             <View style={styles.ratingSection}>
-              <View style={styles.ratingDisplay}>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.ratingLabel}>
-                  EPISODE RATING
-                </ThemedText>
-                <ThemedText style={[styles.ratingNumber, { color: theme.text }]}>
-                  {rating ? rating.toFixed(1) : '0.0'} / 10
-                </ThemedText>
-              </View>
-              
-              {/* Slider with tick marks */}
-              <View style={styles.sliderWrapper}>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={0}
-                  maximumValue={10}
-                  value={rating}
-                  onValueChange={setRating}
-                  step={0.1}
-                  minimumTrackTintColor={theme.accent}
-                  maximumTrackTintColor={theme.border}
-                  thumbTintColor={theme.accent}
-                />
-              </View>
-
-              {/* Scale labels */}
-              <View style={styles.scaleLabels}>
-                <ThemedText style={[styles.scaleLabel, { color: theme.textSecondary }]}>0</ThemedText>
-                <View style={styles.tickMarksContainer}>
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.tickMark,
-                        {
-                          backgroundColor: theme.border,
-                          height: i % 5 === 0 ? 8 : 4,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-                <ThemedText style={[styles.scaleLabel, { color: theme.textSecondary }]}>10</ThemedText>
-              </View>
+              <RatingSlider
+                value={rating}
+                onValueChange={setRating}
+                min={0}
+                max={10}
+                step={0.1}
+                label="EPISODE RATING"
+                displayValue={`${rating ? rating.toFixed(1) : '0.0'} / 10`}
+              />
             </View>
           </View>
 
@@ -417,52 +383,6 @@ const styles = StyleSheet.create({
   ratingSection: {
     marginTop: Spacing.sm,
     gap: Spacing.md,
-  },
-  ratingDisplay: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  ratingLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  ratingNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sliderWrapper: {
-    paddingHorizontal: Spacing.md,
-    justifyContent: 'center',
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  scaleLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 0,
-    marginLeft: 12,
-    marginRight: 5,
-    marginTop: -40,
-  },
-  scaleLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  tickMarksContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    height: 12,
-  },
-  tickMark: {
-    width: 1,
-    opacity: 0.6,
   },
   divider: {
     height: 1,
