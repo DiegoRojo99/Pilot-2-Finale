@@ -153,58 +153,62 @@ function EpisodeRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 border-b border-slate-800/60 last:border-0 py-1">
-      {episode.still_path ? (
-        <Image
-          src={getBackdropUrl(episode.still_path)}
-          alt={episode.name}
-          width={64}
-          height={48}
-          className="h-12 w-16 shrink-0 rounded-lg bg-slate-700 object-cover"
-        />
-      ) : (
-        <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-          No image
-        </div>
-      )}
-      <div className="min-w-0 flex-1 py-2">
-        <div className="flex items-center gap-2">
-          <span className="shrink-0 font-mono text-xs text-slate-500">
-            {String(episode.episode_number).padStart(2, "0")}
-          </span>
-          <Link
-            href={`/show/${showId}/season/${episode.season_number}/episode/${episode.episode_number}`}
-            className={`truncate text-sm transition-colors active:text-blue-300 ${isWatched ? "text-slate-400 hover:text-slate-200" : "text-slate-200 hover:text-blue-300"}`}
-          >
-            {episode.name}
-          </Link>
-        </div>
-        <div className="mt-0.5 ml-6 flex items-center gap-2">
-          {episode.air_date && (
-            <span className="flex items-center gap-1 text-xs text-slate-600">
-              <Calendar className="h-3 w-3" />
-              {formatDate(episode.air_date)}
+    <div className="group mb-2 overflow-hidden rounded-lg bg-slate-700/30 transition-all hover:bg-slate-700/50 disabled:opacity-60">
+      <div className="flex items-center gap-3 p-3">
+        {episode.still_path ? (
+          <Image
+            src={getBackdropUrl(episode.still_path)}
+            alt={episode.name}
+            width={64}
+            height={48}
+            className="h-12 w-16 shrink-0 rounded-md bg-slate-700 object-cover"
+          />
+        ) : (
+          <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md bg-slate-800 text-[10px] uppercase tracking-[0.18em] text-slate-600">
+            No image
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 font-mono text-xs font-semibold text-slate-400">
+              {String(episode.episode_number).padStart(2, "0")}
             </span>
-          )}
-          {episode.vote_average > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-amber-500">
-              <Star className="h-3 w-3 fill-current" />
-              {episode.vote_average.toFixed(1)}
-            </span>
-          )}
-          {episode.runtime ? <span className="text-xs text-slate-600">{episode.runtime}m</span> : null}
+            <Link
+              href={`/show/${showId}/season/${episode.season_number}/episode/${episode.episode_number}`}
+              className={`truncate text-sm font-medium transition-colors active:text-blue-300 ${isWatched ? "text-slate-500 hover:text-slate-300" : "text-slate-100 hover:text-blue-300"}`}
+            >
+              {episode.name}
+            </Link>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {episode.air_date && (
+              <span className="flex items-center gap-1 text-xs text-slate-500">
+                <Calendar className="h-3 w-3" />
+                {formatDate(episode.air_date)}
+              </span>
+            )}
+            {episode.vote_average > 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-amber-500">
+                <Star className="h-3 w-3 fill-current" />
+                {episode.vote_average.toFixed(1)}
+              </span>
+            )}
+            {episode.runtime ? <span className="text-xs text-slate-500">{episode.runtime}m</span> : null}
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          disabled={disabled}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+            isWatched 
+              ? "border-green-500/80 bg-green-500/20 text-green-400 group-hover:border-green-500 group-hover:bg-green-500/30" 
+              : "border-slate-600 text-transparent group-hover:border-slate-500 active:border-slate-400"
+          }`}
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled}
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-          isWatched ? "border-green-500 bg-green-500 text-white" : "border-slate-600 text-transparent active:border-slate-400"
-        }`}
-      >
-        <Check className="h-4 w-4" />
-      </button>
     </div>
   );
 }
@@ -644,7 +648,7 @@ export default function ShowDetailPage() {
     <PageShell showBack noPadding>
       <div className="relative">
         {show.backdrop_path ? (
-          <div className="relative h-48 overflow-hidden">
+          <div className="relative h-48 md:h-64 lg:h-80 xl:h-[32rem] 2xl:h-[40rem] overflow-hidden">
             <Image src={getBackdropUrl(show.backdrop_path)} alt="" fill className="object-cover" sizes="100vw" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900" />
           </div>
