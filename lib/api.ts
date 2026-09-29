@@ -2,7 +2,7 @@
 
 import type {
   UserAchievementProgressView,
-  EpisodeBatchResponse,
+
   EpisodeLog,
   ShowStatus,
   StatsPeriod,
@@ -103,12 +103,6 @@ export const getEpisodeLogs = (
 
 export const getShowEpisodeLogs = (tmdbShowId: number) =>
   fetchJson<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);
-
-export const getShowEpisodeLogsBatch = (tmdbShowIds: number[]) =>
-  fetchJson<EpisodeBatchResponse>("/api/episodes/batch", {
-    method: "POST",
-    body: JSON.stringify({ tmdb_show_ids: tmdbShowIds }),
-  });
 
 export const syncShowEpisodeCatalogBatch = (tmdbShowIds: number[]) =>
   fetchJson<{

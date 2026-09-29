@@ -1,5 +1,4 @@
 import { apiRequest } from '@/lib/api';
-import type { EpisodeBatchResponse } from '@/types/api';
 import type { EpisodeLog, EpisodeStatsPeriod, EpisodeStatsResponse } from '@/types/episode';
 
 export function getShowEpisodeLogs(tmdbShowId: number) {
@@ -10,12 +9,6 @@ export function getStats(period: EpisodeStatsPeriod) {
   return apiRequest<EpisodeStatsResponse>(`/api/episodes/stats?period=${period}`);
 }
 
-export function getShowEpisodeLogsBatch(tmdbShowIds: number[]) {
-  return apiRequest<EpisodeBatchResponse>('/api/episodes/batch', {
-    method: 'POST',
-    body: JSON.stringify({ tmdb_show_ids: tmdbShowIds }),
-  });
-}
 
 export function getAllEpisodeLogs(limit?: number) {
   const params = new URLSearchParams();

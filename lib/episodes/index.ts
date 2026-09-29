@@ -1,6 +1,5 @@
 // Episode-related functionality
 export { syncShowEpisodeCatalog } from './catalog';
-export { fetchEpisodeBatchForUser } from './batch';
 export { 
   createEpisodeLogForUser,
   createEpisodeLogsBulkForUser,

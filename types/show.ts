@@ -75,11 +75,6 @@ export interface ShowProgress {
   next_episode: ShowNextEpisode | null;
 }
 
-export interface EpisodeBatchResponse {
-  logsByShowId: Record<number, EpisodeLog[]>;
-  progressByShowId: Record<number, ShowProgress>;
-}
-
 export const STATUS_LABELS: Record<ShowStatus, string> = {
   watching: "Watching",
   want_to_watch: "Watchlist",

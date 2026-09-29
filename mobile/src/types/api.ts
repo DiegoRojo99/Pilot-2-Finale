@@ -73,11 +73,6 @@ export type ShowProgress = {
   next_episode: ShowNextEpisode | null;
 };
 
-export type EpisodeBatchResponse = {
-  logsByShowId: Record<number, unknown[]>;
-  progressByShowId: Record<number, ShowProgress>;
-};
-
 export type TMDBShow = {
   id: number;
   name: string;
