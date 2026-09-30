@@ -23,14 +23,25 @@ function getNextEpisodeSummary(show: UserShow) {
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
   const remainingAfterNext = Math.max((show.remaining_episodes_count ?? 0) - 1, 0);
 
-  if (!nextEpisode && !isCompleted) {
-    // Show is in progress but we don't have next episode data yet
-    return {
-      primary: 'Start watching',
-      secondary: 'S01 E01',
-      extra: null,
-      isLoading: true,
-    };
+  if (!nextEpisode) {
+    // No next episode available
+    if (isCompleted || (show.remaining_episodes_count ?? 0) === 0) {
+      // All episodes watched
+      return {
+        primary: 'Completed',
+        secondary: 'All episodes watched',
+        extra: null,
+        isLoading: false,
+      };
+    } else {
+      // Show is in progress but we don't have next episode data yet (loading state)
+      return {
+        primary: 'Start watching',
+        secondary: 'S01 E01',
+        extra: null,
+        isLoading: true,
+      };
+    }
   }
 
   return {
