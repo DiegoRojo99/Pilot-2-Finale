@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { getMyShows } from '@/lib/shows';
 import { getUpcomingEpisodes } from '@/lib/episodes';
 import { UserShowCard } from '@/components/show/user-show-card';
+import { TabBar } from '@/components/ui/tab-bar';
 import type { UserShow } from '@/types/api';
 import type { UpcomingEpisode } from '@/types/episode';
 
@@ -256,63 +257,23 @@ export default function MyShowsScreen() {
     <View style={[styles.scrollView, { backgroundColor: theme.background }]}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         {/* Tabs - Full Width */}
-        <View style={[styles.tabsContainer]}>
-          <TouchableOpacity
-            onPress={() => setSelectedTab('shows')}
-            style={[
-              styles.tab,
-              selectedTab === 'shows' && { borderBottomColor: theme.text, borderBottomWidth: 2 },
-            ]}
-          >
-            <View style={styles.tabContent}>
-              <SymbolView 
-                name={{
-                  ios: 'tv',
-                  android: 'tv',
-                  web: 'tv',
-                }}
-                size={16} 
-                tintColor={selectedTab === 'shows' ? theme.text : theme.textSecondary}
-                style={styles.tabIcon}
-              />
-              <ThemedText
-                type="small"
-                style={{ fontWeight: selectedTab === 'shows' ? '600' : '400', fontSize: 16 }}
-                themeColor={selectedTab === 'shows' ? 'text' : 'textSecondary'}
-              >
-                My Shows
-              </ThemedText>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setSelectedTab('coming')}
-            style={[
-              styles.tab,
-              selectedTab === 'coming' && { borderBottomColor: theme.text, borderBottomWidth: 2 },
-            ]}
-          >
-            <View style={styles.tabContent}>
-              <SymbolView 
-                name={{
-                  ios: 'calendar',
-                  android: 'calendar_month',
-                  web: 'calendar_month',
-                }}
-                size={16} 
-                tintColor={selectedTab === 'coming' ? theme.text : theme.textSecondary}
-                style={styles.tabIcon}
-              />
-              <ThemedText
-                type="small"
-                style={{ fontWeight: selectedTab === 'coming' ? '600' : '400', fontSize: 16 }}
-                themeColor={selectedTab === 'coming' ? 'text' : 'textSecondary'}
-              >
-                Coming Soon
-              </ThemedText>
-            </View>
-          </TouchableOpacity>
-        </View>
+        <TabBar
+          tabs={[
+            {
+              id: 'shows',
+              label: 'My Shows',
+              symbolIcon: { ios: 'tv', android: 'tv', web: 'tv' },
+            },
+            {
+              id: 'coming',
+              label: 'Coming Soon',
+              symbolIcon: { ios: 'calendar', android: 'calendar_month', web: 'calendar_month' },
+            },
+          ]}
+          activeTab={selectedTab}
+          onTabChange={(tabId) => setSelectedTab(tabId as TabType)}
+          useSymbols={true}
+        />
 
         {/* Status filter - only for My Shows tab */}
         {selectedTab === 'shows' && (
@@ -390,33 +351,8 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    gap: 0,
-    marginBottom: Spacing.two,
-    marginHorizontal: -Spacing.two,
-    paddingHorizontal: Spacing.two,
-    borderBottomWidth: 1,
-    paddingBottom: Spacing.two,
-  },
-  tab: {
-    flex: 1,
-    paddingBottom: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    borderBottomWidth: 0,
-    alignItems: 'center',
-  },
-  tabContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  tabIcon: {
-    marginBottom: 2,
-    marginRight: 2,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
   },
   filterContainer: {
     marginBottom: Spacing.three,
