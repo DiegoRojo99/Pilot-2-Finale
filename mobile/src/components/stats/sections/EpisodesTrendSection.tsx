@@ -27,7 +27,8 @@ export function EpisodesTrendSection() {
     const fetchTrendData = async () => {
       setLoading(true);
       try {
-        const logs = await getAllEpisodeLogs();
+        // Fetch all historical logs (use high limit to get all data, not just recent 50)
+        const logs = await getAllEpisodeLogs(10000);
         const grouped = groupEpisodesByTrend(logs, period);
         setData(grouped);
       } catch (error) {

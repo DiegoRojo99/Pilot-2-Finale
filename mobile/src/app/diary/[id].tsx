@@ -34,7 +34,8 @@ export default function DiaryEntryDetailScreen() {
       try {
         if (!id) return;
         const entryId = parseInt(id, 10);
-        const logs = await getAllEpisodeLogs(100);
+        // Fetch all historical logs to find the specific entry
+        const logs = await getAllEpisodeLogs(10000);
         const found = logs.find((log) => log.id === entryId);
         if (found) {
           setEntry(found);

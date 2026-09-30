@@ -28,7 +28,8 @@ function AuthenticatedDiary() {
 
   const fetchDiary = useCallback(async () => {
     try {
-      const logs = await getAllEpisodeLogs(100);
+      // Fetch all historical logs (use high limit to get all data, not just recent 100)
+      const logs = await getAllEpisodeLogs(10000);
       setEntries(logs);
       groupEntriesByDay(logs);
       setStatus('success');

@@ -15,18 +15,18 @@ export function groupEpisodesByTrend(
   const validLogs = logs.filter(log => log.watched_at);
   if (!validLogs.length) return [];
 
+  // Use local date boundaries (not UTC) since logs are stored by local date
   const now = new Date();
-  let startDate = new Date();
+  const startDate = new Date();
 
   // Determine start date based on period
-  if (periodType === 'l7d') {
-    startDate.setDate(now.getDate() - 7);
-  } else if (periodType === 'l8w') {
-    startDate.setDate(now.getDate() - 56); // 8 weeks
-  } else {
-    // ly - last year
-    startDate.setFullYear(now.getFullYear() - 1);
-  }
+  if (periodType === 'l7d') startDate.setDate(now.getDate() - 7);
+  else if (periodType === 'l8w') startDate.setDate(now.getDate() - 56); // 8 weeks
+  else startDate.setFullYear(now.getFullYear() - 1); // ly - last year
+
+  // Set start to beginning of day, end to end of day (local time)
+  startDate.setHours(0, 0, 0, 0);
+  now.setHours(23, 59, 59, 999);
 
   // Filter logs within the period
   const periodLogs = validLogs.filter(log => {
@@ -112,8 +112,8 @@ function groupByWeek(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendD
 function groupByMonth(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDataPoint[] {
   const grouped: Record<string, number> = {};
 
-  // Initialize months
-  const current = new Date(startDate);
+  // Initialize months (always use 1st of month to avoid date overflow issues)
+  const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
   while (current <= endDate) {
     const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
     grouped[key] = 0;
