@@ -256,12 +256,12 @@ export default function MyShowsScreen() {
     <View style={[styles.scrollView, { backgroundColor: theme.background }]}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         {/* Tabs - Full Width */}
-        <View style={[styles.tabsContainer, { borderBottomColor: theme.border }]}>
+        <View style={[styles.tabsContainer]}>
           <TouchableOpacity
             onPress={() => setSelectedTab('shows')}
             style={[
               styles.tab,
-              selectedTab === 'shows' && { borderBottomColor: theme.accent, borderBottomWidth: 2 },
+              selectedTab === 'shows' && { borderBottomColor: theme.text, borderBottomWidth: 2 },
             ]}
           >
             <View style={styles.tabContent}>
@@ -272,7 +272,7 @@ export default function MyShowsScreen() {
                   web: 'tv',
                 }}
                 size={16} 
-                tintColor={selectedTab === 'shows' ? theme.accent : theme.textSecondary}
+                tintColor={selectedTab === 'shows' ? theme.text : theme.textSecondary}
                 style={styles.tabIcon}
               />
               <ThemedText
@@ -289,7 +289,7 @@ export default function MyShowsScreen() {
             onPress={() => setSelectedTab('coming')}
             style={[
               styles.tab,
-              selectedTab === 'coming' && { borderBottomColor: theme.accent, borderBottomWidth: 2 },
+              selectedTab === 'coming' && { borderBottomColor: theme.text, borderBottomWidth: 2 },
             ]}
           >
             <View style={styles.tabContent}>
@@ -300,7 +300,7 @@ export default function MyShowsScreen() {
                   web: 'calendar_month',
                 }}
                 size={16} 
-                tintColor={selectedTab === 'coming' ? theme.accent : theme.textSecondary}
+                tintColor={selectedTab === 'coming' ? theme.text : theme.textSecondary}
                 style={styles.tabIcon}
               />
               <ThemedText
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     gap: 0,
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.two,
     marginHorizontal: -Spacing.two,
     paddingHorizontal: Spacing.two,
     borderBottomWidth: 1,
