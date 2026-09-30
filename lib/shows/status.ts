@@ -1,6 +1,6 @@
 import type { ShowStatus } from "@/types";
 import { prisma } from "@/lib/core";
-import { findNextUnwatchedEpisode } from "@/lib/episodes";
+import { findNextUnwatchedEpisode, isEpisodeUnreleased } from "@/lib/episodes";
 
 type ProgressSnapshot = {
   totalEpisodes: number;
@@ -48,7 +48,22 @@ export async function refreshUserShowProgress(userId: string, tmdbShowId: number
   const watchedRuntimeMinutes = watchedEntries.reduce((sum, row) => sum + (row.episode.runtime ?? 0), 0);
   const totalEpisodes = userShow.show.numberOfEpisodes ?? 0;
   const totalRuntimeMinutes = userShow.show.totalRuntimeMinutes ?? 0;
-  const remainingEpisodes = Math.max(0, totalEpisodes - watchedEpisodesCount);
+  
+  // Get count of released episodes only
+  const allEpisodes = await prisma.episode.findMany({
+    where: {
+      tmdbShowId,
+    },
+    select: {
+      airDate: true,
+    },
+  });
+  
+  const releasedEpisodesCount = allEpisodes.filter(
+    (ep) => !isEpisodeUnreleased({ air_date: ep.airDate } as any)
+  ).length;
+  
+  const remainingEpisodes = Math.max(0, releasedEpisodesCount - watchedEpisodesCount);
   const remainingRuntime = Math.max(0, totalRuntimeMinutes - watchedRuntimeMinutes);
 
   await prisma.userShow.updateMany({

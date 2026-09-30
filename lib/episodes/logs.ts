@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/core";
 import type { EpisodeLog } from "@/types";
+import { isEpisodeUnreleased } from "./unreleased";
 
 function mapEpisodeLog(row: {
   id: number;
@@ -500,7 +501,7 @@ export async function findNextUnwatchedEpisode(
 
   const watchedEpisodeIds = new Set(watchedEntries.map((e) => e.episodeId));
 
-  // Get all episodes for this show, ordered chronologically
+  // Get all episodes for this show, ordered chronologically, with airDate to check if released
   const episodes = await prisma.episode.findMany({
     where: {
       tmdbShowId,
@@ -509,6 +510,7 @@ export async function findNextUnwatchedEpisode(
       id: true,
       seasonNumber: true,
       episodeNumber: true,
+      airDate: true,
     },
     orderBy: [
       { seasonNumber: "asc" },
@@ -516,13 +518,16 @@ export async function findNextUnwatchedEpisode(
     ],
   });
 
-  // Find the first unwatched episode
+  // Find the first unwatched RELEASED episode
   for (const episode of episodes) {
     if (!watchedEpisodeIds.has(episode.id)) {
-      return episode.id;
+      // Only return if episode is released
+      if (!isEpisodeUnreleased({ air_date: episode.airDate } as any)) {
+        return episode.id;
+      }
     }
   }
 
-  // All episodes are watched
+  // All released episodes are watched
   return null;
 }
