@@ -143,7 +143,7 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
       >
         <ThemedView style={styles.list}>
           {shows.map((show) => (
-            <UserShowCard key={show.id} show={show} />
+            <UserShowCard key={show.id} show={show} onEpisodeLogged={handleRefresh} />
           ))}
         </ThemedView>
       </ScrollView>
