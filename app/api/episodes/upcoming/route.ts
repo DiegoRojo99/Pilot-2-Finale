@@ -117,16 +117,14 @@ export async function GET(request: Request) {
       });
 
     // Sort based on sortBy parameter
-    if (sortBy === "show") {
-      upcomingEpisodes.sort((a, b) => a.showName.localeCompare(b.showName));
-    }
-    // Default 'date' sorting is already applied in the query
+    if (sortBy === "show") upcomingEpisodes.sort((a, b) => a.showName.localeCompare(b.showName));
 
     return NextResponse.json({
       episodes: upcomingEpisodes,
       total: upcomingEpisodes.length,
     });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error("[UPCOMING_EPISODES_ERROR]", error);
     return NextResponse.json(
       { error: "Failed to fetch upcoming episodes" },
