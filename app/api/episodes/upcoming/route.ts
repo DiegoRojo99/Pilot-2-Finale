@@ -30,7 +30,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   
   // Query parameters
-  const daysAhead = parseInt(searchParams.get("days") ?? "30", 10);
   const status = searchParams.get("status"); // Optional filter by show status
   const sortBy = (searchParams.get("sortBy") ?? "date") as "date" | "show"; // 'date' or 'show'
   
@@ -64,12 +63,9 @@ export async function GET(request: Request) {
 
     const showIds = userShows.map((s) => s.tmdbId);
 
-    // Calculate date range for upcoming episodes
+    // Calculate today's date for comparison
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    
-    const futureDate = new Date(today);
-    futureDate.setUTCDate(futureDate.getUTCDate() + daysAhead);
 
     // Fetch all episodes for these shows
     const episodes = await prisma.episode.findMany({
@@ -96,21 +92,13 @@ export async function GET(request: Request) {
       },
     });
 
-    // Filter to unreleased episodes within date range
+    // Filter to unreleased episodes (all future episodes)
     const upcomingEpisodes: UpcomingEpisode[] = episodes
       .filter((ep) => {
         if (!ep.airDate) return false;
         
-        const epDate = new Date(ep.airDate);
-        epDate.setUTCHours(0, 0, 0, 0);
-        
         // Check if it's unreleased
-        if (!isEpisodeUnreleased({ air_date: ep.airDate } as any)) {
-          return false;
-        }
-        
-        // Check if it's within the date range
-        return epDate <= futureDate;
+        return isEpisodeUnreleased({ air_date: ep.airDate } as any);
       })
       .map((ep) => {
         const userShow = userShows.find((s) => s.tmdbId === ep.tmdbShowId);
