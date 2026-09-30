@@ -102,3 +102,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to add show" }, { status: 500 });
   }
 }
+
+/**
+ * PATCH /api/my-shows - Refresh all user shows' progress
+ * Recalculates next episode and remaining episode counts for all user shows
+ * This is needed when episode release status changes (past episodes become released)
+ */
+export async function PATCH(request: Request) {
+  const rateLimited = defaultRateLimit(request);
+  if (rateLimited) return rateLimited;
+
+  const authResult = await requireAuthenticatedUser();
+  if ("response" in authResult) return authResult.response;
+  const { userId } = authResult.context;
+
+  try {
+    // Get all user shows
+    const userShows = await prisma.userShow.findMany({
+      where: { userId },
+      select: { tmdbId: true },
+    });
+
+    // Refresh progress for each show
+    for (const userShow of userShows) {
+      await updateNextEpisodeToWatch(userId, userShow.tmdbId);
+      await refreshUserShowProgress(userId, userShow.tmdbId);
+    }
+
+    // Return updated shows
+    const shows = await fetchUserShowsByUserId(userId, undefined, {
+      preferUserNameWhenShowIsPlaceholder: true,
+    });
+
+    return NextResponse.json({
+      message: `Refreshed ${userShows.length} show(s)`,
+      shows,
+    });
+  } catch (error) {
+    console.error("Error refreshing shows:", error);
+    return NextResponse.json({ error: "Failed to refresh shows" }, { status: 500 });
+  }
+}
