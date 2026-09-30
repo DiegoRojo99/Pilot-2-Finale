@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Tv } from "lucide-react";
+import { ChevronDown, Tv, Clock } from "lucide-react";
 import { getMyShows } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { UserShowCard } from "@/components/show/ShowCard";
@@ -87,13 +87,15 @@ export default function WatchingPage() {
           className={`${styles.tab} ${activeTab === "shows" ? styles.tabActive : ""}`}
           onClick={() => setActiveTab("shows")}
         >
-          📺 My Shows
+          <Tv className="h-4 w-4" />
+          <span>My Shows</span>
         </button>
         <button
           className={`${styles.tab} ${activeTab === "coming" ? styles.tabActive : ""}`}
           onClick={() => setActiveTab("coming")}
         >
-          🎬 Coming Soon
+          <Clock className="h-4 w-4" />
+          <span>Coming Soon</span>
         </button>
       </div>
 
