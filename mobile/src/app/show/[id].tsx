@@ -357,6 +357,7 @@ export default function ShowDetailScreen() {
   const [loadedShowId, setLoadedShowId] = useState<number | null>(null);
   const [seasonDataCache, setSeasonDataCache] = useState<Map<string, TMDBSeason>>(new Map());
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDiaryModalOpen, setIsDiaryModalOpen] = useState(false);
   const [selectedEpisodeForDiary, setSelectedEpisodeForDiary] = useState<TMDBEpisode | null>(null);
   const [diaryDate, setDiaryDate] = useState(''); // Format: 'YYYY-MM-DD'
@@ -567,6 +568,36 @@ export default function ShowDetailScreen() {
   const handleStatusChange = async (newStatus: ShowStatus) => {
     if (!show) return;
 
+    // Store original for rollback
+    const originalUserShow = userShow;
+    
+    // Optimistic update: update UI immediately
+    if (!userShow) {
+      // Add show with new status - create optimistic show object
+      setUserShow({
+        id: Date.now(),
+        tmdb_id: show.id,
+        name: show.name,
+        poster_path: show.poster_path,
+        backdrop_path: show.backdrop_path,
+        overview: show.overview,
+        first_air_date: show.first_air_date,
+        status: newStatus,
+        vote_average: show.vote_average,
+        number_of_seasons: show.number_of_seasons ?? 0,
+        number_of_episodes: show.number_of_episodes ?? 0,
+        remaining_episodes_count: show.number_of_episodes ?? 0,
+        added_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      // Update existing status optimistically
+      setUserShow({ ...userShow, status: newStatus });
+    }
+    
+    // Close menu immediately for better UX
+    setShowStatusMenu(false);
+    setIsUpdatingStatus(true);
     try {
       if (!userShow) {
         // Add show with new status
@@ -583,27 +614,45 @@ export default function ShowDetailScreen() {
           status: newStatus,
         });
         setUserShow(added);
-      } else {
+      } 
+      else {
         // Update existing status
         const updated = await updateShowStatus(showId, newStatus);
         setUserShow(updated);
       }
-      setShowStatusMenu(false);
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error updating show status:', error);
+      // Rollback on failure
+      setUserShow(originalUserShow);
+    } 
+    finally {
+      setIsUpdatingStatus(false);
     }
   };
 
   const handleRemoveShow = async () => {
     if (!userShow) return;
 
+    // Store original for rollback
+    const originalUserShow = userShow;
+    const originalLogs = episodeLogs;
+    
+    // Optimistic update: remove immediately from UI
+    setUserShow(null);
+    setEpisodeLogs([]);
+
+    setIsUpdatingStatus(true);
     try {
       await removeShow(showId);
-      setUserShow(null);
-      setEpisodeLogs([]);
       setShowStatusMenu(false);
     } catch (error) {
       console.error('Error removing show:', error);
+      // Rollback on failure
+      setUserShow(originalUserShow);
+      setEpisodeLogs(originalLogs);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -859,7 +908,15 @@ export default function ShowDetailScreen() {
               <ThemedView style={styles.statusPickerContainer}>
                 <TouchableOpacity
                   onPress={() => setShowStatusMenu(!showStatusMenu)}
-                  style={[styles.statusButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
+                  disabled={isUpdatingStatus}
+                  style={[
+                    styles.statusButton,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                      borderColor: theme.border,
+                      opacity: isUpdatingStatus ? 0.6 : 1,
+                    }
+                  ]}
                 >
                   <ThemedText type="small">
                     {userShow ? STATUS_LABELS[userShow.status] : 'Add to List'}
@@ -872,9 +929,11 @@ export default function ShowDetailScreen() {
                       <TouchableOpacity
                         key={s}
                         onPress={() => handleStatusChange(s)}
+                        disabled={isUpdatingStatus}
                         style={[
                           styles.statusMenuItem,
-                          userShow?.status === s && { backgroundColor: theme.accent }
+                          userShow?.status === s && { backgroundColor: theme.accent },
+                          isUpdatingStatus && { opacity: 0.5 }
                         ]}
                       >
                         <ThemedText
@@ -890,7 +949,8 @@ export default function ShowDetailScreen() {
                         <View style={[styles.statusMenuDivider, { borderColor: theme.border }]} />
                         <TouchableOpacity
                           onPress={handleRemoveShow}
-                          style={styles.statusMenuItem}
+                          disabled={isUpdatingStatus}
+                          style={[styles.statusMenuItem, isUpdatingStatus && { opacity: 0.5 }]}
                         >
                           <ThemedText type="small" style={{ color: theme.danger }}>
                             Remove from list
