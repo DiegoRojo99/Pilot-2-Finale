@@ -8,8 +8,8 @@ import { Spacing } from '@/constants/theme';
 export interface TabItem {
   id: string;
   label: string;
-  icon?: string; // Ionicons name
-  symbolIcon?: { ios: string; android: string; web: string }; // SF Symbols
+  icon?: any; // Ionicons name (strict typing omitted for flexibility)
+  symbolIcon?: any; // SF Symbols with platform overrides
 }
 
 interface TabsProps {
