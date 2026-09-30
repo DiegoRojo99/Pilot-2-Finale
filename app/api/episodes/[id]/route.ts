@@ -3,7 +3,6 @@ import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { deleteEpisodeLogById, updateEpisodeLogById } from "@/lib/episodes";
 import { reconcileUserShowStatus, updateNextEpisodeToWatch } from "@/lib/shows";
 import { defaultRateLimit } from "@/lib/core";
-import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 
 export const runtime = "nodejs";
 
@@ -40,7 +39,6 @@ export async function DELETE(
   
   await updateNextEpisodeToWatch(userId, tmdbShowId);
   await reconcileUserShowStatus(userId, tmdbShowId);
-  await safeRecomputeAchievementProgressForUser(userId);
   return NextResponse.json({ success: true });
 }
 
@@ -77,7 +75,6 @@ export async function PATCH(
 
   await updateNextEpisodeToWatch(userId, updated.tmdb_show_id);
   await reconcileUserShowStatus(userId, updated.tmdb_show_id);
-  await safeRecomputeAchievementProgressForUser(userId);
 
   return NextResponse.json(updated);
 }

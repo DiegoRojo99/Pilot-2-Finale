@@ -82,17 +82,38 @@ export default function DiaryEntryDetailScreen() {
       return;
     }
 
+    // Store original values for rollback
+    const originalEntry = { ...entry, rating: entry.rating, notes: entry.notes, watched_at: entry.watched_at };
+    
+    // Optimistic update: update UI immediately
+    const updatedEntry: EpisodeLog = {
+      ...entry,
+      rating: rating > 0 ? rating : null,
+      notes: notes || null,
+      watched_at: watchedDate ? `${watchedDate}T00:00:00.000Z` : null,
+      updated_at: new Date().toISOString(),
+    };
+    setEntry(updatedEntry);
     setSaving(true);
+
     try {
+      // Make API call (set will resolve optimistically)
       await updateEpisodeLog(entry.id, {
         rating: rating > 0 ? rating : null,
         notes: notes || undefined,
         watched_at: watchedDate ? `${watchedDate}T00:00:00.000Z` : null,
       });
-      Alert.alert('Success', 'Entry updated');
+      
+      // Success - go back immediately (no alert needed for success)
       router.back();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save changes');
+      // Rollback on failure
+      setEntry(originalEntry);
+      setRating(originalEntry.rating ?? 0);
+      setNotes(originalEntry.notes ?? '');
+      setWatchedDate(originalEntry.watched_at?.split('T')[0] ?? '');
+      
+      Alert.alert('Error', 'Failed to save changes. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -109,12 +130,10 @@ export default function DiaryEntryDetailScreen() {
           setSaving(true);
           try {
             await deleteEpisodeLog(entry.id);
-            Alert.alert('Success', 'Entry deleted');
             router.back();
           } catch (error) {
-            Alert.alert('Error', 'Failed to delete entry');
-          } finally {
             setSaving(false);
+            Alert.alert('Error', 'Failed to delete entry. Please try again.');
           }
         },
         style: 'destructive',

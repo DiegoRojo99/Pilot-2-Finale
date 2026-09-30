@@ -58,6 +58,5 @@ export async function DELETE(
 
   if (deletedCount === 0) return NextResponse.json({ error: "Episode log not found" }, { status: 404 });
   await reconcileUserShowStatus(userId, numericTmdbShowId);
-  await safeRecomputeAchievementProgressForUser(userId);
   return NextResponse.json({ success: true });
 }
