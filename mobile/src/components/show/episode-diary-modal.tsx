@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Modal, View, Text, TextInput, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { Modal, View, TextInput, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -44,15 +43,17 @@ export function EpisodeDiaryModal({
     setRatingInput(defaultRating === null || defaultRating === undefined ? '' : String(defaultRating));
     setError(null);
   }, [defaultRating, defaultWatchedAt, isOpen]);
-
-  const handleCancel = () => {
+  
+  // Memoize cancel handler to prevent re-renders
+  const handleCancelMemo = useCallback(() => {
     setError(null);
     setWatchedDate('');
     setRatingInput('');
     onCancel();
-  };
+  }, [onCancel]);
 
-  const handleSubmit = () => {
+  // Memoize submit handler
+  const handleSubmitMemo = useCallback(() => {
     const parsedRating = ratingInput.trim() === '' ? null : Number(ratingInput);
     const isValidNumber = parsedRating === null || (Number.isFinite(parsedRating) && parsedRating >= 0 && parsedRating <= 10);
 
@@ -73,14 +74,14 @@ export function EpisodeDiaryModal({
 
     setWatchedDate('');
     setRatingInput('');
-  };
+  }, [ratingInput, watchedDate, onSubmit]);
 
   return (
     <Modal
       visible={isOpen}
       transparent
       animationType="fade"
-      onRequestClose={handleCancel}
+      onRequestClose={handleCancelMemo}
     >
       <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.6)' }]}>
         <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement }]}>
@@ -145,7 +146,7 @@ export function EpisodeDiaryModal({
 
           <View style={styles.buttonRow}>
             <Pressable
-              onPress={handleCancel}
+              onPress={handleCancelMemo}
               disabled={isPending}
               style={[
                 styles.button,
@@ -161,7 +162,7 @@ export function EpisodeDiaryModal({
               </ThemedText>
             </Pressable>
             <Pressable
-              onPress={handleSubmit}
+              onPress={handleSubmitMemo}
               disabled={isPending}
               style={[
                 styles.button,
