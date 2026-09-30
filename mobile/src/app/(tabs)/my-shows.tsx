@@ -1,5 +1,5 @@
 import { AuthGate } from '@/components/auth/auth-gate';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
@@ -176,11 +176,8 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
       (groups, episode) => {
         const dateKey = episode.airDate;
         const existing = groups.find(g => g.date === dateKey);
-        if (existing) {
-          existing.episodes.push(episode);
-        } else {
-          groups.push({ date: dateKey, episodes: [episode] });
-        }
+        if (existing) existing.episodes.push(episode);
+        else groups.push({ date: dateKey, episodes: [episode] });
         return groups;
       },
       [] as { date: string; episodes: UpcomingEpisode[] }[]
@@ -193,7 +190,7 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
         style={{ flex: 1 }}
       >
         <ThemedView style={styles.list}>
-          {groupedEpisodes.map((group) => {
+          {groupedEpisodes.map((group: { date: string; episodes: UpcomingEpisode[] }) => {
             const groupDate = new Date(group.date);
             const dateLabel = groupDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -205,19 +202,42 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
                 >
                   {dateLabel}
                 </ThemedText>
-                {group.episodes.map((episode) => (
-                  <Card 
-                    key={`${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`}
-                    style={styles.episodeCard}
-                  >
-                    <ThemedText type="small" style={{ fontWeight: '600' }}>
-                      {episode.showName}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
-                      S{String(episode.seasonNumber).padStart(2, '0')} E{String(episode.episodeNumber).padStart(2, '0')} • {episode.title}
-                    </ThemedText>
-                  </Card>
-                ))}
+                {group.episodes.map((episode: UpcomingEpisode) => {
+                  const posterUrl = episode.showPosterPath
+                    ? `https://image.tmdb.org/t/p/w185${episode.showPosterPath}`
+                    : null;
+
+                  return (
+                    <Card 
+                      key={`${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`}
+                      style={styles.episodeCard}
+                    >
+                      <View style={styles.episodeContent}>
+                        {posterUrl ? (
+                          <Image
+                            source={{ uri: posterUrl }}
+                            style={styles.episodePoster}
+                          />
+                        ) : (
+                          <View style={[styles.episodePoster, { backgroundColor: theme.backgroundElement }]} />
+                        )}
+                        <View style={styles.episodeInfo}>
+                          <ThemedText type="small" style={{ fontWeight: '600' }} numberOfLines={1}>
+                            {episode.showName}
+                          </ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one, fontSize: 12 }} numberOfLines={1}>
+                            S{String(episode.seasonNumber).padStart(2, '0')} E{String(episode.episodeNumber).padStart(2, '0')}
+                          </ThemedText>
+                          {episode.title && (
+                            <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }} numberOfLines={2}>
+                              {episode.title}
+                            </ThemedText>
+                          )}
+                        </View>
+                      </View>
+                    </Card>
+                  );
+                })}
               </View>
             );
           })}
@@ -438,12 +458,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.5,
     marginBottom: Spacing.two,
-    marginTop: Spacing.three,
-    fontWeight: '600',
+    borderBottomWidth: 1,
+    borderBottomColor: '#475569',
+    fontWeight: '700',
   },
   episodeCard: {
     marginBottom: Spacing.two,
+    padding: 0,
+    overflow: 'hidden',
+    borderRadius: Spacing.two,
+  },
+  episodeContent: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  episodePoster: {
+    width: 56,
+    height: 85,
+    marginRight: Spacing.two,
+  },
+  episodeInfo: {
+    flex: 1,
     padding: Spacing.two,
+    justifyContent: 'center',
   },
   list: {
     alignSelf: 'stretch',
