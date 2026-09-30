@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, RefreshControl, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { View, RefreshControl, StyleSheet, FlatList } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthGate } from '@/components/auth/auth-gate';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { DiaryEmptyState, DiaryLoadingState, DiaryErrorState } from '@/components/diary';
@@ -117,7 +116,7 @@ function AuthenticatedDiary() {
             />
           </View>
           {viewMode === 'calendar' && (
-            <View style={styles.contentWrapper}>
+            <View>
               <DiaryCalendar logs={entries} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
             </View>
           )}
@@ -125,7 +124,7 @@ function AuthenticatedDiary() {
       }
       data={days}
       renderItem={({ item: day }) => (
-        <View style={styles.contentWrapper}>
+        <View>
           <DiaryDayItem day={day} onEntryUpdated={() => void fetchDiary()} />
         </View>
       )}
@@ -142,31 +141,32 @@ function AuthenticatedDiary() {
 }
 
 export default function DiaryScreen() {
+  const theme = useTheme();
+
   return (
-    <SafeAreaView style={[{ flex: 1 }, styles.safeArea]} edges={['top']}>
-      <ThemedView style={styles.container}>
+    <View style={[styles.scrollView, { backgroundColor: theme.background }]}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
         <AuthGate
           title="Sign in to view diary"
           description="Your watched episodes and notes are private to your account."
         >
           <AuthenticatedDiary />
         </AuthGate>
-      </ThemedView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
   },
   safeArea: {
-    paddingHorizontal: 0,
+    flex: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
   },
   tabsWrapper: {
     marginHorizontal: -Spacing.lg,
-  },
-  contentWrapper: {
-    paddingHorizontal: Spacing.lg,
   },
 });
