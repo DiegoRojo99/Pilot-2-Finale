@@ -613,12 +613,32 @@ export default function ShowDetailScreen() {
           number_of_episodes: show.number_of_episodes ?? 0,
           status: newStatus,
         });
-        setUserShow(added);
+        // API returns minimal data - merge with optimistic state
+        setUserShow({
+          id: added.id,
+          tmdb_id: show.id,
+          name: show.name,
+          poster_path: show.poster_path,
+          backdrop_path: show.backdrop_path,
+          overview: show.overview,
+          first_air_date: show.first_air_date,
+          status: newStatus,
+          vote_average: show.vote_average,
+          number_of_seasons: show.number_of_seasons ?? 0,
+          number_of_episodes: show.number_of_episodes ?? 0,
+          remaining_episodes_count: show.number_of_episodes ?? 0,
+          added_at: added.added_at || new Date().toISOString(),
+          updated_at: added.updated_at || new Date().toISOString(),
+        });
       } 
       else {
-        // Update existing status
+        // Update existing status - API returns just the updated fields
         const updated = await updateShowStatus(showId, newStatus);
-        setUserShow(updated);
+        setUserShow({ 
+          ...userShow, 
+          status: updated.status || newStatus,
+          updated_at: updated.updated_at || new Date().toISOString(),
+        });
       }
     } 
     catch (error) {

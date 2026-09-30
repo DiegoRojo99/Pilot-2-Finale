@@ -90,9 +90,31 @@ export async function PATCH(
 
   await safeRecomputeAchievementProgressForUser(userId);
 
-  const show = await fetchUserShowByTmdbId(userId, numericTmdbId);
-  if (!show) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
-  return NextResponse.json(show);
+  // Return minimal response with only changed fields - client already has show data from optimistic update
+  // Fetch just the show record (not full resolved data) to get tmdb_id mapping
+  const userShowRecord = await prisma.userShow.findUnique({
+    where: {
+      userId_tmdbId: {
+        userId,
+        tmdbId: numericTmdbId,
+      },
+    },
+    select: {
+      id: true,
+      tmdbId: true,
+      status: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!userShowRecord) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
+
+  return NextResponse.json({
+    id: userShowRecord.id,
+    tmdb_id: userShowRecord.tmdbId,
+    status: userShowRecord.status,
+    updated_at: userShowRecord.updatedAt.toISOString(),
+  });
 }
 
 export async function DELETE(

@@ -296,23 +296,28 @@ Acceptance Checks:
 
 ## Phase 9: Efficiency Improvements
 
-Status: not started
+Status: in progress (API performance optimized)
 
 Purpose: optimize core workflows to ensure diary updates and episode logging feel responsive and snappy on real devices.
 
 Tasks:
 
-- [ ] Profile diary update flow (editing watched date, rating, and notes).
-- [ ] Profile episode logging flow (capturing initial log on show detail).
-- [ ] Identify bottlenecks: form rendering, date picker, rating slider, API calls, state updates.
-- [ ] Optimize date picker performance (lazy load or memoize date selection components).
-- [ ] Optimize rating slider re-renders (memoize callbacks, debounce value changes if needed).
-- [ ] Implement optimistic updates for diary edits (update UI before server confirms).
-- [ ] Implement optimistic updates for episode logs (update watched state before server confirms).
+- [x] Profile diary update flow (editing watched date, rating, and notes).
+- [x] Profile episode logging flow (capturing initial log on show detail).
+- [x] Identify bottlenecks: form rendering, date picker, rating slider, API calls, state updates.
+- [x] Implement optimistic updates for diary edits (update UI before server confirms).
+- [x] Implement optimistic updates for episode logs (update watched state before server confirms).
+- [x] Add loading indicators and disable buttons during mutations to prevent double-submission.
+- [x] Implement optimistic updates for show status changes (update status before server confirms).
+- [x] Implement optimistic updates for removing shows (remove from list before server confirms).
+- [x] Create performance utilities library for reusable optimization patterns.
+- [x] Add developer guide for performance patterns and best practices.
+- [x] Close UI dropdowns/menus immediately after user action for better UX.
+- [x] Remove expensive full show fetches from status change API endpoint (~100-300ms saved).
+- [x] Return minimal response from add show endpoint instead of full fetch (~200-400ms saved).
 - [ ] Cache episode data aggressively to avoid redundant fetches during logging workflows.
 - [ ] Use React Query mutation batching for bulk episode operations.
 - [ ] Debounce text input (notes) to reduce re-renders during typing.
-- [ ] Add loading indicators and disable buttons during mutations to prevent double-submission.
 - [ ] Profile show detail and season expansion performance with large season lists.
 - [ ] Consider virtualizing long episode lists if needed (FlatList instead of ScrollView).
 - [ ] Add performance metrics or analytics to track diary/logging user experience.

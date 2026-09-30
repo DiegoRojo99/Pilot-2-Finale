@@ -91,12 +91,32 @@ export async function POST(request: Request) {
     await refreshUserShowProgress(userId, body.tmdb_id);
     await recomputeAchievementProgressForUser(userId);
 
-    const show = await fetchUserShowByTmdbId(userId, body.tmdb_id, {
-      preferUserNameWhenShowIsPlaceholder: true,
+    // Fetch just the metadata we need without full show resolution
+    const userShowRecord = await prisma.userShow.findUnique({
+      where: {
+        userId_tmdbId: {
+          userId,
+          tmdbId: body.tmdb_id,
+        },
+      },
+      select: {
+        id: true,
+        tmdbId: true,
+        status: true,
+        addedAt: true,
+        updatedAt: true,
+      },
     });
 
-    if (!show) return NextResponse.json({ error: "Failed to add show" }, { status: 500 });
-    return NextResponse.json(show, { status: 201 });
+    if (!userShowRecord) return NextResponse.json({ error: "Failed to add show" }, { status: 500 });
+
+    // Return minimal response - client already has show data from form input
+    return NextResponse.json({
+      id: userShowRecord.id,
+      tmdb_id: userShowRecord.tmdbId,
+      status: userShowRecord.status,
+      added_at: userShowRecord.addedAt.toISOString(),
+    }, { status: 201 });
   } catch (error) {
     console.error("Error adding show:", error);
     return NextResponse.json({ error: "Failed to add show" }, { status: 500 });
