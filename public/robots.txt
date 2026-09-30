@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /.next/
+
+# Crawl delay to be respectful to server
+Crawl-delay: 1
+
+# Sitemaps
+Sitemap: https://pilot-2-finale.vercel.app/sitemap.xml
