@@ -13,13 +13,10 @@ import styles from "./WatchingPage.module.css";
 
 const STATUS_OPTIONS: ShowStatus[] = ["watching", "want_to_watch", "watched", "on_hold", "dropped"];
 type TabType = "shows" | "coming";
-type DaysFilter = 7 | 14 | 30 | 60 | 90;
-const DAYS_OPTIONS: DaysFilter[] = [7, 14, 30, 60, 90];
 
 export default function WatchingPage() {
   const [activeTab, setActiveTab] = useState<TabType>("shows");
   const [selectedStatus, setSelectedStatus] = useState<ShowStatus>("watching");
-  const [selectedDays, setSelectedDays] = useState<DaysFilter>(30);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -29,9 +26,9 @@ export default function WatchingPage() {
   });
 
   const { data: upcomingData, isLoading: upcomingLoading, error: upcomingError } = useQuery<UpcomingEpisodesResponse>({
-    queryKey: ["upcomingEpisodes", selectedDays],
+    queryKey: ["upcomingEpisodes"],
     queryFn: async () => {
-      const res = await fetch(`/api/episodes/upcoming?days=${selectedDays}&status=watching`);
+      const res = await fetch(`/api/episodes/upcoming?days=30&status=watching`);
       if (!res.ok) throw new Error("Failed to fetch upcoming episodes");
       return res.json();
     },
@@ -129,22 +126,6 @@ export default function WatchingPage() {
       {/* Coming Soon Tab */}
       {activeTab === "coming" && (
         <>
-          <div className={styles.filterBar}>
-            <label htmlFor="days-filter">Look Ahead:</label>
-            <select
-              id="days-filter"
-              value={selectedDays}
-              onChange={(e) => setSelectedDays(Number(e.target.value) as DaysFilter)}
-              className={styles.select}
-            >
-              {DAYS_OPTIONS.map((days) => (
-                <option key={days} value={days}>
-                  Next {days} Days
-                </option>
-              ))}
-            </select>
-          </div>
-
           {upcomingLoading && <PageLoader />}
           {upcomingError && <ErrorMessage message="Failed to load upcoming episodes" />}
           {upcomingData && (
@@ -152,64 +133,49 @@ export default function WatchingPage() {
               {upcomingData.episodes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
                   <Tv className="h-12 w-12 opacity-30" />
-                  <p className="text-center text-sm">No upcoming episodes in the next {selectedDays} days</p>
+                  <p className="text-center text-sm">No upcoming episodes in the next 30 days</p>
                 </div>
               ) : (
-                <>
-                  <div className={styles.episodeGrid}>
-                    {upcomingData.episodes.map((episode) => {
-                      const backdropUrl = episode.showBackdropPath
-                        ? `https://image.tmdb.org/t/p/w780${episode.showBackdropPath}`
-                        : undefined;
-                      const posterUrl = episode.showPosterPath
-                        ? `https://image.tmdb.org/t/p/w342${episode.showPosterPath}`
-                        : undefined;
-                      const airDate = new Date(episode.airDate);
+                <div className="flex flex-col gap-2">
+                  {upcomingData.episodes.map((episode) => {
+                    const posterUrl = episode.showPosterPath
+                      ? `https://image.tmdb.org/t/p/w185${episode.showPosterPath}`
+                      : undefined;
+                    const airDate = new Date(episode.airDate);
 
-                      return (
-                        <div key={`${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`} className={styles.episodeCard}>
-                          <div className={styles.backdrop}>
-                            {backdropUrl ? (
-                              <img src={backdropUrl} alt={episode.showName} className={styles.backdropImg} />
-                            ) : (
-                              <div className={styles.backdropPlaceholder} />
-                            )}
-                            <div className={styles.backdropOverlay} />
+                    return (
+                      <div
+                        key={`${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`}
+                        className={styles.episodeRow}
+                      >
+                        {posterUrl ? (
+                          <img
+                            src={posterUrl}
+                            alt={episode.showName}
+                            className={styles.episodePoster}
+                          />
+                        ) : (
+                          <div className={styles.episodePosterPlaceholder} />
+                        )}
+                        <div className={styles.episodeRowContent}>
+                          <h3 className={styles.episodeRowShowName}>{episode.showName}</h3>
+                          <div className={styles.episodeRowMeta}>
+                            <span className={styles.episodeRowLabel}>
+                              S{String(episode.seasonNumber).padStart(2, '0')}E
+                              {String(episode.episodeNumber).padStart(2, '0')}
+                            </span>
+                            <span className={styles.episodeRowDate}>
+                              {airDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
                           </div>
-
-                          <div className={styles.cardContent}>
-                            <div className={styles.posterSection}>
-                              {posterUrl ? (
-                                <img src={posterUrl} alt={episode.showName} className={styles.poster} />
-                              ) : (
-                                <div className={styles.posterPlaceholder} />
-                              )}
-                              <div className={styles.episodeBadge}>
-                                S{String(episode.seasonNumber).padStart(2, '0')}E
-                                {String(episode.episodeNumber).padStart(2, '0')}
-                              </div>
-                            </div>
-
-                            <div className={styles.info}>
-                              <h3 className={styles.showName}>{episode.showName}</h3>
-                              <p className={styles.episodeTitle}>{episode.title}</p>
-                              <div className={styles.airDateLabel}>
-                                {airDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                              </div>
-                              {episode.overview && <p className={styles.overview}>{episode.overview}</p>}
-                            </div>
-                          </div>
+                          {episode.title && (
+                            <p className={styles.episodeRowTitle}>{episode.title}</p>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className={styles.summary}>
-                    <p>
-                      {upcomingData.episodes.length} episode{upcomingData.episodes.length !== 1 ? 's' : ''} in the next {selectedDays} days
-                    </p>
-                  </div>
-                </>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </>
           )}
