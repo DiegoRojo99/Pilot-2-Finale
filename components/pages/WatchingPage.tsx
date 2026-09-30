@@ -8,17 +8,19 @@ import { PageShell } from "@/components/layout/PageShell";
 import { UserShowCard } from "@/components/show/ShowCard";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
-import { type UpcomingEpisodesResponse } from "@/types";
+import { StatusFilter } from "@/components/ui/StatusFilter";
+import { type ShowStatus, type UpcomingEpisodesResponse } from "@/types";
 import styles from "./WatchingPage.module.css";
 
 type TabType = "shows" | "coming";
 
 export default function WatchingPage() {
   const [activeTab, setActiveTab] = useState<TabType>("shows");
+  const [selectedStatus, setSelectedStatus] = useState<ShowStatus>("watching");
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["my-shows"],
-    queryFn: () => getMyShows("watching"),
+    queryKey: ["my-shows", selectedStatus],
+    queryFn: () => getMyShows(selectedStatus),
     staleTime: 30_000,
   });
 
@@ -53,6 +55,15 @@ export default function WatchingPage() {
       {/* My Shows Tab */}
       {activeTab === "shows" && (
         <>
+          <div className={styles.showsHeader}>
+            <div className="hidden sm:block">
+              <StatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
+            </div>
+            <div className="sm:hidden w-full">
+              <StatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} fullWidth />
+            </div>
+          </div>
+
           {isLoading && <PageLoader />}
           {error && <ErrorMessage message="Failed to load shows" onRetry={() => void refetch()} />}
           {data && (
@@ -60,7 +71,7 @@ export default function WatchingPage() {
               {data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
                   <Tv className="h-12 w-12 opacity-30" />
-                  <p className="text-center text-sm">No shows being watched. Search and add some!</p>
+                  <p className="text-center text-sm">No shows in this status. Search and add some!</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">

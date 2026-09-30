@@ -6,6 +6,13 @@
   border-bottom: none;
 }
 
+.showsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
 .tab {
   padding: 0.5rem 0;
   background: none;
