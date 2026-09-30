@@ -525,7 +525,7 @@ export default function ShowDetailScreen() {
     }
     // Add to watched
     else {
-      const watchedAt = diaryDate ? new Date(diaryDate).toISOString() : new Date().toISOString();
+      const watchedAt = diaryDate ? new Date(diaryDate).toISOString() : null;
       const newLog: EpisodeLog = {
         id: Date.now(),
         tmdb_show_id: showId,
@@ -543,7 +543,7 @@ export default function ShowDetailScreen() {
     
     setIsDiarySaving(true);
     try {
-      const watchedAt = isCurrentlyWatched ? null : (diaryDate ? new Date(diaryDate).toISOString() : new Date().toISOString());
+      const watchedAt = isCurrentlyWatched ? null : (diaryDate ? new Date(diaryDate).toISOString() : null);
       
       await logEpisode({
         tmdb_show_id: showId,
