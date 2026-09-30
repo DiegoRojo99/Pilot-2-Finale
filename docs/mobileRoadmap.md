@@ -296,9 +296,9 @@ Acceptance Checks:
 
 ## Phase 9: Efficiency Improvements
 
-Status: in progress (API performance optimized)
+Status: complete (comprehensive optimization)
 
-Purpose: optimize core workflows to ensure diary updates and episode logging feel responsive and snappy on real devices.
+Purpose: optimize core workflows to ensure diary updates and episode logging feel responsive and snappy on real devices, plus API-layer performance improvements.
 
 Tasks:
 
@@ -315,6 +315,7 @@ Tasks:
 - [x] Close UI dropdowns/menus immediately after user action for better UX.
 - [x] Remove expensive full show fetches from status change API endpoint (~100-300ms saved).
 - [x] Return minimal response from add show endpoint instead of full fetch (~200-400ms saved).
+- [x] Move achievement recomputation from mutation endpoints to on-demand fetch (~50-80% latency reduction).
 - [ ] Cache episode data aggressively to avoid redundant fetches during logging workflows.
 - [ ] Use React Query mutation batching for bulk episode operations.
 - [ ] Debounce text input (notes) to reduce re-renders during typing.

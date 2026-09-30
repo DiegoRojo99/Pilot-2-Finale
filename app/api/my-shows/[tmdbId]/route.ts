@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma, isNumericId, readJson, defaultRateLimit } from "@/lib/core";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { fetchUserShowByTmdbId, repairShowCatalogIfNeeded } from "@/lib/shows";
-import {
-  safeIncrementWatchlistToWatchedProgress,
-  safeRecomputeAchievementProgressForUser,
-} from "@/lib/achievements/progress";
+import { safeIncrementWatchlistToWatchedProgress } from "@/lib/achievements/progress";
 import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";
@@ -88,8 +85,6 @@ export async function PATCH(
     await safeIncrementWatchlistToWatchedProgress(userId, 1);
   }
 
-  await safeRecomputeAchievementProgressForUser(userId);
-
   // Return minimal response with only changed fields - client already has show data from optimistic update
   // Fetch just the show record (not full resolved data) to get tmdb_id mapping
   const userShowRecord = await prisma.userShow.findUnique({
@@ -137,8 +132,5 @@ export async function DELETE(
   });
 
   if (deleteResult.count === 0) return NextResponse.json({ error: "Show not found in your list" }, { status: 404 });
-
-  await safeRecomputeAchievementProgressForUser(userId);
-
   return NextResponse.json({ success: true });
 }

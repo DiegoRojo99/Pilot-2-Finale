@@ -9,7 +9,6 @@ import {
 } from "@/lib/episodes";
 import { reconcileUserShowStatus, updateNextEpisodeToWatch } from "@/lib/shows";
 import { readJson, defaultRateLimit } from "@/lib/core";
-import { safeRecomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 import { EpisodeLog } from "@/types";
 
 export const runtime = "nodejs";
@@ -135,7 +134,6 @@ export async function POST(request: Request) {
 
       await updateNextEpisodeToWatch(userId, tmdbShowId);
       await reconcileUserShowStatus(userId, tmdbShowId);
-      await safeRecomputeAchievementProgressForUser(userId);
       return NextResponse.json({ count }, { status: 201 });
     } 
     catch (error) {
@@ -170,7 +168,6 @@ export async function POST(request: Request) {
 
     await updateNextEpisodeToWatch(userId, tmdbShowId);
     await reconcileUserShowStatus(userId, tmdbShowId);
-    await safeRecomputeAchievementProgressForUser(userId);
     return NextResponse.json(log, { status: 201 });
   } 
   catch (error) {

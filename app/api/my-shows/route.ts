@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma, readJson, defaultRateLimit } from "@/lib/core";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { fetchUserShowByTmdbId, fetchUserShowsByUserId, upsertShowCatalog, refreshUserShowProgress, updateNextEpisodeToWatch } from "@/lib/shows";
-import { recomputeAchievementProgressForUser } from "@/lib/achievements/progress";
 import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";
@@ -89,7 +88,6 @@ export async function POST(request: Request) {
 
     await updateNextEpisodeToWatch(userId, body.tmdb_id);
     await refreshUserShowProgress(userId, body.tmdb_id);
-    await recomputeAchievementProgressForUser(userId);
 
     // Fetch just the metadata we need without full show resolution
     const userShowRecord = await prisma.userShow.findUnique({
