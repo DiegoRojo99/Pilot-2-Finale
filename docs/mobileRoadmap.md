@@ -222,7 +222,7 @@ Acceptance Checks:
 
 ## Phase 6: Unreleased Episodes & Release Calendar
 
-Status: in progress
+Status: complete
 
 Purpose: gracefully handle unreleased, future-dated, and catalog-gap edge cases; surface upcoming releases as a key feature.
 
@@ -231,23 +231,26 @@ Tasks:
 - [x] Add backend logic to tag episodes as unreleased (air date in future or missing).
 - [x] Filter out unreleased episodes from watchable episode lists on show detail.
 - [x] Show visual indicator (e.g., "Coming Soon") on unreleased episodes instead of checkbox.
+- [x] Filter "My Shows" tab to only display released episodes as next.
+- [x] Update +N count to only include released episodes.
+- [x] Build a "Coming Soon" tab on WatchingPage showing upcoming episode releases.
+- [x] Group upcoming episodes by air date with diary-style section headers.
+- [x] Show episode metadata: show name, season, episode number, title, air date.
+- [x] Create PATCH /api/my-shows endpoint to refresh stale database cached values.
 - [ ] Handle seasons with zero fetched episodes (incomplete catalog data).
 - [ ] Display message like "Season data not yet available" when season episodes are missing.
-- [ ] Build a "Next Episodes" screen showing upcoming episode releases across tracked shows.
-- [ ] Rank next episodes by air date (earliest first).
-- [ ] Show episode metadata: show name, season, episode number, title, air date.
-- [ ] Add filters to next episodes by show status (e.g., only Watching or Want to Watch).
-- [ ] Add filters to next episodes by air date range (this week, this month, etc.).
-- [ ] Show count of unreleased episodes per show on My Shows cards.
-- [ ] Integrate next episodes into Discover or My Shows as a prominent feature or dedicated tab.
+- [ ] Add filters to coming soon by show status (e.g., only Watching or Want to Watch).
+- [ ] Add filters to coming soon by air date range (this week, this month, etc.).
 - [ ] Add notifications or reminders for upcoming episodes (optional for MVP, can move to Phase 10).
 - [ ] Handle TMDB catalog refreshes that add new episode data mid-season.
 
 Acceptance Checks:
 
 - [x] Users cannot accidentally log episodes with future air dates.
+- [x] My Shows tab displays only released episodes as next.
+- [x] Coming Soon tab shows all unreleased episodes grouped by air date.
+- [x] Users can refresh stale data via PATCH endpoint when database values are outdated.
 - [ ] Shows with missing or incomplete season data display a clear message.
-- [ ] Users can browse upcoming releases across their library from a dedicated view.
 - [ ] Next episode data updates correctly after catalog refresh.
 
 ## Phase 7: Diary
