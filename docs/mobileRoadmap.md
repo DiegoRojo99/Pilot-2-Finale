@@ -252,7 +252,7 @@ Acceptance Checks:
 
 ## Phase 7: Diary
 
-Status: in progress
+Status: complete (web), in progress (mobile)
 
 Purpose: bring the existing insight surfaces to mobile after core tracking works.
 
@@ -262,11 +262,14 @@ Tasks:
 - [x] Build the History screen using chronological episode logs.
 - [x] Add filters or grouping if the existing data shape supports it cleanly.
 - [x] Add helpful empty states for new users with no logs yet.
-- [ ] Add a calendar view to view logs by date
+- [x] Add a calendar view to view logs by date (web)
+- [ ] Add a calendar view to view logs by date (mobile)
 
 Acceptance Checks:
 
 - [x] Recently watched episodes appear correctly on mobile.
+- [x] Calendar view shows dates with episode logs and counts.
+- [x] Clicking a date filters the list to show only episodes from that day.
 - [ ] Achievements load and represent current user progress.
 
 ## Phase 8: Stats And Achievements

@@ -2,19 +2,23 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Calendar, List } from "lucide-react";
 import { getEpisodeLogs, removeEpisodeLogById, updateEpisodeLog } from "@/lib/api";
 import { episodeKey, formatDate } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { ErrorMessage, PageLoader } from '@/components/ui';
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import DiaryDayEntry from "@/components/diary/DiaryDayEntry";
+import { DiaryCalendar } from "@/components/diary/DiaryCalendar";
+import styles from "./HistoryPage.module.css";
 import type { EpisodeLog } from "@/types";
 
 export default function HistoryPage() {
   const queryClient = useQueryClient();
   const [editingLog, setEditingLog] = useState<EpisodeLog | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["episode-logs"],
@@ -57,7 +61,11 @@ export default function HistoryPage() {
   });
 
   const diaryGroups = useMemo(() => {
-    const sortedLogs = [...(data ?? [])].sort((left, right) => {
+    const logsToProcess = selectedDate
+      ? (data ?? []).filter((log) => log.watched_at?.startsWith(selectedDate))
+      : data ?? [];
+
+    const sortedLogs = [...logsToProcess].sort((left, right) => {
       const leftTime = left.watched_at ? new Date(left.watched_at).getTime() : 0;
       const rightTime = right.watched_at ? new Date(right.watched_at).getTime() : 0;
       return rightTime - leftTime;
@@ -77,14 +85,43 @@ export default function HistoryPage() {
       label: groupKey === "no-date" ? "No watch date" : formatDate(logs[0]?.watched_at ?? null),
       logs,
     }));
-  }, [data]);
+  }, [data, selectedDate]);
 
   return (
     <PageShell title="Diary">
+      {/* View mode toggle */}
+      <div className={styles.tabsContainer}>
+        <button
+          onClick={() => {
+            setViewMode("list");
+            setSelectedDate(null);
+          }}
+          className={`${styles.tab} ${viewMode === "list" ? styles.tabActive : ""}`}
+        >
+          <List className="h-4 w-4" />
+          <span>List</span>
+        </button>
+        <button
+          onClick={() => setViewMode("calendar")}
+          className={`${styles.tab} ${viewMode === "calendar" ? styles.tabActive : ""}`}
+        >
+          <Calendar className="h-4 w-4" />
+          <span>Calendar</span>
+        </button>
+      </div>
+
       {isLoading && <PageLoader />}
       {error && <ErrorMessage message="Failed to load history" onRetry={() => void refetch()} />}
       {data && (
         <>
+          {viewMode === "calendar" && (
+            <DiaryCalendar
+              logs={data}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
+          )}
+
           {data.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-800/40 px-4 py-16 text-slate-500">
               <CheckSquare className="h-12 w-12 opacity-30" />
