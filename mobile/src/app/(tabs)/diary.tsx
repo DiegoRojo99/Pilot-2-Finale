@@ -1,13 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, RefreshControl, StyleSheet, FlatList } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthGate } from '@/components/auth/auth-gate';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { DiaryEmptyState, DiaryLoadingState, DiaryErrorState } from '@/components/diary';
+import { DiaryCalendar } from '@/components/diary/diary-calendar';
+import { TabBar } from '@/components/ui/tab-bar';
 import { getAllEpisodeLogs } from '@/lib/episodes';
 import type { EpisodeLog } from '@/types/episode';
 import { DiaryDayItem } from '@/components/diary/diary-day-item';
@@ -23,6 +23,8 @@ function AuthenticatedDiary() {
   const [days, setDays] = useState<DiaryDay[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const fetchDiary = useCallback(async () => {
     try {
@@ -36,9 +38,13 @@ function AuthenticatedDiary() {
   }, []);
 
   const groupEntriesByDay = (logs: EpisodeLog[]) => {
+    const logsToProcess = selectedDate
+      ? logs.filter((log) => log.watched_at?.startsWith(selectedDate))
+      : logs;
+
     const grouped: Record<string, EpisodeLog[]> = {};
 
-    logs.forEach((entry) => {
+    logsToProcess.forEach((entry) => {
       const date = entry.watched_at
         ? new Date(entry.watched_at).toLocaleDateString('en-US', {
             weekday: 'short',
@@ -70,6 +76,11 @@ function AuthenticatedDiary() {
     finally { setIsRefreshing(false); }
   };
 
+  // Re-group entries when selectedDate changes
+  useEffect(() => {
+    groupEntriesByDay(entries);
+  }, [selectedDate]);
+
   useFocusEffect(
     useCallback(() => {
       if (status === 'loading') void fetchDiary();
@@ -88,47 +99,74 @@ function AuthenticatedDiary() {
   }
 
   return (
-    <>
-      <FlatList
-        data={days}
-        renderItem={({ item: day }) => (
+    <FlatList
+      ListHeaderComponent={
+        <>
+          <View style={styles.tabsWrapper}>
+            <TabBar
+              tabs={[
+                { id: 'list', label: 'List', icon: 'list' },
+                { id: 'calendar', label: 'Calendar', icon: 'calendar' },
+              ]}
+              activeTab={viewMode}
+              onTabChange={(tabId) => {
+                setViewMode(tabId as 'list' | 'calendar');
+                if (tabId === 'list') setSelectedDate(null);
+              }}
+            />
+          </View>
+          {viewMode === 'calendar' && (
+            <View>
+              <DiaryCalendar logs={entries} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+            </View>
+          )}
+        </>
+      }
+      data={days}
+      renderItem={({ item: day }) => (
+        <View>
           <DiaryDayItem day={day} onEntryUpdated={() => void fetchDiary()} />
-        )}
-        keyExtractor={(item) => item.date}
-        scrollEnabled={true}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
-      />
-    </>
+        </View>
+      )}
+      keyExtractor={(item) => item.date}
+      scrollEnabled={true}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
+      contentContainerStyle={
+        viewMode === 'calendar' && selectedDate === null && days.length === 0
+          ? { flexGrow: 1 }
+          : undefined
+      }
+    />
   );
 }
 
 export default function DiaryScreen() {
-  return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-      <ThemedView style={styles.container}>
-        <View style={[styles.header]}>
-          <ThemedText type="title" style={{ fontSize: 28, fontWeight: '800' }}>
-            Diary
-          </ThemedText>
-        </View>
+  const theme = useTheme();
 
+  return (
+    <View style={[styles.scrollView, { backgroundColor: theme.background }]}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
         <AuthGate
           title="Sign in to view diary"
           description="Your watched episodes and notes are private to your account."
         >
           <AuthenticatedDiary />
         </AuthGate>
-      </ThemedView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
   },
-  header: {
+  safeArea: {
+    flex: 1,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
+  },
+  tabsWrapper: {
+    marginHorizontal: -Spacing.lg,
   },
 });

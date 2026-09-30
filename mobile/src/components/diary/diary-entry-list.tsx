@@ -136,7 +136,6 @@ export function DiaryEntryList({ entry, onEntryUpdated }: DiaryEntryListProps) {
 
 const styles = StyleSheet.create({
   touchable: {
-    marginHorizontal: Spacing.md,
     marginVertical: Spacing.sm,
     borderRadius: 12,
   },

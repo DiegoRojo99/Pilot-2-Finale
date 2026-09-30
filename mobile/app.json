@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pilot 2 Finale",
     "slug": "pilot-2-finale-mobile",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pilot2finale",

@@ -35,7 +35,7 @@ export function DiaryDayItem({ day, onEntryUpdated }: { day: DiaryDay; onEntryUp
     return (
         <View key={date} style={{ marginBottom: Spacing.xl }}>
             {/* Date Separator */}
-            <View style={[styles.dateSeparator, { backgroundColor: theme.background }]}>
+            <View style={{ backgroundColor: theme.background }}>
                 <ThemedText 
                     type="subtitle" 
                     style={[styles.dateLabel, { color: theme.textSecondary }]}
@@ -53,9 +53,6 @@ export function DiaryDayItem({ day, onEntryUpdated }: { day: DiaryDay; onEntryUp
 }
 
 const styles = StyleSheet.create({
-  dateSeparator: {
-    paddingHorizontal: Spacing.lg,
-  },
   dateLabel: {
     textTransform: 'uppercase',
     fontSize: 12,
