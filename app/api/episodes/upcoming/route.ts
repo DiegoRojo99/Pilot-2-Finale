@@ -10,6 +10,8 @@ interface UpcomingEpisode {
   id: number;
   showId: number;
   showName: string;
+  showPosterPath: string | null;
+  showBackdropPath: string | null;
   seasonNumber: number;
   episodeNumber: number;
   title: string;
@@ -34,25 +36,19 @@ export async function GET(request: Request) {
   const sortBy = (searchParams.get("sortBy") ?? "date") as "date" | "show"; // 'date' or 'show'
   
   try {
-    // Get user's tracked shows
-    let userShowsQuery: Parameters<typeof prisma.userShow.findMany>[0] = {
-      where: { userId },
-      select: {
-        id: true,
-        tmdbId: true,
-        name: true,
-        status: true,
+    // Get user's tracked shows with their Show data
+    const userShows = await prisma.userShow.findMany({
+      where: { userId, ...(status && { status }) },
+      include: {
+        show: {
+          select: {
+            name: true,
+            posterPath: true,
+            backdropPath: true,
+          },
+        },
       },
-    };
-
-    if (status) {
-      userShowsQuery.where = {
-        ...userShowsQuery.where,
-        status,
-      };
-    }
-
-    const userShows = await prisma.userShow.findMany(userShowsQuery);
+    });
 
     if (userShows.length === 0) {
       return NextResponse.json({
@@ -102,10 +98,13 @@ export async function GET(request: Request) {
       })
       .map((ep) => {
         const userShow = userShows.find((s) => s.tmdbId === ep.tmdbShowId);
+        const showName = userShow?.show.name ?? userShow?.name ?? "Unknown Show";
         return {
           id: ep.id,
           showId: ep.tmdbShowId,
-          showName: userShow?.name ?? "Unknown Show",
+          showName,
+          showPosterPath: userShow?.show.posterPath ?? null,
+          showBackdropPath: userShow?.show.backdropPath ?? null,
           seasonNumber: ep.seasonNumber,
           episodeNumber: ep.episodeNumber,
           title: ep.name ?? `S${ep.seasonNumber}E${ep.episodeNumber}`,
