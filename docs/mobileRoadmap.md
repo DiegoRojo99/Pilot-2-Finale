@@ -239,9 +239,6 @@ Tasks:
 - [x] Create PATCH /api/my-shows endpoint to refresh stale database cached values.
 - [ ] Handle seasons with zero fetched episodes (incomplete catalog data).
 - [ ] Display message like "Season data not yet available" when season episodes are missing.
-- [ ] Add filters to coming soon by show status (e.g., only Watching or Want to Watch).
-- [ ] Add filters to coming soon by air date range (this week, this month, etc.).
-- [ ] Add notifications or reminders for upcoming episodes (optional for MVP, can move to Phase 10).
 - [ ] Handle TMDB catalog refreshes that add new episode data mid-season.
 
 Acceptance Checks:
@@ -351,6 +348,7 @@ Tasks:
 - [ ] Add platform-specific checks for Android back behavior.
 - [ ] Add platform-specific checks for iOS safe areas.
 - [ ] Add basic error reporting strategy.
+- [ ] Add notifications or reminders for upcoming episodes.
 
 Acceptance Checks:
 
