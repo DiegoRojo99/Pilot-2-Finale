@@ -19,8 +19,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getAchievements } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { PageLoader } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage, PageLoader } from '@/components/ui';
 import type { UserAchievementProgressView } from "@/types";
 
 const ICON_BY_NAME: Record<string, LucideIcon> = {

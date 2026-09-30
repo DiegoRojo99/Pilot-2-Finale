@@ -21,14 +21,14 @@ export function UserShowCard({ show }: UserShowCardProps) {
   const [isEpisodeDiaryModalOpen, setIsEpisodeDiaryModalOpen] = useState(false);
 
   const nextEpisode = show.next_episode ?? null;
-  const isCompleted = show.status === "watched" && !nextEpisode;
   const nextEpisodeLabel = nextEpisode
     ? `S${String(nextEpisode.season_number).padStart(2, "0")} E${String(nextEpisode.episode_number).padStart(2, "0")}`
     : null;
+
   const nextEpisodeName = nextEpisode?.episode_name ?? null;
   const remainingAfterNext = Math.max(show.remaining_episodes_count - 1, 0);
   const primaryStatusLabel = nextEpisodeLabel ?? "Completed";
-  const secondaryStatusLabel = nextEpisodeName ?? (isCompleted ? "All episodes watched" : "Start watching");
+  const secondaryStatusLabel = nextEpisodeName ?? (nextEpisode ? "Start watching" : "All episodes watched");
 
   const createEpisodeLogMutation = useMutation({
     mutationFn: async ({

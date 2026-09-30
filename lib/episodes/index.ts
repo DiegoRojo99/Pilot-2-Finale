@@ -17,3 +17,11 @@ export {
   fetchEpisodeStats,
   parseEpisodeStatsPeriod 
 } from './stats';
+
+export {
+  isEpisodeUnreleased,
+  decorateEpisodeWithReleaseStatus,
+  decorateEpisodesWithReleaseStatus,
+  filterReleasedEpisodes,
+  filterUnreleasedEpisodes,
+} from './unreleased';

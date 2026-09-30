@@ -21,10 +21,7 @@ import {
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { LoadingSpinner, PageLoader } from "@/components/ui/LoadingSpinner";
-import { RatingBadge } from "@/components/ui/RatingBadge";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { LoadingSpinner, PageLoader, ErrorMessage, RatingBadge, StatusBadge } from '@/components/ui';
 import { STATUS_LABELS, type EpisodeLog, type ShowStatus, type TMDBEpisode, type TMDBSeason } from "@/types";
 
 const ALL_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "on_hold", "dropped"];
@@ -152,8 +149,15 @@ function EpisodeRow({
   disabled?: boolean;
   onToggle: () => void;
 }) {
+  const isUnreleased = (episode as TMDBEpisode & { isUnreleased?: boolean }).isUnreleased ?? false;
+  const isDisabledEffectively = disabled || isUnreleased;
+
   return (
-    <div className="group mb-2 overflow-hidden rounded-lg bg-slate-700/30 transition-all hover:bg-slate-700/50 disabled:opacity-60">
+    <div className={`group mb-2 overflow-hidden rounded-lg transition-all ${
+      isUnreleased 
+        ? "bg-slate-800/30 opacity-60" 
+        : "bg-slate-700/30 hover:bg-slate-700/50"
+    }`}>
       <div className="flex items-center gap-3 p-3">
         {episode.still_path ? (
           <Image
@@ -161,10 +165,14 @@ function EpisodeRow({
             alt={episode.name}
             width={64}
             height={48}
-            className="h-12 w-16 shrink-0 rounded-md bg-slate-700 object-cover"
+            className={`h-12 w-16 shrink-0 rounded-md object-cover ${
+              isUnreleased ? "opacity-50 grayscale" : "bg-slate-700"
+            }`}
           />
         ) : (
-          <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md bg-slate-800 text-[10px] uppercase tracking-[0.18em] text-slate-600">
+          <div className={`flex h-12 w-16 shrink-0 items-center justify-center rounded-md text-[10px] uppercase tracking-[0.18em] ${
+            isUnreleased ? "bg-slate-800/50 text-slate-700" : "bg-slate-800 text-slate-600"
+          }`}>
             No image
           </div>
         )}
@@ -173,12 +181,18 @@ function EpisodeRow({
             <span className="shrink-0 font-mono text-xs font-semibold text-slate-400">
               {String(episode.episode_number).padStart(2, "0")}
             </span>
-            <Link
-              href={`/show/${showId}/season/${episode.season_number}/episode/${episode.episode_number}`}
-              className={`truncate text-sm font-medium transition-colors active:text-blue-300 ${isWatched ? "text-slate-500 hover:text-slate-300" : "text-slate-100 hover:text-blue-300"}`}
-            >
-              {episode.name}
-            </Link>
+            {isUnreleased ? (
+              <span className={`truncate text-sm font-medium text-slate-500`}>
+                {episode.name}
+              </span>
+            ) : (
+              <Link
+                href={`/show/${showId}/season/${episode.season_number}/episode/${episode.episode_number}`}
+                className={`truncate text-sm font-medium transition-colors active:text-blue-300 ${isWatched ? "text-slate-500 hover:text-slate-300" : "text-slate-100 hover:text-blue-300"}`}
+              >
+                {episode.name}
+              </Link>
+            )}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {episode.air_date && (
@@ -199,14 +213,16 @@ function EpisodeRow({
         <button
           type="button"
           onClick={onToggle}
-          disabled={disabled}
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-            isWatched 
-              ? "border-green-500/80 bg-green-500/20 text-green-400 group-hover:border-green-500 group-hover:bg-green-500/30" 
-              : "border-slate-600 text-transparent group-hover:border-slate-500 active:border-slate-400"
+          disabled={isDisabledEffectively}
+          className={`flex h-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+            isUnreleased
+              ? "w-auto bg-slate-700/50 border-transparent px-2 text-[10px] font-semibold text-slate-400"
+              : isWatched 
+              ? "w-6 border-green-500/80 bg-green-500/20 text-green-400 group-hover:border-green-500 group-hover:bg-green-500/30" 
+              : "w-6 border-slate-600 text-transparent group-hover:border-slate-500 active:border-slate-400"
           }`}
         >
-          <Check className="h-3.5 w-3.5" />
+          {isUnreleased ? "Coming Soon" : <Check className="h-3.5 w-3.5" />}
         </button>
       </div>
     </div>
@@ -547,7 +563,10 @@ export default function ShowDetailPage() {
     if (!seasonData?.episodes?.length) return;
 
     const episodesToLog = seasonData.episodes
-      .filter((episode) => !watchedSet.has(episodeKey(episode.season_number, episode.episode_number)))
+      .filter((episode) => {
+        const isUnreleased = (episode as typeof episode & { isUnreleased?: boolean }).isUnreleased ?? false;
+        return !isUnreleased && !watchedSet.has(episodeKey(episode.season_number, episode.episode_number));
+      })
       .map((episode) => ({
         episode: episode.episode_number,
         name: episode.name,
@@ -565,9 +584,14 @@ export default function ShowDetailPage() {
     seasonNumber: number,
     episodeNumber: number,
     name: string,
-    tmdbEpisodeId?: number
+    tmdbEpisodeId?: number,
+    episode?: TMDBEpisode
   ) => {
     if (isBulkAddingEpisodes || isCreatingEpisodeLog || isStatusUpdating) return;
+    
+    // Prevent logging unreleased episodes
+    const isUnreleased = episode ? (episode as typeof episode & { isUnreleased?: boolean }).isUnreleased ?? false : false;
+    if (isUnreleased) return;
 
     // Before opening the single-entry modal, offer a shortcut for filling prior unwatched episodes.
     let seasonData: TMDBSeason;
@@ -589,9 +613,14 @@ export default function ShowDetailPage() {
     if (!seasonData) return;
     const episodes = seasonData.episodes || [];
     const unwatchedBefore = episodes.filter(
-      (ep) =>
-        ep.episode_number < episodeNumber &&
-        !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+      (ep) => {
+        const epUnreleased = (ep as typeof ep & { isUnreleased?: boolean }).isUnreleased ?? false;
+        return (
+          ep.episode_number < episodeNumber &&
+          !epUnreleased &&
+          !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+        );
+      }
     );
 
     if (unwatchedBefore.length > 0) {

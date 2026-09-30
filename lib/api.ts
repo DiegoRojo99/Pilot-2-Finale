@@ -89,6 +89,11 @@ export const removeShow = (tmdbId: number) =>
     method: "DELETE",
   });
 
+export const refreshMyShowsProgress = () =>
+  fetchJson<{ message: string; shows: UserShow[] }>("/api/my-shows", {
+    method: "PATCH",
+  });
+
 export const getEpisodeLogs = (
   tmdbShowId?: number,
   options?: { withWatchDate?: boolean },

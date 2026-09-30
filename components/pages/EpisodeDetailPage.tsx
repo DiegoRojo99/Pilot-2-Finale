@@ -9,9 +9,7 @@ import { Calendar, Clock3, PencilLine, Star, Trash2 } from "lucide-react";
 import { getEpisodeLogsForEpisode, getSeasonDetails, getShowDetails, removeEpisodeLogById, updateEpisodeLog } from "@/lib/api";
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { PageLoader } from "@/components/ui/LoadingSpinner";
-import { RatingBadge } from "@/components/ui/RatingBadge";
+import { ErrorMessage, PageLoader, RatingBadge } from '@/components/ui';
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
 import { EpisodeLog } from "@/types/episode";
 

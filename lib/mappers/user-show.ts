@@ -1,4 +1,5 @@
 import type { ShowStatus, UserShow, UserShowWithShowRow } from "@/types";
+import { isEpisodeUnreleased } from "@/lib/episodes";
 
 const VALID_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "dropped", "on_hold"];
 
@@ -18,7 +19,12 @@ export function mapUserShow(
       ? (row.name as string)
       : row.show.name;
 
-  const nextEpisode = row.nextEpisodeToWatch ? {
+  // Only show next episode if it's released (aired)
+  const isNextEpisodeUnreleased = row.nextEpisodeToWatch?.airDate
+    ? isEpisodeUnreleased({ air_date: row.nextEpisodeToWatch.airDate } as any)
+    : false;
+
+  const nextEpisode = row.nextEpisodeToWatch && !isNextEpisodeUnreleased ? {
     tmdb_episode_id: row.nextEpisodeToWatch.tmdbEpisodeId,
     season_number: row.nextEpisodeToWatch.seasonNumber,
     episode_number: row.nextEpisodeToWatch.episodeNumber,

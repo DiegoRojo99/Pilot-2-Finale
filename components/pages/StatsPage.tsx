@@ -7,8 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Activity, ArrowRight, Award, BookOpen, CheckCircle2, ListChecks, Tv } from "lucide-react";
 import { getAchievements, getStats } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { PageLoader } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage, PageLoader } from '@/components/ui';
 import type { StatsPeriod } from "@/types";
 
 const PERIOD_OPTIONS: Array<{ value: StatsPeriod; label: string }> = [

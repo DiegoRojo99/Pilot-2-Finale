@@ -32,23 +32,25 @@ type EpisodeRowProps = {
 
 function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) {
   const theme = useTheme();
+  const isUnreleased = (episode as typeof episode & { isUnreleased?: boolean }).isUnreleased ?? false;
   
   return (
-    <ThemedView style={[styles.episodeRow, { borderBottomColor: theme.border }]}>
+    <ThemedView style={[styles.episodeRow, { borderBottomColor: theme.border, opacity: isUnreleased ? 0.6 : 1 }]}>
       <TouchableOpacity
         style={styles.episodeImageContainer}
         activeOpacity={0.7}
-        onPress={() => onPress(episode.season_number, episode.episode_number)}
+        disabled={isUnreleased}
+        onPress={() => !isUnreleased && onPress(episode.season_number, episode.episode_number)}
       >
         {episode.still_path && getBackdropUrl(episode.still_path) ? (
           <Image
             source={{ uri: getBackdropUrl(episode.still_path) || '' }}
-            style={styles.episodeImage}
+            style={[styles.episodeImage, isUnreleased && { opacity: 0.5 }]}
             contentFit="cover"
           />
         ) : (
           <ThemedView type="backgroundSelected" style={styles.episodeImagePlaceholder}>
-            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 9, lineHeight: 12 }}>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 9, lineHeight: 12, opacity: isUnreleased ? 0.5 : 1 }}>
               No image
             </ThemedText>
           </ThemedView>
@@ -63,7 +65,7 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
               type="small" 
               style={{ 
                 flex: 1,
-                color: isWatched ? theme.textSecondary : theme.text,
+                color: isUnreleased ? theme.textSecondary : (isWatched ? theme.textSecondary : theme.text),
                 fontSize: 13
               }}
               numberOfLines={1}
@@ -101,11 +103,32 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
         </ThemedView>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={onToggle}
-        activeOpacity={0.7}
-        style={styles.episodeCheckboxContainer}
-      >
+      {isUnreleased ? (
+        <ThemedView style={styles.episodeCheckboxContainer}>
+          <ThemedView style={[
+            styles.episodeCheckbox,
+            { 
+              borderColor: 'transparent',
+              backgroundColor: theme.textSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: Spacing.two,
+              paddingVertical: Spacing.one,
+              height: 24,
+              minWidth: 48
+            }
+          ]}>
+            <ThemedText style={{ fontSize: 10, fontWeight: '700', color: theme.background, lineHeight: 12 }}>
+              Soon
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
+      ) : (
+        <TouchableOpacity
+          onPress={onToggle}
+          activeOpacity={0.7}
+          style={styles.episodeCheckboxContainer}
+        >
           <ThemedView
             style={[
               styles.episodeCheckbox,
@@ -118,6 +141,7 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
             {isWatched && <ThemedText style={{ fontSize: 16, lineHeight: 16, marginTop: -2, color: 'white' }}>✓</ThemedText>}
           </ThemedView>
         </TouchableOpacity>
+      )}
     </ThemedView>
   );
 }
@@ -144,6 +168,7 @@ function SeasonAccordion({
   const [expanded, setExpanded] = useState(false);
   const [seasonData, setSeasonData] = useState<TMDBSeason | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   
   const episodeCount = season.episode_count ?? 0;
@@ -155,6 +180,23 @@ function SeasonAccordion({
   const effectiveWatchedCount = seasonData ? loadedWatchedCount : watchedCount;
   const progressPercent = episodeCount > 0 ? (effectiveWatchedCount / episodeCount) * 100 : 0;
 
+  const fetchSeasonData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const details = await getCachedSeasonDetails(season.season_number);
+      setSeasonData(details);
+      if (!details.episodes || details.episodes.length === 0) {
+        setError('Season data not yet available');
+      }
+    } catch (err) {
+      console.error('Failed to load season episodes:', err);
+      setError('Failed to load season data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleExpandPress = async () => {
     if (expanded) {
       setExpanded(false);
@@ -163,15 +205,7 @@ function SeasonAccordion({
 
     // Load season details only when expanded
     if (!seasonData && !isLoading) {
-      setIsLoading(true);
-      try {
-        const details = await getCachedSeasonDetails(season.season_number);
-        setSeasonData(details);
-      } catch (error) {
-        console.error('Failed to load season episodes:', error);
-      } finally {
-        setIsLoading(false);
-      }
+      await fetchSeasonData();
     }
 
     setExpanded(true);
@@ -240,7 +274,26 @@ function SeasonAccordion({
             </ThemedView>
           )}
 
-          {episodes.map((episode) => (
+          {!isLoading && episodes.length === 0 && error && (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginBottom: Spacing.two }}>
+                {error}
+              </ThemedText>
+              <TouchableOpacity
+                style={[
+                  styles.retryButton,
+                  { borderColor: theme.accent }
+                ]}
+                onPress={fetchSeasonData}
+              >
+                <ThemedText type="small" style={{ color: theme.accent }}>
+                  Retry
+                </ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          )}
+
+          {!isLoading && episodes.length > 0 && episodes.map((episode) => (
             <EpisodeRow
               key={episode.id}
               episode={episode}
@@ -392,6 +445,10 @@ export default function ShowDetailScreen() {
   };
 
   const handleToggleEpisode = async (episode: TMDBEpisode) => {
+    // Prevent logging unreleased episodes
+    const isUnreleased = (episode as typeof episode & { isUnreleased?: boolean }).isUnreleased ?? false;
+    if (isUnreleased) return;
+
     const isCurrentlyWatched = watchedSet.has(episodeKey(episode.season_number, episode.episode_number));
     
     // If unmarking or already loading, just open the diary modal
@@ -410,9 +467,14 @@ export default function ShowDetailScreen() {
       if (!seasonData?.episodes?.length) return;
       
       const previousUnwatched = seasonData.episodes.filter(
-        (ep) =>
-          ep.episode_number < episode.episode_number &&
-          !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+        (ep) => {
+          const epUnreleased = (ep as typeof ep & { isUnreleased?: boolean }).isUnreleased ?? false;
+          return (
+            ep.episode_number < episode.episode_number &&
+            !epUnreleased &&
+            !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+          );
+        }
       );
 
       if (previousUnwatched.length > 0) {
@@ -556,9 +618,14 @@ export default function ShowDetailScreen() {
     if (!seasonData?.episodes) return;
 
     const previousUnwatched = seasonData.episodes.filter(
-      (ep) =>
-        ep.episode_number < episodeNumber &&
-        !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+      (ep) => {
+        const isEpUnreleased = (ep as typeof ep & { isUnreleased?: boolean }).isUnreleased ?? false;
+        return (
+          ep.episode_number < episodeNumber &&
+          !isEpUnreleased &&
+          !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+        );
+      }
     );
 
     if (previousUnwatched.length === 0) return;
@@ -677,7 +744,10 @@ export default function ShowDetailScreen() {
     if (!seasonData?.episodes) return;
 
     const unwatchedEpisodes = seasonData.episodes.filter(
-      (ep) => !watchedSet.has(episodeKey(ep.season_number, ep.episode_number))
+      (ep) => {
+        const isEpUnreleased = (ep as typeof ep & { isUnreleased?: boolean }).isUnreleased ?? false;
+        return !isEpUnreleased && !watchedSet.has(episodeKey(ep.season_number, ep.episode_number));
+      }
     );
 
     if (unwatchedEpisodes.length === 0) return;
@@ -1446,5 +1516,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  emptyContainer: {
+    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.two,
+    alignItems: 'center',
+  },
+  retryButton: {
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
 });

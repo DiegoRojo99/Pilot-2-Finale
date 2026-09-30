@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { EpisodeLog } from "@/types";
 import { Film, MoreVertical, Edit2, Trash2 } from "lucide-react";
 import { episodeKey, getBackdropUrl } from "@/lib/utils";
+import styles from "./diary.module.css";
 
 type DiaryDayEntryProps = {
   group: {
@@ -38,10 +39,10 @@ export default function DiaryDayEntry({ group, deletingLogId, onEdit, onDelete }
   return (
     <>
         {/* Date Separator */}
-        <h3 className="text-base font-bold text-slate-100">{group.label}</h3>
+        <h3 className={styles.dateLabel}>{group.label}</h3>
 
         {/* Entries */}
-        <div className="space-y-2 pb-4">
+        <div className={styles.entriesList}>
             {group.logs.map((log) => (
                 <DiaryEntryCard
                     key={log.id}

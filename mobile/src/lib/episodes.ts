@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api';
-import type { EpisodeLog, EpisodeStatsPeriod, EpisodeStatsResponse } from '@/types/episode';
+import type { EpisodeLog, EpisodeStatsPeriod, EpisodeStatsResponse, UpcomingEpisodesResponse } from '@/types/episode';
 
 export function getShowEpisodeLogs(tmdbShowId: number) {
   return apiRequest<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);
@@ -9,6 +9,9 @@ export function getStats(period: EpisodeStatsPeriod) {
   return apiRequest<EpisodeStatsResponse>(`/api/episodes/stats?period=${period}`);
 }
 
+export function getUpcomingEpisodes(status: string = 'watching') {
+  return apiRequest<UpcomingEpisodesResponse>(`/api/episodes/upcoming?status=${status}`);
+}
 
 export function getAllEpisodeLogs(limit?: number) {
   const params = new URLSearchParams();

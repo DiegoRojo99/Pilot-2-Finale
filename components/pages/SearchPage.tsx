@@ -6,8 +6,7 @@ import { Search as SearchIcon, Star, TrendingUp, X } from "lucide-react";
 import { addShow, getMyShows, getTopRatedShows, getTrendingShows, searchShows } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { PosterCard, SearchShowCard } from "@/components/show/ShowCard";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { PageLoader } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage, PageLoader } from '@/components/ui';
 import type { TMDBShow } from "@/types";
 
 function useDebounce(value: string, delay = 400) {

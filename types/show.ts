@@ -57,6 +57,7 @@ export interface UserShowWithShowRow {
     seasonNumber: number;
     episodeNumber: number;
     name: string | null;
+    airDate: string | null;
   } | null;
 }
 
