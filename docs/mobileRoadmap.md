@@ -237,9 +237,9 @@ Tasks:
 - [x] Group upcoming episodes by air date with diary-style section headers.
 - [x] Show episode metadata: show name, season, episode number, title, air date.
 - [x] Create PATCH /api/my-shows endpoint to refresh stale database cached values.
-- [ ] Handle seasons with zero fetched episodes (incomplete catalog data).
-- [ ] Display message like "Season data not yet available" when season episodes are missing.
-- [ ] Handle TMDB catalog refreshes that add new episode data mid-season.
+- [x] Handle seasons with zero fetched episodes (incomplete catalog data).
+- [x] Display message like "Season data not yet available" when season episodes are missing.
+- [x] Handle TMDB catalog refreshes that add new episode data mid-season.
 
 Acceptance Checks:
 
@@ -247,8 +247,8 @@ Acceptance Checks:
 - [x] My Shows tab displays only released episodes as next.
 - [x] Coming Soon tab shows all unreleased episodes grouped by air date.
 - [x] Users can refresh stale data via PATCH endpoint when database values are outdated.
-- [ ] Shows with missing or incomplete season data display a clear message.
-- [ ] Next episode data updates correctly after catalog refresh.
+- [x] Shows with missing or incomplete season data display a clear message.
+- [x] Next episode data updates correctly after catalog refresh.
 
 ## Phase 7: Diary
 

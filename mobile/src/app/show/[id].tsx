@@ -168,6 +168,7 @@ function SeasonAccordion({
   const [expanded, setExpanded] = useState(false);
   const [seasonData, setSeasonData] = useState<TMDBSeason | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   
   const episodeCount = season.episode_count ?? 0;
@@ -179,6 +180,23 @@ function SeasonAccordion({
   const effectiveWatchedCount = seasonData ? loadedWatchedCount : watchedCount;
   const progressPercent = episodeCount > 0 ? (effectiveWatchedCount / episodeCount) * 100 : 0;
 
+  const fetchSeasonData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const details = await getCachedSeasonDetails(season.season_number);
+      setSeasonData(details);
+      if (!details.episodes || details.episodes.length === 0) {
+        setError('Season data not yet available');
+      }
+    } catch (err) {
+      console.error('Failed to load season episodes:', err);
+      setError('Failed to load season data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleExpandPress = async () => {
     if (expanded) {
       setExpanded(false);
@@ -187,15 +205,7 @@ function SeasonAccordion({
 
     // Load season details only when expanded
     if (!seasonData && !isLoading) {
-      setIsLoading(true);
-      try {
-        const details = await getCachedSeasonDetails(season.season_number);
-        setSeasonData(details);
-      } catch (error) {
-        console.error('Failed to load season episodes:', error);
-      } finally {
-        setIsLoading(false);
-      }
+      await fetchSeasonData();
     }
 
     setExpanded(true);
@@ -264,7 +274,26 @@ function SeasonAccordion({
             </ThemedView>
           )}
 
-          {episodes.map((episode) => (
+          {!isLoading && episodes.length === 0 && error && (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginBottom: Spacing.two }}>
+                {error}
+              </ThemedText>
+              <TouchableOpacity
+                style={[
+                  styles.retryButton,
+                  { borderColor: theme.accent }
+                ]}
+                onPress={fetchSeasonData}
+              >
+                <ThemedText type="small" style={{ color: theme.accent }}>
+                  Retry
+                </ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          )}
+
+          {!isLoading && episodes.length > 0 && episodes.map((episode) => (
             <EpisodeRow
               key={episode.id}
               episode={episode}
@@ -1487,5 +1516,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  emptyContainer: {
+    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.two,
+    alignItems: 'center',
+  },
+  retryButton: {
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
 });
