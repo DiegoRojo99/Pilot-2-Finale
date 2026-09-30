@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Tv } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Tv, Calendar } from "lucide-react";
 import { getMyShows } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { UserShowCard } from "@/components/show/ShowCard";
@@ -34,36 +35,45 @@ export default function WatchingPage() {
     <PageShell
       title="My Shows"
       rightAction={
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setDropdownOpen((v) => !v)}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/upcoming"
             className="flex items-center gap-1.5 rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 active:bg-slate-600"
           >
-            {STATUS_LABELS[selectedStatus]}
-            <ChevronDown className="h-4 w-4" />
-          </button>
-          {dropdownOpen && (
-            <div className="absolute top-full right-0 z-20 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl">
-              {STATUS_OPTIONS.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => {
-                    setSelectedStatus(status);
-                    setDropdownOpen(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                    selectedStatus === status
-                      ? "bg-blue-400/10 text-blue-400"
-                      : "text-slate-300 hover:bg-slate-700/50"
-                  }`}
-                >
-                  {STATUS_LABELS[status]}
-                </button>
-              ))}
-            </div>
-          )}
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Next</span>
+          </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setDropdownOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 active:bg-slate-600"
+            >
+              {STATUS_LABELS[selectedStatus]}
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            {dropdownOpen && (
+              <div className="absolute top-full right-0 z-20 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl">
+                {STATUS_OPTIONS.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStatus(status);
+                      setDropdownOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                      selectedStatus === status
+                        ? "bg-blue-400/10 text-blue-400"
+                        : "text-slate-300 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    {STATUS_LABELS[status]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       }
     >

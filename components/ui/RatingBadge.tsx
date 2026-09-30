@@ -7,10 +7,7 @@ type RatingBadgeProps = {
 };
 
 export function RatingBadge({ rating, size = "md" }: RatingBadgeProps) {
-  if (!rating) {
-    return null;
-  }
-
+  if (!rating) return null;
   const isSmall = size === "sm";
 
   return (

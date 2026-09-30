@@ -21,10 +21,7 @@ import {
 import { episodeKey, formatDate, getBackdropUrl, getPosterUrl } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { EpisodeDiaryModal } from "@/components/show/EpisodeDiaryModal";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { LoadingSpinner, PageLoader } from "@/components/ui/LoadingSpinner";
-import { RatingBadge } from "@/components/ui/RatingBadge";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { LoadingSpinner, PageLoader, ErrorMessage, RatingBadge, StatusBadge } from '@/components/ui';
 import { STATUS_LABELS, type EpisodeLog, type ShowStatus, type TMDBEpisode, type TMDBSeason } from "@/types";
 
 const ALL_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "on_hold", "dropped"];

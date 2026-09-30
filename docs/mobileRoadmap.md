@@ -222,15 +222,15 @@ Acceptance Checks:
 
 ## Phase 6: Unreleased Episodes & Release Calendar
 
-Status: not started
+Status: in progress
 
 Purpose: gracefully handle unreleased, future-dated, and catalog-gap edge cases; surface upcoming releases as a key feature.
 
 Tasks:
 
-- [ ] Add backend logic to tag episodes as unreleased (air date in future or missing).
-- [ ] Filter out unreleased episodes from watchable episode lists on show detail.
-- [ ] Show visual indicator (e.g., "Coming Soon") on unreleased episodes instead of checkbox.
+- [x] Add backend logic to tag episodes as unreleased (air date in future or missing).
+- [x] Filter out unreleased episodes from watchable episode lists on show detail.
+- [x] Show visual indicator (e.g., "Coming Soon") on unreleased episodes instead of checkbox.
 - [ ] Handle seasons with zero fetched episodes (incomplete catalog data).
 - [ ] Display message like "Season data not yet available" when season episodes are missing.
 - [ ] Build a "Next Episodes" screen showing upcoming episode releases across tracked shows.
@@ -245,7 +245,7 @@ Tasks:
 
 Acceptance Checks:
 
-- [ ] Users cannot accidentally log episodes with future air dates.
+- [x] Users cannot accidentally log episodes with future air dates.
 - [ ] Shows with missing or incomplete season data display a clear message.
 - [ ] Users can browse upcoming releases across their library from a dedicated view.
 - [ ] Next episode data updates correctly after catalog refresh.

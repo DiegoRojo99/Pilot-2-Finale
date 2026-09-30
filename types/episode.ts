@@ -29,3 +29,21 @@ export interface EpisodeStatsResponse {
   pendingEpisodesWatching: number;
   pendingRuntimeMinutesWatching: number;
 }
+
+export interface UpcomingEpisode {
+  id: number;
+  showId: number;
+  showName: string;
+  seasonNumber: number;
+  episodeNumber: number;
+  title: string;
+  airDate: string;
+  overview: string | null;
+  stillPath: string | null;
+  userShowStatus: string;
+}
+
+export interface UpcomingEpisodesResponse {
+  episodes: UpcomingEpisode[];
+  total: number;
+}
