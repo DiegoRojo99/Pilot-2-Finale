@@ -34,6 +34,8 @@ export interface UpcomingEpisode {
   id: number;
   showId: number;
   showName: string;
+  showPosterPath: string | null;
+  showBackdropPath: string | null;
   seasonNumber: number;
   episodeNumber: number;
   title: string;
