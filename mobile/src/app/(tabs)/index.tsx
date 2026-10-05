@@ -243,16 +243,16 @@ export default function HomeScreen() {
             <>
               <View style={styles.railSection}>
                 <View style={styles.sectionHeader}>
-                  <View>
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Trending Now</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">What's popular this week</ThemedText>
-                  </View>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>Trending Now</ThemedText>
                   <Pressable 
                     hitSlop={8}
                     onPress={() => router.push('/discover/trending-all')}
                     style={({ pressed }) => pressed && styles.seeAllPressed}
                   >
-                    <ThemedText type="small" themeColor="accent" style={styles.seeAllText}>See All</ThemedText>
+                    <View style={styles.seeAllButton}>
+                      <ThemedText type="small" themeColor="accent" style={styles.seeAllText}>See All</ThemedText>
+                      <Ionicons name="chevron-forward" size={16} color={theme.accent} />
+                    </View>
                   </Pressable>
                 </View>
                 <ScrollView 
@@ -270,16 +270,16 @@ export default function HomeScreen() {
 
               <View style={styles.railSection}>
                 <View style={styles.sectionHeader}>
-                  <View>
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Top Rated</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">Highest rated shows</ThemedText>
-                  </View>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>Top Rated</ThemedText>
                   <Pressable 
                     hitSlop={8}
                     onPress={() => router.push('/discover/top-rated-all')}
                     style={({ pressed }) => pressed && styles.seeAllPressed}
                   >
-                    <ThemedText type="small" themeColor="accent" style={styles.seeAllText}>See All</ThemedText>
+                    <View style={styles.seeAllButton}>
+                      <ThemedText type="small" themeColor="accent" style={styles.seeAllText}>See All</ThemedText>
+                      <Ionicons name="chevron-forward" size={16} color={theme.accent} />
+                    </View>
                   </Pressable>
                 </View>
                 <ScrollView 
@@ -413,6 +413,11 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontWeight: '600',
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   posterRow: {
     marginHorizontal: -Spacing.lg,
