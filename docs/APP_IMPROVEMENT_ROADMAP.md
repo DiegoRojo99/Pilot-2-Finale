@@ -237,15 +237,15 @@ Tasks:
 
 **Hero Section Refinement:**
 
-- [ ] Enhance backdrop hero with depth.
-  - [ ] Parallax scroll effect (backdrop moves slower than content).
+- [x] Enhance backdrop hero with depth.
+  - [x] Parallax scroll effect (backdrop moves slower than content).
   - [ ] Dynamic color extraction from poster for accent backgrounds.
-  - [ ] Gradient overlay that darkens at bottom (improve text readability).
-  - [ ] Poster image with shadow and slight scale-up on scroll.
-- [ ] Improve metadata display.
-  - [ ] Title in large, readable font.
-  - [ ] Year, rating (stars), and status badge in single row.
-  - [ ] Episode count and season count as inline stats.
+  - [x] Gradient overlay that darkens at bottom (improve text readability).
+  - [x] Poster image with shadow and slight scale-up on scroll.
+- [x] Improve metadata display.
+  - [x] Title in large, readable font.
+  - [x] Year, rating, and status badge organized in single row.
+  - [x] Episode count and season count as inline stats.
   - [ ] Network/studio info (if available from TMDB).
 
 **Genre & Overview:**

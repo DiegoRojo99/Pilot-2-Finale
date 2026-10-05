@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, Platform, Modal } from 'react-native';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, Platform, Modal, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -378,6 +378,7 @@ export default function ShowDetailScreen() {
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
   const isCurrentShowLoaded = loadedShowId === showId;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const watchedSet = useMemo(() => {
     const set = new Set<string>();
@@ -868,9 +869,26 @@ export default function ShowDetailScreen() {
     <SafeAreaView edges={['bottom']} style={styles.scrollView}>
       <ScrollView
         style={[styles.scrollView, { backgroundColor: theme.background }]}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          scrollY.setValue(e.nativeEvent.contentOffset.y);
+        }}>
         {status === 'success' && show && backdropUrl ? (
-          <ThemedView style={styles.backdropFrame}>
+          <Animated.View style={[
+            styles.backdropFrame,
+            {
+              transform: [
+                {
+                  translateY: scrollY.interpolate({
+                    inputRange: [0, 200],
+                    outputRange: [0, 60],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ],
+            },
+          ]}>
             <Image
               source={{ uri: backdropUrl }}
               style={styles.backdrop}
@@ -883,7 +901,7 @@ export default function ShowDetailScreen() {
               locations={[0, 1]}
               style={styles.backdropFade}
             />
-          </ThemedView>
+          </Animated.View>
         ) : null}
 
         <View style={styles.safeArea}>
@@ -902,26 +920,47 @@ export default function ShowDetailScreen() {
             <>
               <ThemedView style={styles.hero}> 
                 {posterUrl ? (
-                  <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
+                  <Image source={{ uri: posterUrl }} style={[styles.poster, styles.posterShadow]} contentFit="cover" />
                 ) : (
-                  <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
+                  <ThemedView type="backgroundSelected" style={[styles.posterPlaceholder, styles.posterShadow]}>
                     <ThemedText type="small" themeColor="textSecondary">
                       No poster
                     </ThemedText>
                   </ThemedView>
                 )}
 
-                <ThemedView type="backgroundElement" style={styles.heroText}>
-                  <ThemedText type="smallBold">{show.name}</ThemedText>
-                  <ThemedView style={styles.heroSubText}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
-                    </ThemedText>
-                    <ShowStatusBadge status={userShow?.status ?? 'Not added'} />
-                  </ThemedView>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {show.number_of_seasons ?? 0} seasons · {show.number_of_episodes ?? 0} episodes
-                  </ThemedText>
+                <ThemedView style={styles.heroText}>
+                  <ThemedText type="subtitle" style={{ marginBottom: Spacing.xs }}>{show.name}</ThemedText>
+                  
+                  <View style={styles.heroMetaRow}>
+                    <View style={styles.heroMetaColumn}>
+                      <ThemedText type="xs" themeColor="textSecondary">
+                        {getYear(show.first_air_date)}
+                        {' • '}
+                        {show.vote_average.toFixed(1)}/10
+                      </ThemedText>
+                    </View>
+                    {userShow && <ShowStatusBadge status={userShow.status} />}
+                  </View>
+
+                  <View style={styles.heroStatsRow}>
+                    <View style={styles.heroStat}>
+                      <ThemedText type="xs" themeColor="textSecondary">
+                        SEASONS
+                      </ThemedText>
+                      <ThemedText type="smallBold">
+                        {show.number_of_seasons ?? 0}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.heroStat}>
+                      <ThemedText type="xs" themeColor="textSecondary">
+                        EPISODES
+                      </ThemedText>
+                      <ThemedText type="smallBold">
+                        {show.number_of_episodes ?? 0}
+                      </ThemedText>
+                    </View>
+                  </View>
                 </ThemedView>
               </ThemedView>
 
@@ -1323,6 +1362,13 @@ const styles = StyleSheet.create({
     height: 165,
     borderRadius: Spacing.two,
   },
+  posterShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   posterPlaceholder: {
     width: 110,
     height: 165,
@@ -1333,9 +1379,27 @@ const styles = StyleSheet.create({
   },
   heroText: {
     flex: 1,
-    gap: Spacing.one,
+    gap: Spacing.xs,
     paddingRight: Spacing.two,
     backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+    justifyContent: 'space-between',
+  },
+  heroMetaColumn: {
+    gap: 0,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    marginTop: Spacing.sm,
+  },
+  heroStat: {
+    gap: Spacing.xs,
   },
   heroSubText: {
     flexDirection: 'row',
