@@ -15,62 +15,62 @@ This roadmap focuses on transforming the Pilot 2 Finale mobile app from a **web-
 
 ## Phase 0: Navigation Foundation & Design System
 
-Status: not started
+Status: ✅ COMPLETED
 
 Purpose: Build a rock-solid navigation infrastructure and visual foundation that makes the app feel cohesive and native.
 
 Tasks:
 
-- [ ] Audit current bottom tab navigation for native patterns.
-  - [ ] Review tab labels, icons, and badge positioning for iOS/Android conventions.
-  - [ ] Ensure tab bar icons are properly sized (24-30px) and have clear active states.
-  - [ ] Add vibrant badge styling for unread/new content counts.
-  - [ ] Test tab bar readability and touch targets on small screens.
-- [ ] Redesign tab bar visual hierarchy.
-  - [ ] Implement gradient or glassmorphism backdrop (iOS 16+ style).
-  - [ ] Add subtle elevation/shadow to separate from content.
-  - [ ] Use color transitions on active tabs (not just icon changes).
-  - [ ] Consider animated transitions when switching tabs.
-- [ ] Extend design tokens for native app polish.
-  - [ ] Add opacity/transparency scales (for glass, depth, overlays).
-  - [ ] Add blur radius scales (for frosted glass effects).
-  - [ ] Add corner radius scales for native button shapes.
-  - [ ] Define safe area insets for notched and foldable devices.
-  - [ ] Add haptic feedback token patterns (impact, selection, notification).
-- [ ] Implement stack navigation with swipe-back on iOS.
-  - [ ] Ensure swipe-to-pop works for show detail, episode detail, and modal screens.
-  - [ ] Add visual swipe-back preview (translucent backdrop, leading content visibility).
-  - [ ] Test back gesture doesn't conflict with horizontal scrolling (rails, paging).
-- [ ] Add consistent header styling across screens.
-  - [ ] Large title headers (iOS style) on top-level tab screens.
-  - [ ] Inline titles on detail screens with optional back button animation.
-  - [ ] Header shadow/blur only when content scrolls beneath it.
-- [ ] Implement platform-specific behaviors.
-  - [ ] Android: Back button through root stack navigation.
-  - [ ] iOS: Swipe back gesture and large title collapse.
-  - [ ] Both: Consistent safe area handling (notches, home indicators).
-- [ ] Add haptic feedback patterns.
-  - [ ] Selection haptics on tab taps.
-  - [ ] Light impact on successful actions (add show, log episode).
-  - [ ] Notification haptics for errors and alerts.
-- [ ] Refine typography and spacing for mobile readability.
-  - [ ] Ensure minimum 16px base font size on content.
-  - [ ] Add letter spacing to headings for premium feel.
-  - [ ] Use consistent line height for body text (1.5x).
-  - [ ] Verify spacing scales (4px, 8px, 12px, 16px, 24px) are applied consistently.
+- [x] Audit current bottom tab navigation for native patterns.
+  - [x] Review tab labels, icons, and badge positioning for iOS/Android conventions.
+  - [x] Ensure tab bar icons are properly sized (24-30px) and have clear active states.
+  - [x] Add vibrant badge styling for unread/new content counts.
+  - [x] Test tab bar readability and touch targets on small screens.
+- [x] Redesign tab bar visual hierarchy.
+  - [x] Implement gradient or glassmorphism backdrop (iOS 16+ style).
+  - [x] Add subtle elevation/shadow to separate from content.
+  - [x] Use color transitions on active tabs (not just icon changes).
+  - [x] Consider animated transitions when switching tabs.
+- [x] Extend design tokens for native app polish.
+  - [x] Add opacity/transparency scales (for glass, depth, overlays).
+  - [x] Add blur radius scales (for frosted glass effects).
+  - [x] Add corner radius scales for native button shapes.
+  - [x] Define safe area insets for notched and foldable devices.
+  - [x] Add haptic feedback token patterns (impact, selection, notification).
+- [x] Implement stack navigation with swipe-back on iOS.
+  - [x] Ensure swipe-to-pop works for show detail, episode detail, and modal screens.
+  - [x] Add visual swipe-back preview (translucent backdrop, leading content visibility).
+  - [x] Test back gesture doesn't conflict with horizontal scrolling (rails, paging).
+- [x] Add consistent header styling across screens.
+  - [x] Large title headers (iOS style) on top-level tab screens.
+  - [x] Inline titles on detail screens with optional back button animation.
+  - [x] Header shadow/blur only when content scrolls beneath it.
+- [x] Implement platform-specific behaviors.
+  - [x] Android: Back button through root stack navigation.
+  - [x] iOS: Swipe back gesture and large title collapse.
+  - [x] Both: Consistent safe area handling (notches, home indicators).
+- [x] Add haptic feedback patterns.
+  - [x] Selection haptics on tab taps.
+  - [x] Light impact on successful actions (add show, log episode).
+  - [x] Notification haptics for errors and alerts.
+- [x] Refine typography and spacing for mobile readability.
+  - [x] Ensure minimum 16px base font size on content.
+  - [x] Add letter spacing to headings for premium feel.
+  - [x] Use consistent line height for body text (1.5x).
+  - [x] Verify spacing scales (4px, 8px, 12px, 16px, 24px) are applied consistently.
 
 Acceptance Checks:
 
-- [ ] Tab bar feels smooth and responsive with clear visual feedback.
-- [ ] Platform-specific behaviors (iOS swipe-back, Android back button) work seamlessly.
-- [ ] All screens respect safe areas on notched and foldable devices.
-- [ ] Typography and spacing feel intentional and readable on small screens.
+- [x] Tab bar feels smooth and responsive with clear visual feedback.
+- [x] Platform-specific behaviors (iOS swipe-back, Android back button) work seamlessly.
+- [x] All screens respect safe areas on notched and foldable devices.
+- [x] Typography and spacing feel intentional and readable on small screens.
 
 ---
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: needs refinement
+Status: ready to start
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
