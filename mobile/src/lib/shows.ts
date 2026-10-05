@@ -7,8 +7,8 @@ export function searchShows(query: string, page = 1) {
   return apiRequest<TMDBSearchResult>(`/api/shows/search?${params.toString()}`);
 }
 
-export function getTrendingShows() {
-  return apiRequest<TMDBSearchResult>('/api/shows/trending/week');
+export function getTrendingShows(page = 1) {
+  return apiRequest<TMDBSearchResult>(`/api/shows/trending/week?page=${page}`);
 }
 
 export function getTopRatedShows(page = 1) {

@@ -5,7 +5,7 @@ export default function TopRatedAllScreen() {
   return (
     <ShowGridPage
       title="Top Rated"
-      loadFn={getTopRatedShows}
+      loadFn={(page) => getTopRatedShows(page)}
       errorMessage="Failed to load top rated shows"
     />
   );

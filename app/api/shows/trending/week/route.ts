@@ -9,7 +9,9 @@ export async function GET(request: Request) {
   if (rateLimited) return rateLimited;
 
   try {
-    const data = await tmdbFetch("/trending/tv/week");
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get("page") ?? "1";
+    const data = await tmdbFetch("/trending/tv/week", { page });
     return NextResponse.json(data);
   } 
   catch (error) {

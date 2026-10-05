@@ -5,7 +5,7 @@ export default function TrendingAllScreen() {
   return (
     <ShowGridPage
       title="Trending Now"
-      loadFn={getTrendingShows}
+      loadFn={(page) => getTrendingShows(page)}
       errorMessage="Failed to load trending shows"
     />
   );

@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View, Pressable } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing, BorderRadius, Shadows, MaxContentWidth } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { TMDBShow } from '@/types/api';
 import { ShowCard } from '@/components/show/show-card';
 
 interface ShowGridPageProps {
   title: string;
-  loadFn: () => Promise<{ results: TMDBShow[]; total_results: number }>;
+  loadFn: (page: number) => Promise<{ results: TMDBShow[]; total_results: number }>;
   errorMessage?: string;
 }
 
@@ -22,18 +22,20 @@ export function ShowGridPage({ title, loadFn, errorMessage = 'Failed to load sho
   const theme = useTheme();
   const [shows, setShows] = useState<TMDBShow[]>([]);
   const [totalResults, setTotalResults] = useState(0);
-  const [displayedCount, setDisplayedCount] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     const loadShows = async () => {
       try {
         setLoading(true);
-        const data = await loadFn();
+        const data = await loadFn(1);
         setShows(data.results);
         setTotalResults(data.total_results);
+        setCurrentPage(1);
       } catch (err) {
         console.error(`Failed to load ${title}:`, err);
         setError(true);
@@ -49,16 +51,44 @@ export function ShowGridPage({ title, loadFn, errorMessage = 'Failed to load sho
     router.push({ pathname: '/show/[id]', params: { id: String(show.id) } });
   };
 
-  const handleLoadMore = () => {
+  const handleLoadMore = async () => {
+    // Prevent multiple simultaneous requests
+    if (isFetchingRef.current || loadingMore) return;
+    
+    // Check if we already have all results
+    if (shows.length >= totalResults) return;
+    
+    isFetchingRef.current = true;
     setLoadingMore(true);
-    setTimeout(() => {
-      setDisplayedCount((prev) => Math.min(prev + 20, shows.length));
+    
+    try {
+      const nextPage = currentPage + 1;
+      const data = await loadFn(nextPage);
+      
+      // Filter out duplicate shows (by ID) to avoid duplicate key errors
+      const newShows = data.results.filter(
+        (newShow) => !shows.some((existingShow) => existingShow.id === newShow.id)
+      );
+      
+      // Only add if there are new shows
+      if (newShows.length > 0) {
+        setShows((prev) => [...prev, ...newShows]);
+        setCurrentPage(nextPage);
+      } 
+      else {
+        // If no new shows, we've reached the end
+        setCurrentPage(nextPage);
+      }
+    } catch (err) {
+      console.error(`Failed to load more ${title}:`, err);
+    } finally {
+      isFetchingRef.current = false;
       setLoadingMore(false);
-    }, 300);
+    }
   };
 
-  const visibleShows = shows.slice(0, displayedCount);
-  const hasMore = displayedCount < shows.length;
+  const visibleShows = shows;
+  const hasMore = shows.length < totalResults;
 
   if (loading) {
     return (
@@ -101,31 +131,20 @@ export function ShowGridPage({ title, loadFn, errorMessage = 'Failed to load sho
           columnWrapperStyle={styles.columnWrapper}
           contentContainerStyle={styles.flatListContent}
           scrollEnabled={true}
+          onEndReached={() => {
+            if (!hasMore) return;
+            if (isFetchingRef.current) return;
+            if (loadingMore) return;
+            handleLoadMore();
+          }}
+          onEndReachedThreshold={0.3}
           ListFooterComponent={
             <View style={styles.footerContainer}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.resultInfo}>
-                Showing {displayedCount} of {totalResults} results
+                Showing {shows.length} of {totalResults} results
               </ThemedText>
-              {hasMore && (
-                <Pressable
-                  onPress={handleLoadMore}
-                  style={[styles.loadMoreButton, { backgroundColor: theme.accent }]}
-                  disabled={loadingMore}
-                >
-                  {loadingMore ? (
-                    <ActivityIndicator color={theme.accentText} />
-                  ) : (
-                    <>
-                      <Ionicons name="add-circle-outline" size={20} color={theme.accentText} />
-                      <ThemedText
-                        type="default"
-                        style={{ color: theme.accentText, fontWeight: '600' }}
-                      >
-                        Load More
-                      </ThemedText>
-                    </>
-                  )}
-                </Pressable>
+              {loadingMore && (
+                <ActivityIndicator color={theme.accent} />
               )}
             </View>
           }
@@ -159,10 +178,9 @@ const styles = StyleSheet.create({
   },
   columnWrapper: {
     gap: Spacing.md,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   gridItem: {
-    flex: 1,
     marginBottom: Spacing.md,
   },
   flatListContent: {
@@ -179,15 +197,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     alignItems: 'center',
     gap: Spacing.md,
-  },
-  loadMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    minHeight: 44,
   },
 });
