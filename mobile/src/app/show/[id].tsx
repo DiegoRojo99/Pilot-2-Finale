@@ -8,12 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShowDetailHero } from '@/components/show/ShowDetailHero';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getShowDetails, getUserShowDetails, getSeasonDetails, addShow, removeShow, updateShowStatus } from '@/lib/shows';
 import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes';
-import { getBackdropUrl, getPosterUrl } from '@/lib/tmdb-images';
+import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary } from '@/types/api';
 import { type EpisodeLog } from '@/types/episode';
 import { RatingSlider } from '@/components/ui/rating-slider';
@@ -901,13 +900,87 @@ export default function ShowDetailScreen() {
 
           {status === 'success' && show && isCurrentShowLoaded ? (
             <>
-              <ShowDetailHero
-                show={show}
-                userShow={userShow}
-                onStatusChange={handleStatusChange}
-                onRemoveShow={handleRemoveShow}
-                isUpdating={isUpdatingStatus}
-              />
+              <ThemedView style={styles.hero}> 
+                {posterUrl ? (
+                  <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="cover" />
+                ) : (
+                  <ThemedView type="backgroundSelected" style={styles.posterPlaceholder}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      No poster
+                    </ThemedText>
+                  </ThemedView>
+                )}
+
+                <ThemedView type="backgroundElement" style={styles.heroText}>
+                  <ThemedText type="smallBold">{show.name}</ThemedText>
+                  <ThemedView style={styles.heroSubText}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
+                    </ThemedText>
+                    <ShowStatusBadge status={userShow?.status ?? 'Not added'} />
+                  </ThemedView>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {show.number_of_seasons ?? 0} seasons · {show.number_of_episodes ?? 0} episodes
+                  </ThemedText>
+                </ThemedView>
+              </ThemedView>
+
+              <ThemedView style={styles.statusPickerContainer}>
+                <TouchableOpacity
+                  onPress={() => setShowStatusMenu(!showStatusMenu)}
+                  disabled={isUpdatingStatus}
+                  style={[
+                    styles.statusButton,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                      borderColor: theme.border,
+                      opacity: isUpdatingStatus ? 0.6 : 1,
+                    }
+                  ]}
+                >
+                  <ThemedText type="small">
+                    {userShow ? STATUS_LABELS[userShow.status] : 'Add to List'}
+                  </ThemedText>
+                </TouchableOpacity>
+                
+                {showStatusMenu && (
+                  <View style={[styles.statusMenu, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                    {(['watching', 'want_to_watch', 'watched', 'on_hold', 'dropped'] as ShowStatus[]).map((s) => (
+                      <TouchableOpacity
+                        key={s}
+                        onPress={() => handleStatusChange(s)}
+                        disabled={isUpdatingStatus}
+                        style={[
+                          styles.statusMenuItem,
+                          userShow?.status === s && { backgroundColor: theme.accent },
+                          isUpdatingStatus && { opacity: 0.5 }
+                        ]}
+                      >
+                        <ThemedText
+                          type="small"
+                          style={{ color: userShow?.status === s ? theme.accentText : theme.text }}
+                        >
+                          {STATUS_LABELS[s]}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                    {userShow && (
+                      <>
+                        <View style={[styles.statusMenuDivider, { borderColor: theme.border }]} />
+                        <TouchableOpacity
+                          onPress={handleRemoveShow}
+                          disabled={isUpdatingStatus}
+                          style={[styles.statusMenuItem, isUpdatingStatus && { opacity: 0.5 }]}
+                        >
+                          <ThemedText type="small" style={{ color: theme.danger }}>
+                            Remove from list
+                          </ThemedText>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                )}
+              </ThemedView>
 
               {show.genres && show.genres.length > 0 ? (
                 <ThemedView style={styles.genreRow}>
@@ -1236,6 +1309,38 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     height: 96,
+  },
+  hero: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.three,
+    marginTop: -Spacing.seven,
+    backgroundColor: 'transparent',
+  },
+  poster: {
+    width: 110,
+    height: 165,
+    borderRadius: Spacing.two,
+  },
+  posterPlaceholder: {
+    width: 110,
+    height: 165,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.one,
+  },
+  heroText: {
+    flex: 1,
+    gap: Spacing.one,
+    paddingRight: Spacing.two,
+    backgroundColor: 'transparent',
+  },
+  heroSubText: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   statusBadge: {
     borderRadius: Spacing.five,
