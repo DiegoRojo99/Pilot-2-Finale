@@ -227,11 +227,11 @@ Acceptance Checks:
 
 ---
 
-## Phase 3: Show Detail Screen — Immersive & Interactive
+## Phase 3a: Show Detail Viewer — Immersive Browsing (No Login Required)
 
-Status: needs refinement
+Status: 🚀 IN PROGRESS
 
-Purpose: Make show detail feel like a premium, immersive experience with powerful episode tracking.
+Purpose: Create a premium, immersive show detail screen for browsing and discovery. No login required.
 
 Tasks:
 
@@ -247,49 +247,35 @@ Tasks:
   - [ ] Year, rating (stars), and status badge in single row.
   - [ ] Episode count and season count as inline stats.
   - [ ] Network/studio info (if available from TMDB).
-- [ ] Polish status controls.
-  - [ ] Prominent "Change Status" button (full width or large).
-  - [ ] Quick-remove option in context menu (not inline).
-  - [ ] Visual feedback for status changes (toast notification).
 
 **Genre & Overview:**
 
 - [ ] Redesign genre display.
   - [ ] Colored pill badges for each genre (tie to app accent palette).
   - [ ] Scrollable horizontal list if many genres.
-  - [ ] Tap to filter My Shows by selected genre.
 - [ ] Add rich overview section.
   - [ ] "Expand to read more" if overview is long.
   - [ ] Justified text alignment for premium feel.
   - [ ] Pull quote or highlight if available.
 
-**Season Accordion Enhancement:**
+**Season Accordion (View-Only):**
 
 - [ ] Improve season header styling.
   - [ ] Season poster image on left (if available).
-  - [ ] Progress bar with percentage label.
-  - [ ] "X of Y episodes watched" subtitle.
+  - [ ] Total episode count and air date range.
   - [ ] Animated chevron icon (rotates on expand).
-- [ ] Add season-level quick actions.
-  - [ ] "Mark All Watched" button inside season.
-  - [ ] "See Details" link to season detail screen (if built).
-  - [ ] Season air dates (from TMDB).
-- [ ] Implement smooth accordion transitions.
-  - [ ] Expand/collapse animation (not instant).
+- [ ] Display season structure without tracking.
+  - [ ] Show all episodes in season.
+  - [ ] Smooth accordion transitions.
   - [ ] Maintain scroll position when expanding.
 
-**Episode List Polish:**
+**Episode List Display:**
 
 - [ ] Redesign episode rows.
   - [ ] Larger still image (wider, taller).
   - [ ] Gradient overlay with episode title.
-  - [ ] Metadata row: Air date, runtime, rating.
-  - [ ] Status indicator (watched checkbox or badge).
-  - [ ] Watched episodes fade or desaturate for visual distinction.
-- [ ] Add episode quick-logging.
-  - [ ] Tap checkbox to log watched (instant feedback, no modal).
-  - [ ] Tap row to open full logging modal with date & rating.
-  - [ ] Swipe for context menu (edit, delete, share).
+  - [ ] Metadata row: Episode number, air date, runtime, TMDB rating.
+  - [ ] Clean, readable layout without status indicators.
 - [ ] Implement skeleton loading for season expansion.
   - [ ] Pulsing episode row placeholders while fetching.
 
@@ -301,27 +287,77 @@ Tasks:
   - [ ] Overview/synopsis.
   - [ ] Guest actors or crew (if available).
   - [ ] IMDB/TMDB rating and vote count.
-  - [ ] User rating and notes display.
-- [ ] Add episode sharing.
+- [ ] Add episode sharing (view-only).
   - [ ] Share button opens native share sheet.
-  - [ ] Pre-filled message: "Just watched S2E4 of Show Name! ⭐ 4/5".
+  - [ ] Pre-filled message: "Check out S2E4 of Show Name on Pilot 2 Finale!".
 
 **Next Episode & Related Content:**
 
 - [ ] Add "Next Episode" card (sticky or prominent).
   - [ ] Shows unreleased episode with air date countdown.
-  - [ ] Tap to set reminder (if notifications enabled).
   - [ ] Visual distinction for upcoming vs. released.
 - [ ] Add "Related Shows" section.
-  - [ ] Similar shows based on genre or cast.
-  - [ ] Carousel with quick-add buttons.
+  - [ ] Similar shows based on genre.
+  - [ ] Carousel with quick-view navigation.
 
 Acceptance Checks:
 
 - [ ] Show detail feels immersive and premium.
-- [ ] Episode logging is frictionless (quick tap for logging, swipe for options).
 - [ ] Parallax and animations feel smooth, not janky.
 - [ ] All metadata is easily readable and well-organized.
+- [ ] Works for non-logged-in users visiting from Discover tab.
+
+---
+
+## Phase 3b: Episode Tracking & Status Management (Login Required)
+
+Status: needs refinement
+
+Purpose: Add tracking, logging, and status management to show details for logged-in users.
+
+Tasks:
+
+**Status Controls:**
+
+- [ ] Polish status controls.
+  - [ ] Prominent "Change Status" button (full width or large).
+  - [ ] Quick-remove option in context menu (not inline).
+  - [ ] Visual feedback for status changes (toast notification).
+
+**Season Progress:**
+
+- [ ] Enhance season headers with tracking data.
+  - [ ] Progress bar with percentage label.
+  - [ ] "X of Y episodes watched" subtitle.
+
+**Episode Quick-Logging:**
+
+- [ ] Add episode quick-logging.
+  - [ ] Tap checkbox to log watched (instant feedback, no modal).
+  - [ ] Tap row to open full logging modal with date & rating.
+  - [ ] Swipe for context menu (edit, delete, share).
+- [ ] Show watched state indicators.
+  - [ ] Status indicator (watched checkbox or badge).
+  - [ ] Watched episodes fade or desaturate for visual distinction.
+
+**Episode Detail Modal (Extended):**
+
+- [ ] Add user-specific data to episode modal.
+  - [ ] User rating and notes display.
+  - [ ] Rewatch history (if available).
+  - [ ] Edit button to modify logged data.
+
+**Season-Level Actions:**
+
+- [ ] Add season-level quick actions.
+  - [ ] "Mark All Watched" button inside season.
+  - [ ] "See Details" link to season detail screen (if built).
+
+Acceptance Checks:
+
+- [ ] Episode logging is frictionless (quick tap for logging, swipe for options).
+- [ ] Status changes persist and sync across app.
+- [ ] Progress tracking displays accurately.
 
 ---
 
