@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: in progress (Steps 1-4 complete)
+Status: in progress (Steps 1-5 complete)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -84,15 +84,15 @@ Tasks:
   - [ ] Search suggestions appear in a modal or bottom sheet (not inline overlay).
   - [ ] Add voice search icon for future voice input.
   - [ ] Clear search history and recent searches when tapped.
+- [x] Add filter chips for advanced search.
+  - [x] Status chips: Trending, Top Rated, Latest.
+  - [ ] Genre filter (tag-based, multi-select).
+  - [ ] Year range slider for release date.
+  - [ ] Rating filter (5-star slider).
 - [ ] Implement search result pagination elegantly.
   - [ ] Load-more button at bottom (not infinite scroll for now).
   - [ ] Show result count ("Showing 1-20 of 450 results").
   - [ ] Add option to sort results (relevance, rating, recency).
-- [ ] Add filter chips for advanced search.
-  - [ ] Status chips: Trending, Top Rated, Latest.
-  - [ ] Genre filter (tag-based, multi-select).
-  - [ ] Year range slider for release date.
-  - [ ] Rating filter (5-star slider).
 
 **Discovery Rails Refinement:**
 
