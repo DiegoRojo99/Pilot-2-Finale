@@ -10,7 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getShowDetails, getUserShowDetails, getSeasonDetails, addShow, removeShow, updateShowStatus } from '@/lib/shows';
+import { getShowDetails, getUserShowDetails, getSeasonDetails, addShow, removeShow, updateShowStatus, getSimilarShows } from '@/lib/shows';
 import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes';
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary } from '@/types/api';
@@ -592,6 +592,8 @@ export default function ShowDetailScreen() {
     count: number;
   } | null>(null);
   const [isMarkingPrevious, setIsMarkingPrevious] = useState(false);
+  const [relatedShows, setRelatedShows] = useState<TMDBShow[]>([]);
+  const [isLoadingRelated, setIsLoadingRelated] = useState(false);
   const theme = useTheme();
   const showId = Number(id);
   const hasValidShowId = Number.isFinite(showId);
@@ -638,6 +640,20 @@ export default function ShowDetailScreen() {
           catch {
             // Episode logs fetch failed, continue anyway
           }
+        }
+        
+        // Fetch related shows
+        try {
+          setIsLoadingRelated(true);
+          const similar = await getSimilarShows(showId);
+          if (isMounted) {
+            setRelatedShows(similar.results?.slice(0, 10) || []);
+          }
+        } catch (relatedError) {
+          console.error('Error loading related shows:', relatedError);
+          if (isMounted) setRelatedShows([]);
+        } finally {
+          if (isMounted) setIsLoadingRelated(false);
         }
         
         setStatus('success');
@@ -1308,6 +1324,54 @@ export default function ShowDetailScreen() {
                     )}
                 </ThemedView>
               ) : null}
+
+              {relatedShows.length > 0 && (
+                <ThemedView style={styles.relatedShowsSection}>
+                  <ThemedText type="smallBold" style={{ marginBottom: Spacing.md }}>
+                    RELATED SHOWS
+                  </ThemedText>
+                  <ScrollView
+                    horizontal
+                    scrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.relatedShowsContent}
+                  >
+                    {relatedShows.map((relatedShow) => (
+                      <TouchableOpacity
+                        key={relatedShow.id}
+                        onPress={() => {
+                          // Navigate to related show
+                          router.push(`/show/${relatedShow.id}`);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.relatedShowCard}
+                      >
+                        {relatedShow.poster_path && getPosterUrl(relatedShow.poster_path) ? (
+                          <Image
+                            source={{ uri: getPosterUrl(relatedShow.poster_path) || '' }}
+                            style={styles.relatedShowImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <ThemedView type="backgroundSelected" style={styles.relatedShowImage}>
+                            <ThemedText type="xs" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+                              No image
+                            </ThemedText>
+                          </ThemedView>
+                        )}
+                        <ThemedText
+                          type="small"
+                          style={{ color: theme.text, marginTop: Spacing.sm }}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
+                          {relatedShow.name}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </ThemedView>
+              )}
             </>
           ) : null}
         </View>
@@ -1924,5 +1988,25 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  relatedShowsSection: {
+    alignSelf: 'stretch',
+    paddingVertical: Spacing.md,
+  },
+  relatedShowsContent: {
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  relatedShowCard: {
+    width: 100,
+    gap: Spacing.sm,
+  },
+  relatedShowImage: {
+    width: 100,
+    height: 150,
+    borderRadius: Spacing.two,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

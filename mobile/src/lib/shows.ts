@@ -27,6 +27,10 @@ export function getSeasonDetails(showId: number, seasonNumber: number) {
   return apiRequest<TMDBSeason>(`/api/shows/${showId}/season/${seasonNumber}`);
 }
 
+export function getSimilarShows(showId: number) {
+  return apiRequest<TMDBSearchResult>(`/api/shows/${showId}/similar`);
+}
+
 export function getMyShows(status?: ShowStatus) {
   return apiRequest<UserShow[]>(status ? `/api/my-shows?status=${status}` : '/api/my-shows');
 }

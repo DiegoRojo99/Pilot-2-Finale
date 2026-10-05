@@ -285,16 +285,16 @@ Tasks:
   - [x] Episode title, number (S01E05), and air date.
   - [x] Overview/synopsis with section headers.
   - [x] TMDB rating and metadata display with icons.
-  - [ ] Guest actors or crew (if available).
-- [ ] Add episode sharing (view-only).
-  - [ ] Share button opens native share sheet.
-  - [ ] Pre-filled message: "Check out S2E4 of Show Name on Pilot 2 Finale!".
+  - [x] Guest actors or crew (if available).
+- [x] Add episode sharing (view-only).
+  - [x] Share button opens native share sheet.
+  - [x] Pre-filled message: "Check out S2E4 of Show Name on Pilot 2 Finale!".
 
 **Related Content:**
 
-- [ ] Add "Related Shows" section.
-  - [ ] Similar shows based on genre.
-  - [ ] Carousel with quick-view navigation.
+- [x] Add "Related Shows" section.
+  - [x] Similar shows based on genre.
+  - [x] Carousel with quick-view navigation.
 
 Acceptance Checks:
 
