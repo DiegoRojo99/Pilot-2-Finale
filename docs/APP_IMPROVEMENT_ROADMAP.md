@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: in progress (Steps 1-3 complete)
+Status: in progress (Steps 1-4 complete)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -125,12 +125,12 @@ Tasks:
 
 **Empty & Error States:**
 
-- [ ] Design premium empty states.
-  - [ ] Illustration for "No Results" with actionable suggestions.
-  - [ ] "Try adjusting your filters" or "Browse trending shows instead" CTA.
-- [ ] Add network error state with retry.
-  - [ ] Offline message with retry button.
-  - [ ] Failed search retry with visual feedback.
+- [x] Design premium empty states.
+  - [x] Illustration for "No Results" with actionable suggestions.
+  - [x] "Try adjusting your filters" or "Browse trending shows instead" CTA.
+- [x] Add network error state with retry.
+  - [x] Offline message with retry button.
+  - [x] Failed search retry with visual feedback.
 - [ ] Add loading skeleton for search results.
   - [ ] Pulsing poster placeholders.
   - [ ] Skeleton text for metadata.

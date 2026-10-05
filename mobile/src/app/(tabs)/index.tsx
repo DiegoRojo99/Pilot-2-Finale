@@ -156,12 +156,22 @@ export default function HomeScreen() {
             shows={searchResults}
             onShowPress={openShow}
           />
+        ) : searchStatus === 'success' && query.trim().length >= 2 ? (
+          <ThemedView style={[styles.emptyStateCard, { backgroundColor: theme.surfaceBackground }]}>
+            <Ionicons name="search-outline" size={48} color={theme.textSecondary} />
+            <View style={styles.emptyStateContent}>
+              <ThemedText type="subtitle" style={styles.emptyStateTitle}>No results found</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyStateMessage}>
+                Try adjusting your search or browse our suggestions below
+              </ThemedText>
+            </View>
+          </ThemedView>
         ) : null}
 
         <ThemedView style={styles.suggestions}>
           {suggestionsStatus === 'loading' ? (
-            <ThemedView style={[styles.emptyCard, { borderColor: theme.border }]}> 
-              <ActivityIndicator color={theme.accent} />
+            <ThemedView style={[styles.emptyStateCard, { backgroundColor: theme.surfaceBackground }]}> 
+              <ActivityIndicator size="large" color={theme.accent} />
               <ThemedText type="small" themeColor="textSecondary">
                 Loading suggestions...
               </ThemedText>
@@ -169,11 +179,14 @@ export default function HomeScreen() {
           ) : null}
 
           {suggestionsStatus === 'error' ? (
-            <ThemedView style={[styles.emptyCard, { borderColor: theme.border }]}> 
-              <ThemedText type="subtitle">Start with a title</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Suggestions are unavailable right now, but search is ready when you know what to watch next.
-              </ThemedText>
+            <ThemedView style={[styles.emptyStateCard, { backgroundColor: theme.surfaceBackground }]}> 
+              <Ionicons name="alert-circle-outline" size={48} color={theme.textSecondary} />
+              <View style={styles.emptyStateContent}>
+                <ThemedText type="subtitle" style={styles.emptyStateTitle}>Couldn't load suggestions</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.emptyStateMessage}>
+                  Check your connection, but search is ready anytime
+                </ThemedText>
+              </View>
             </ThemedView>
           ) : null}
 
@@ -309,6 +322,26 @@ const styles = StyleSheet.create({
   },
   railSection: {
     gap: Spacing.md,
+  },
+  emptyStateCard: {
+    alignSelf: 'stretch',
+    gap: Spacing.lg,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
+    alignItems: 'center',
+  },
+  emptyStateContent: {
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  emptyStateTitle: {
+    textAlign: 'center',
+  },
+  emptyStateMessage: {
+    textAlign: 'center',
+    lineHeight: 20,
   },
   emptyCard: {
     alignSelf: 'stretch',
