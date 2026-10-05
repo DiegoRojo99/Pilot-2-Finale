@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   gridItem: {
-    flex: 1,
+    maxWidth: 120,
     marginBottom: Spacing.sm,
   },
   flatListContent: {
