@@ -16,13 +16,6 @@ import { ShowCard } from '@/components/show/show-card';
 
 type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
 type SuggestionsStatus = 'loading' | 'success' | 'error';
-type FilterType = 'all' | 'trending' | 'toprated';
-
-const FILTERS = [
-  { id: 'all', label: 'All', icon: 'apps-outline' as const },
-  { id: 'trending', label: 'Trending', icon: 'trending-up' as const },
-  { id: 'toprated', label: 'Top Rated', icon: 'star' as const },
-] as const;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -33,7 +26,6 @@ export default function HomeScreen() {
   const [suggestionsStatus, setSuggestionsStatus] = useState<SuggestionsStatus>('loading');
   const [trendingShows, setTrendingShows] = useState<TMDBShow[]>([]);
   const [topRatedShows, setTopRatedShows] = useState<TMDBShow[]>([]);
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const theme = useTheme();
 
   function handleQueryChange(value: string) {
@@ -158,45 +150,6 @@ export default function HomeScreen() {
             </ThemedText>
           ) : null}
         </ThemedView>
-
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterRow}
-        >
-          {FILTERS.map((filter) => (
-            <Pressable
-              key={filter.id}
-              onPress={() => setActiveFilter(filter.id as FilterType)}
-              style={[
-                styles.filterChip,
-                activeFilter === filter.id && {
-                  backgroundColor: theme.accent,
-                },
-                activeFilter !== filter.id && {
-                  backgroundColor: theme.surfaceBackground,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              <Ionicons 
-                name={filter.icon} 
-                size={16} 
-                color={activeFilter === filter.id ? theme.accentText : theme.text}
-              />
-              <ThemedText 
-                type="small"
-                style={{
-                  color: activeFilter === filter.id ? theme.accentText : theme.text,
-                  fontWeight: activeFilter === filter.id ? '600' : '500',
-                }}
-              >
-                {filter.label}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </ScrollView>
 
         {searchResults.length > 0 ? (
           <PosterRail
@@ -402,7 +355,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: Spacing.md,
   },
   sectionTitle: {
@@ -424,21 +377,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   posterItem: {
-    marginRight: Spacing.md,
-  },
-  filterRow: {
-    marginHorizontal: -Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    minHeight: TouchTarget.small,
     marginRight: Spacing.md,
   },
 });

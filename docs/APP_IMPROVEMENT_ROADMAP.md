@@ -80,12 +80,12 @@ Tasks:
 
 - [x] Redesign search input with native patterns.
   - [x] Large, tappable search bar (min 44px height).
-  - [x] Pill-shaped with clear button (iOS style).
+  - [x] Rounded rectangle shape with clear button (Material Design style).
   - [ ] Search suggestions appear in a modal or bottom sheet (not inline overlay).
   - [ ] Add voice search icon for future voice input.
   - [ ] Clear search history and recent searches when tapped.
-- [x] Add filter chips for advanced search.
-  - [x] Status chips: Trending, Top Rated, Latest.
+- [ ] Add filter chips for advanced search.
+  - [ ] Status chips removed (no value without category context).
   - [ ] Genre filter (tag-based, multi-select).
   - [ ] Year range slider for release date.
   - [ ] Rating filter (5-star slider).
@@ -98,18 +98,21 @@ Tasks:
 
 - [x] Redesign trending and top-rated rails.
   - [x] Larger poster images (wider cards for mobile).
-  - [x] Add gradient text overlay for titles (readability).
+  - [x] Clean rail headers with right-aligned "See All" buttons.
+  - [x] "See All" buttons include chevron arrow icon.
+  - [x] Removed subtitle descriptions (cleaner visual hierarchy).
   - [x] Show metadata overlay on tap/hover (rating, year, episode count).
-  - [x] "Swipe to see more" indicator on first load.
-  - [x] Horizontal snap scrolling (not smooth fling).
-- [x] Add "Popular This Week" and "Fan Favorites" sections.
-  - [x] Data-driven recommendations based on trending + user list overlap.
-  - [x] Rotating sections to prevent staleness.
-  - [x] "See All" navigation for each section.
+  - [x] Horizontal snap scrolling with page indicators (dots).
+  - [ ] Auto-scroll carousel every 5-8 seconds with pause on tap.
+- [x] Add discovery rails sections.
+  - [x] Trending Now and Top Rated sections with data.
+  - [x] "See All" navigation for each section (trending-all.tsx, top-rated-all.tsx).
+  - [x] Grid layout with pagination on "See All" pages.
+  - [x] Result count display ("Showing X of Y results").
 - [ ] Implement carousel auto-advance (optional, with pause on tap).
   - [ ] Auto-scroll every 5-8 seconds.
   - [ ] Pause when user taps or swipes.
-  - [x] Visible page indicators (dots) to show position.
+  - [x] Visible page indicators (dots) to show carousel position.
 
 **Show Card Polish:**
 
