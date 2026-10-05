@@ -105,8 +105,8 @@ export default function HomeScreen() {
         style={[styles.scrollView, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.scrollContent}>
         <View style={styles.safeArea}>
-        <ThemedText type="title">
-          Discover
+        <ThemedText type="subtitle">
+          Search
         </ThemedText>
 
         <ThemedView style={[styles.searchPill, { backgroundColor: theme.surfaceBackground }]}> 
