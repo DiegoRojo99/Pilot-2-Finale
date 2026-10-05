@@ -179,41 +179,59 @@ export default function HomeScreen() {
 
           {suggestionsStatus === 'success' ? (
             <>
-              <View style={styles.sectionHeader}>
-                <ThemedText type="subtitle">Trending Now</ThemedText>
-                <Pressable onPress={() => router.push('/discover/trending-all')}>
-                  <ThemedText type="small" themeColor="accent">See All</ThemedText>
-                </Pressable>
-              </View>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.posterRow}
-              >
-                {trendingShows.slice(0, 10).map((show) => (
-                  <View key={show.id} style={styles.posterItem}>
-                    <ShowCard show={show} onShowPress={openShow} />
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>Trending Now</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">What's popular this week</ThemedText>
                   </View>
-                ))}
-              </ScrollView>
+                  <Pressable 
+                    hitSlop={8}
+                    onPress={() => router.push('/discover/trending-all')}
+                    style={({ pressed }) => pressed && styles.seeAllPressed}
+                  >
+                    <ThemedText type="small" themeColor="accent" style={styles.seeAllText}>See All</ThemedText>
+                  </Pressable>
+                </View>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.posterRow}
+                >
+                  {trendingShows.slice(0, 10).map((show) => (
+                    <View key={show.id} style={styles.posterItem}>
+                      <ShowCard show={show} onShowPress={openShow} />
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
 
-              <View style={styles.sectionHeader}>
-                <ThemedText type="subtitle">Top Rated</ThemedText>
-                <Pressable onPress={() => router.push('/discover/top-rated-all')}>
-                  <ThemedText type="small" themeColor="accent">See All</ThemedText>
-                </Pressable>
-              </View>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.posterRow}
-              >
-                {topRatedShows.slice(0, 10).map((show) => (
-                  <View key={show.id} style={styles.posterItem}>
-                    <ShowCard show={show} onShowPress={openShow} />
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>Top Rated</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">Highest rated shows</ThemedText>
                   </View>
-                ))}
-              </ScrollView>
+                  <Pressable 
+                    hitSlop={8}
+                    onPress={() => router.push('/discover/top-rated-all')}
+                    style={({ pressed }) => pressed && styles.seeAllPressed}
+                  >
+                    <ThemedText type="small" themeColor="accent" style={styles.seeAllText}>See All</ThemedText>
+                  </Pressable>
+                </View>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.posterRow}
+                >
+                  {topRatedShows.slice(0, 10).map((show) => (
+                    <View key={show.id} style={styles.posterItem}>
+                      <ShowCard show={show} onShowPress={openShow} />
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
             </>
           ) : null}
         </ThemedView>
@@ -287,26 +305,38 @@ const styles = StyleSheet.create({
   },
   suggestions: {
     alignSelf: 'stretch',
-    gap: Spacing.four,
+    gap: Spacing.xl,
+  },
+  railSection: {
+    gap: Spacing.md,
   },
   emptyCard: {
     alignSelf: 'stretch',
-    gap: Spacing.two,
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  sectionTitle: {
+    marginBottom: Spacing.xs,
+  },
+  seeAllPressed: {
+    opacity: 0.7,
+  },
+  seeAllText: {
+    fontWeight: '600',
   },
   posterRow: {
-    marginHorizontal: -Spacing.four,
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.two,
+    marginHorizontal: -Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
   posterItem: {
-    marginRight: Spacing.three,
+    marginRight: Spacing.md,
   },
 });
