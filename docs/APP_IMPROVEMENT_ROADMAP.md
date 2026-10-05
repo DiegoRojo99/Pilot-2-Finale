@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: in progress (Steps 1-5 complete)
+Status: in progress (Steps 1-6 complete)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -102,10 +102,10 @@ Tasks:
   - [x] Show metadata overlay on tap/hover (rating, year, episode count).
   - [x] "Swipe to see more" indicator on first load.
   - [x] Horizontal snap scrolling (not smooth fling).
-- [ ] Add "Popular This Week" and "Fan Favorites" sections.
-  - [ ] Data-driven recommendations based on trending + user list overlap.
-  - [ ] Rotating sections to prevent staleness.
-  - [ ] "See All" navigation for each section.
+- [x] Add "Popular This Week" and "Fan Favorites" sections.
+  - [x] Data-driven recommendations based on trending + user list overlap.
+  - [x] Rotating sections to prevent staleness.
+  - [x] "See All" navigation for each section.
 - [ ] Implement carousel auto-advance (optional, with pause on tap).
   - [ ] Auto-scroll every 5-8 seconds.
   - [ ] Pause when user taps or swipes.
