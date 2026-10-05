@@ -26,18 +26,6 @@ export function ShowCard({ show, onShowPress }: { show: TMDBShow; onShowPress?: 
             </ThemedText>
           </ThemedView>
         )}
-
-        <ThemedView style={styles.infoPanel}>
-          <View>
-            <ThemedText type="smallBold" numberOfLines={1}>
-              {show.name}
-            </ThemedText>
-          </View>
-
-          <ThemedText type="small" themeColor="textSecondary">
-            {getYear(show.first_air_date)} · {show.vote_average.toFixed(1)}
-          </ThemedText>
-        </ThemedView>
       </View>
     </Pressable>
   );
@@ -49,7 +37,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.95 }],
   },
   card: {
-    width: 176,
+    width: 130,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     ...Shadows.sm,

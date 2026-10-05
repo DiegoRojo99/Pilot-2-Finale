@@ -196,7 +196,7 @@ export default function HomeScreen() {
             <>
               <View style={styles.railSection}>
                 <View style={styles.sectionHeader}>
-                  <ThemedText type="subtitle" style={styles.sectionTitle}>Trending Now</ThemedText>
+                  <ThemedText type="default" style={styles.sectionTitle}>Trending Now</ThemedText>
                   <Pressable 
                     hitSlop={8}
                     onPress={() => router.push('/discover/trending-all')}
@@ -223,7 +223,7 @@ export default function HomeScreen() {
 
               <View style={styles.railSection}>
                 <View style={styles.sectionHeader}>
-                  <ThemedText type="subtitle" style={styles.sectionTitle}>Top Rated</ThemedText>
+                  <ThemedText type="default" style={styles.sectionTitle}>Top Rated</ThemedText>
                   <Pressable 
                     hitSlop={8}
                     onPress={() => router.push('/discover/top-rated-all')}
