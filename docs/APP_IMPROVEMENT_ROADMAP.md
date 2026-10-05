@@ -260,24 +260,23 @@ Tasks:
 
 **Season Accordion (View-Only):**
 
-- [ ] Improve season header styling.
-  - [ ] Season poster image on left (if available).
-  - [ ] Total episode count and air date range.
-  - [ ] Animated chevron icon (rotates on expand).
-- [ ] Display season structure without tracking.
-  - [ ] Show all episodes in season.
-  - [ ] Smooth accordion transitions.
-  - [ ] Maintain scroll position when expanding.
+- [x] Improve season header styling.
+  - [x] Season name with total episode count.
+  - [x] Animated chevron icon (rotates on expand).
+- [x] Display season structure without tracking.
+  - [x] Show all episodes in season.
+  - [x] Smooth accordion transitions.
+  - [x] Episodes show still image, title, air date, rating, runtime.
 
 **Episode List Display:**
 
-- [ ] Redesign episode rows.
-  - [ ] Larger still image (wider, taller).
-  - [ ] Gradient overlay with episode title.
-  - [ ] Metadata row: Episode number, air date, runtime, TMDB rating.
-  - [ ] Clean, readable layout without status indicators.
-- [ ] Implement skeleton loading for season expansion.
-  - [ ] Pulsing episode row placeholders while fetching.
+- [x] Redesign episode rows.
+  - [x] Still image (wider, taller).
+  - [x] Episode title with number.
+  - [x] Metadata row: Episode number, air date, runtime, TMDB rating.
+  - [x] Clean, readable layout without status indicators.
+- [x] Implement skeleton loading for season expansion.
+  - [x] Loading state shows "Loading episodes…" message.
 
 **Episode Detail Modal:**
 

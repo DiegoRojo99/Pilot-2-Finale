@@ -146,6 +146,104 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
   );
 }
 
+function EpisodeRowViewOnly({ episode, onPress }: { episode: TMDBEpisode; onPress: (season: number, episode: number) => void }) {
+  const theme = useTheme();
+  const isUnreleased = (episode as typeof episode & { isUnreleased?: boolean }).isUnreleased ?? false;
+  
+  return (
+    <ThemedView style={[styles.episodeRow, { borderBottomColor: theme.border, opacity: isUnreleased ? 0.6 : 1 }]}>
+      <TouchableOpacity
+        style={styles.episodeImageContainer}
+        activeOpacity={0.7}
+        disabled={isUnreleased}
+        onPress={() => !isUnreleased && onPress(episode.season_number, episode.episode_number)}
+      >
+        {episode.still_path && getBackdropUrl(episode.still_path) ? (
+          <Image
+            source={{ uri: getBackdropUrl(episode.still_path) || '' }}
+            style={[styles.episodeImage, isUnreleased && { opacity: 0.5 }]}
+            contentFit="cover"
+          />
+        ) : (
+          <ThemedView type="backgroundSelected" style={styles.episodeImagePlaceholder}>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 9, lineHeight: 12, opacity: isUnreleased ? 0.5 : 1 }}>
+              No image
+            </ThemedText>
+          </ThemedView>
+        )}
+        
+        <ThemedView style={styles.episodeContentContainer}>
+          <ThemedView style={styles.episodeTopRow}>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 13, fontFamily: 'monospace' }}>
+              {String(episode.episode_number).padStart(2, '0')}
+            </ThemedText>
+            <ThemedText 
+              type="small" 
+              style={{ 
+                flex: 1,
+                color: isUnreleased ? theme.textSecondary : theme.text,
+                fontSize: 13
+              }}
+              numberOfLines={1}
+            >
+              {episode.name}
+            </ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.episodeMeta}>
+            {episode.air_date && (
+              <View style={styles.episodeMetaItem}>
+                <Ionicons name="calendar" size={11} color={theme.textSecondary} />
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+                  {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </ThemedText>
+              </View>
+            )}
+            {episode.vote_average > 0 && (
+              <View style={styles.episodeMetaItem}>
+                <Ionicons name="star" size={11} color="#fbbf24" />
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+                  {episode.vote_average.toFixed(1)}
+                </ThemedText>
+              </View>
+            )}
+            {episode.runtime ? (
+              <View style={styles.episodeMetaItem}>
+                <Ionicons name="time" size={11} color={theme.textSecondary} />
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+                  {episode.runtime}m
+                </ThemedText>
+              </View>
+            ) : null}
+          </ThemedView>
+        </ThemedView>
+      </TouchableOpacity>
+
+      {isUnreleased ? (
+        <ThemedView style={styles.episodeCheckboxContainer}>
+          <ThemedView style={[
+            styles.episodeCheckbox,
+            { 
+              borderColor: 'transparent',
+              backgroundColor: theme.textSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: Spacing.two,
+              paddingVertical: Spacing.one,
+              height: 24,
+              minWidth: 48
+            }
+          ]}>
+            <ThemedText style={{ fontSize: 10, fontWeight: '700', color: theme.background, lineHeight: 12 }}>
+              Soon
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
+      ) : null}
+    </ThemedView>
+  );
+}
+
 function SeasonAccordion({
   showId,
   season,
@@ -299,6 +397,125 @@ function SeasonAccordion({
               episode={episode}
               isWatched={watchedSet.has(episodeKey(episode.season_number, episode.episode_number))}
               onToggle={() => onToggleEpisode(episode)}
+              onPress={() => onPressEpisode(episode.season_number, episode.episode_number)}
+            />
+          ))}
+        </ThemedView>
+      )}
+    </ThemedView>
+  );
+}
+
+function SeasonAccordionViewOnly({
+  showId,
+  season,
+  getCachedSeasonDetails,
+  onPressEpisode,
+}: {
+  showId: number;
+  season: TMDBSeasonSummary;
+  getCachedSeasonDetails: (seasonNumber: number) => Promise<TMDBSeason>;
+  onPressEpisode: (season: number, episode: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [seasonData, setSeasonData] = useState<TMDBSeason | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
+  
+  const episodeCount = season.episode_count ?? 0;
+
+  const fetchSeasonData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const details = await getCachedSeasonDetails(season.season_number);
+      setSeasonData(details);
+      if (!details.episodes || details.episodes.length === 0) {
+        setError('Season data not yet available');
+      }
+    } catch (err) {
+      console.error('Failed to load season episodes:', err);
+      setError('Failed to load season data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExpandPress = async () => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+
+    if (!seasonData && !isLoading) {
+      await fetchSeasonData();
+    }
+
+    setExpanded(true);
+  };
+
+  const episodes = seasonData?.episodes ?? [];
+
+  return (
+    <ThemedView 
+      type="backgroundElement"
+      style={[styles.seasonAccordion, { borderColor: theme.border }]}
+    >
+      <TouchableOpacity
+        style={styles.seasonHeader}
+        onPress={handleExpandPress}
+        activeOpacity={0.7}
+      >
+        <ThemedView style={styles.seasonLeftContent}>
+          <ThemedText type="smallBold">{season.name}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 2 }}>
+            {episodeCount} episodes
+          </ThemedText>
+        </ThemedView>
+        
+        <ThemedView style={styles.seasonRightContent}>
+          <View style={{ width: 16, height: 16, justifyContent: 'center', alignItems: 'center' }}>
+            {expanded ? (
+              <ThemedText style={{ fontSize: 12, lineHeight: 12 }}>−</ThemedText>
+            ) : (
+              <ThemedText style={{ fontSize: 12, lineHeight: 12 }}>+</ThemedText>
+            )}
+          </View>
+        </ThemedView>
+      </TouchableOpacity>
+
+      {expanded && (
+        <ThemedView style={[styles.episodesList, { borderTopColor: theme.border }]}>
+          {isLoading && (
+            <ThemedView style={styles.loadingContainer}>
+              <ThemedText type="small" themeColor="textSecondary">Loading episodes…</ThemedText>
+            </ThemedView>
+          )}
+
+          {!isLoading && episodes.length === 0 && error && (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginBottom: Spacing.two }}>
+                {error}
+              </ThemedText>
+              <TouchableOpacity
+                style={[
+                  styles.retryButton,
+                  { borderColor: theme.accent }
+                ]}
+                onPress={fetchSeasonData}
+              >
+                <ThemedText type="small" style={{ color: theme.accent }}>
+                  Retry
+                </ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          )}
+
+          {!isLoading && episodes.length > 0 && episodes.map((episode) => (
+            <EpisodeRowViewOnly
+              key={episode.id}
+              episode={episode}
               onPress={() => onPressEpisode(episode.season_number, episode.episode_number)}
             />
           ))}
@@ -1059,24 +1276,36 @@ export default function ShowDetailScreen() {
                 </TouchableOpacity>
               ) : null}
 
-              {show.seasons && show.seasons.length > 0 && userShow ? (
+              {show.seasons && show.seasons.length > 0 ? (
                 <ThemedView style={styles.seasonsSection}> 
-                  <ThemedText type="smallBold">Track Episodes</ThemedText>
+                  <ThemedText type="smallBold">
+                    {userShow ? 'Track Episodes' : 'Episodes'}
+                  </ThemedText>
                   {show.seasons
                     .filter((season) => season.season_number > 0)
-                    .map((seasonSummary) => (
-                      <SeasonAccordion
-                        key={seasonSummary.season_number}
-                        showId={showId}
-                        season={seasonSummary}
-                        watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
-                        watchedSet={watchedSet}
+                    .map((seasonSummary) => 
+                      userShow ? (
+                        <SeasonAccordion
+                          key={seasonSummary.season_number}
+                          showId={showId}
+                          season={seasonSummary}
+                          watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
+                          watchedSet={watchedSet}
                         onToggleEpisode={handleToggleEpisode}
                         onPressEpisode={redirectToEpisode}
                         onMarkSeasonAll={handleMarkSeasonAll}
                         getCachedSeasonDetails={getCachedSeasonDetails}
-                      />
-                    ))}
+                        />
+                      ) : (
+                        <SeasonAccordionViewOnly
+                          key={seasonSummary.season_number}
+                          showId={showId}
+                          season={seasonSummary}
+                          getCachedSeasonDetails={getCachedSeasonDetails}
+                          onPressEpisode={redirectToEpisode}
+                        />
+                      )
+                    )}
                 </ThemedView>
               ) : null}
             </>
