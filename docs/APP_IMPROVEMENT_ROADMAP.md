@@ -280,12 +280,12 @@ Tasks:
 
 **Episode Detail Modal:**
 
-- [ ] Design rich episode detail view.
-  - [ ] Large still image at top.
-  - [ ] Episode title, number, and air date.
-  - [ ] Overview/synopsis.
+- [x] Design rich episode detail view.
+  - [x] Large still image at top.
+  - [x] Episode title, number (S01E05), and air date.
+  - [x] Overview/synopsis with section headers.
+  - [x] TMDB rating and metadata display with icons.
   - [ ] Guest actors or crew (if available).
-  - [ ] IMDB/TMDB rating and vote count.
 - [ ] Add episode sharing (view-only).
   - [ ] Share button opens native share sheet.
   - [ ] Pre-filled message: "Check out S2E4 of Show Name on Pilot 2 Finale!".
