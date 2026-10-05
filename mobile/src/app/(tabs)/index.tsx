@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PosterRail } from '@/components/show/poster-rail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing, BorderRadius, TouchTarget, Shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getTopRatedShows, getTrendingShows, searchShows } from '@/lib/shows';
 import type { TMDBShow } from '@/types/api';
@@ -34,6 +34,13 @@ export default function HomeScreen() {
       setSearchResults([]);
       setResultCount(0);
     }
+  }
+
+  function handleClearSearch() {
+    setQuery('');
+    setSearchStatus('idle');
+    setSearchResults([]);
+    setResultCount(0);
   }
 
   function openShow(show: TMDBShow) {
@@ -100,11 +107,9 @@ export default function HomeScreen() {
           Discover
         </ThemedText>
 
-        <ThemedView style={[styles.searchCard, { borderColor: theme.border, backgroundColor: theme.surfaceBackground }]}> 
+        <ThemedView style={[styles.searchPill, { backgroundColor: theme.surfaceBackground }]}> 
           <View style={styles.searchInputContainer}>
-            <View style={styles.iconWrapper}>
-              <Ionicons name="search" size={20} color={theme.textSecondary} />
-            </View>
+            <Ionicons name="search" size={20} color={theme.textSecondary} />
             <TextInput
               value={query}
               onChangeText={handleQueryChange}
@@ -115,15 +120,20 @@ export default function HomeScreen() {
               returnKeyType="search"
               style={[styles.searchInput, { color: theme.text }]}
             />
+            {query.length > 0 && (
+              <Pressable onPress={handleClearSearch} hitSlop={8}>
+                <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
+              </Pressable>
+            )}
           </View>
 
           {searchStatus === 'loading' ? (
-            <ThemedView style={[styles.inlineStatus, { backgroundColor: theme.surfaceBackground}]}>
-              <ActivityIndicator color={theme.accent} />
+            <View style={styles.statusRow}>
+              <ActivityIndicator size="small" color={theme.accent} />
               <ThemedText type="small" themeColor="textSecondary">
                 Searching...
               </ThemedText>
-            </ThemedView>
+            </View>
           ) : null}
 
           {searchStatus === 'error' ? (
@@ -132,7 +142,7 @@ export default function HomeScreen() {
             </ThemedText>
           ) : null}
 
-          {searchStatus === 'success' ? (
+          {searchStatus === 'success' && query.trim().length >= 2 ? (
             <ThemedText type="small" themeColor="textSecondary">
               {resultCount} result{resultCount === 1 ? '' : 's'} found
             </ThemedText>
@@ -242,40 +252,38 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: 'bold',
   },
-  searchCard: {
+  searchPill: {
     alignSelf: 'stretch',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
-    borderWidth: 1,
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    ...Shadows.sm,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.md,
+    height: TouchTarget.default,
+    justifyContent: 'center',
   },
   searchIcon: {
-    marginRight: Spacing.one,
-  },
-  iconWrapper: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginRight: Spacing.md,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: Spacing.two,
     fontSize: 16,
+    fontWeight: '500',
   },
-  searchHint: {
-    marginTop: Spacing.one,
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   inlineStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.md,
   },
   suggestions: {
     alignSelf: 'stretch',
