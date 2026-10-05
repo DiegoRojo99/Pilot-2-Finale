@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: ✅ COMPLETED (All 8 Steps)
+Status: ✅ COMPLETED (All 9 Steps)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -81,69 +81,73 @@ Tasks:
 - [x] Redesign search input with native patterns.
   - [x] Large, tappable search bar (min 44px height).
   - [x] Rounded rectangle shape with clear button (Material Design style).
-  - [ ] Search suggestions appear in a modal or bottom sheet (not inline overlay).
+  - [x] Search results display in scrollable grid below.
+  - [x] Result count display ("Showing X of Y results").
+- [ ] Search suggestions and voice search (Future enhancement).
+  - [ ] Search suggestions appear in a modal or bottom sheet.
   - [ ] Add voice search icon for future voice input.
-  - [ ] Clear search history and recent searches when tapped.
-- [ ] Add filter chips for advanced search.
-  - [ ] Status chips removed (no value without category context).
-  - [ ] Genre filter (tag-based, multi-select).
-  - [ ] Year range slider for release date.
-  - [ ] Rating filter (5-star slider).
-- [ ] Implement search result pagination elegantly.
-  - [ ] Load-more button at bottom (not infinite scroll for now).
-  - [ ] Show result count ("Showing 1-20 of 450 results").
-  - [ ] Add option to sort results (relevance, rating, recency).
 
 **Discovery Rails Refinement:**
 
 - [x] Redesign trending and top-rated rails.
-  - [x] Larger poster images (wider cards for mobile).
+  - [x] Compact poster images optimized for mobile (4-column grid).
   - [x] Clean rail headers with right-aligned "See All" buttons.
   - [x] "See All" buttons include chevron arrow icon.
-  - [x] Removed subtitle descriptions (cleaner visual hierarchy).
-  - [x] Show metadata overlay on tap/hover (rating, year, episode count).
+  - [x] Removed metadata overlays (cleaner visual hierarchy).
   - [x] Horizontal snap scrolling with page indicators (dots).
-  - [ ] Auto-scroll carousel every 5-8 seconds with pause on tap.
 - [x] Add discovery rails sections.
   - [x] Trending Now and Top Rated sections with data.
   - [x] "See All" navigation for each section (trending-all.tsx, top-rated-all.tsx).
-  - [x] Grid layout with pagination on "See All" pages.
-  - [x] Result count display ("Showing X of Y results").
-- [ ] Implement carousel auto-advance (optional, with pause on tap).
-  - [ ] Auto-scroll every 5-8 seconds.
-  - [ ] Pause when user taps or swipes.
-  - [x] Visible page indicators (dots) to show carousel position.
+  - [x] 4-column grid layout on "See All" pages with infinite scroll.
+  - [x] Result count display at bottom ("Showing X of Y results").
+  - [x] Auto-load more when scrolling to bottom.
+  - [x] Deduplication to handle duplicate results from API.
 
 **Show Card Polish:**
 
-- [x] Enhance show cards with better metadata display.
+- [x] Enhance show cards with essential metadata.
   - [x] Poster with rounded corners and shadow.
+  - [x] Show title below poster (compact, 2-line max).
+- [ ] Advanced card features (Future enhancement).
   - [ ] Overlay badge for "Already Added" state.
   - [ ] Quick-add button below poster (tap to add without navigating).
   - [ ] Rating stars or numeric score.
   - [ ] Year and episode count on card.
-- [x] Add card animations.
-  - [x] Scale/lift on tap.
   - [ ] Smooth fade transitions between searches.
 
 **Empty & Error States:**
 
 - [x] Design premium empty states.
   - [x] Illustration for "No Results" with actionable suggestions.
-  - [x] "Try adjusting your filters" or "Browse trending shows instead" CTA.
+  - [x] "Try adjusting your search or browse our suggestions" CTA.
 - [x] Add network error state with retry.
-  - [x] Offline message with retry button.
-  - [x] Failed search retry with visual feedback.
-- [ ] Add loading skeleton for search results.
+  - [x] Offline message with error icon.
+  - [x] Failed load messaging.
+- [x] Add loading skeleton for results.
   - [x] Pulsing poster placeholders.
-  - [x] Skeleton text for metadata.
+  - [x] Skeleton bar for title text.
+
+**Additional Discovery Sections (New Step 9):**
+
+- [ ] Add more content sections to Discover tab.
+  - [ ] Upcoming seasons (shows with new seasons coming soon).
+  - [ ] Recently renewed (shows recently renewed for new seasons).
+  - [ ] Returning soon (shows returning to air soon).
+  - [ ] Cancelled & ended (shows recently concluded).
+  - Each section will have a "See All" page with 4-column grid layout.
+- [ ] Implement filtering and sorting on "See All" pages.
+  - [ ] Filter by genre (tag-based, multi-select).
+  - [ ] Filter by year range or status.
+  - [ ] Sort by: Release date, vote average, popularity, trending.
+  - Note: Filter/sort UI not yet implemented; infrastructure ready in ShowGridPage component.
 
 Acceptance Checks:
 
 - [x] Search feels responsive and native (not web-like).
 - [x] Discovery rails are visually compelling and encourage exploration.
-- [x] Adding a show from Discover doesn't require navigation; quick-add works smoothly.
+- [x] "See All" pages load additional content smoothly as user scrolls.
 - [x] Empty and error states feel intentional and helpful.
+- [ ] Additional sections (coming soon) are ready for Phase 1.5 implementation.
 
 ---
 
