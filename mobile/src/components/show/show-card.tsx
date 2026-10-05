@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.95 }],
   },
   card: {
-    width: 90,
+    flex: 1,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     ...Shadows.sm,

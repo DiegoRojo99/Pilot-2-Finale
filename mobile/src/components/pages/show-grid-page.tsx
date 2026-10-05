@@ -177,14 +177,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   columnWrapper: {
-    gap: Spacing.md,
+    gap: Spacing.sm,
     justifyContent: 'flex-start',
   },
   gridItem: {
-    marginBottom: Spacing.md,
+    flex: 1,
+    marginBottom: Spacing.sm,
   },
   flatListContent: {
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
   },
