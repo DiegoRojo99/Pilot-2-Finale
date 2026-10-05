@@ -1,22 +1,35 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/components/auth/auth-provider';
+import { Colors, Shadows, BorderRadius } from '@/constants/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+          }}
+        >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="discover/trending-all"
             options={{
               headerShown: true,
               headerTitle: 'Trending Now',
-              headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+              headerTintColor: colors.text,
+              headerStyle: {
+                backgroundColor: colors.surfaceBackground,
+              },
+              headerShadowVisible: false,
+              gestureDirection: 'horizontal',
             }}
           />
           <Stack.Screen
@@ -24,7 +37,12 @@ export default function TabLayout() {
             options={{
               headerShown: true,
               headerTitle: 'Top Rated',
-              headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+              headerTintColor: colors.text,
+              headerStyle: {
+                backgroundColor: colors.surfaceBackground,
+              },
+              headerShadowVisible: false,
+              gestureDirection: 'horizontal',
             }}
           />
           <Stack.Screen
@@ -33,7 +51,8 @@ export default function TabLayout() {
               headerShown: true,
               headerTransparent: true,
               headerTitle: '',
-              headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+              headerTintColor: colors.text,
+              gestureDirection: 'horizontal',
             }}
           />
           <Stack.Screen
@@ -42,7 +61,8 @@ export default function TabLayout() {
               headerShown: true,
               headerTransparent: true,
               headerTitle: '',
-              headerTintColor: colorScheme === 'dark' ? '#f8fafc' : '#0f172a',
+              headerTintColor: colors.text,
+              gestureDirection: 'horizontal',
             }}
           />
         </Stack>
