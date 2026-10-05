@@ -89,11 +89,6 @@ export function ShowGridPage({ title, loadFn, errorMessage = 'Failed to load sho
   return (
     <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-        <View style={styles.resultInfo}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Showing {displayedCount} of {totalResults} results
-          </ThemedText>
-        </View>
         <FlatList
           data={visibleShows}
           renderItem={({ item }) => (
@@ -102,13 +97,16 @@ export function ShowGridPage({ title, loadFn, errorMessage = 'Failed to load sho
             </View>
           )}
           keyExtractor={(item) => String(item.id)}
-          numColumns={2}
+          numColumns={4}
           columnWrapperStyle={styles.columnWrapper}
           contentContainerStyle={styles.flatListContent}
           scrollEnabled={true}
           ListFooterComponent={
-            hasMore ? (
-              <View style={styles.loadMoreContainer}>
+            <View style={styles.footerContainer}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.resultInfo}>
+                Showing {displayedCount} of {totalResults} results
+              </ThemedText>
+              {hasMore && (
                 <Pressable
                   onPress={handleLoadMore}
                   style={[styles.loadMoreButton, { backgroundColor: theme.accent }]}
@@ -128,8 +126,8 @@ export function ShowGridPage({ title, loadFn, errorMessage = 'Failed to load sho
                     </>
                   )}
                 </Pressable>
-              </View>
-            ) : null
+              )}
+            </View>
           }
         />
       </SafeAreaView>
@@ -159,27 +157,28 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  resultInfo: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
   columnWrapper: {
     gap: Spacing.md,
     justifyContent: 'space-between',
   },
   gridItem: {
     flex: 1,
+    marginBottom: Spacing.md,
   },
   flatListContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
+    paddingHorizontal: Spacing.sm,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
-  loadMoreContainer: {
+  resultInfo: {
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  footerContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
+    gap: Spacing.md,
   },
   loadMoreButton: {
     flexDirection: 'row',
