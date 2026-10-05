@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Providers } from "@/components/Providers";
 import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
@@ -58,11 +58,12 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
