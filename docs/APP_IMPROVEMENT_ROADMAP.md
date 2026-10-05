@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: ready to start
+Status: in progress (Steps 1-2 complete)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -78,9 +78,9 @@ Tasks:
 
 **Search & Filter Refinement:**
 
-- [ ] Redesign search input with native patterns.
-  - [ ] Large, tappable search bar (min 44px height).
-  - [ ] Pill-shaped with clear button (iOS style).
+- [x] Redesign search input with native patterns.
+  - [x] Large, tappable search bar (min 44px height).
+  - [x] Pill-shaped with clear button (iOS style).
   - [ ] Search suggestions appear in a modal or bottom sheet (not inline overlay).
   - [ ] Add voice search icon for future voice input.
   - [ ] Clear search history and recent searches when tapped.
@@ -96,10 +96,10 @@ Tasks:
 
 **Discovery Rails Refinement:**
 
-- [ ] Redesign trending and top-rated rails.
-  - [ ] Larger poster images (wider cards for mobile).
-  - [ ] Add gradient text overlay for titles (readability).
-  - [ ] Show metadata overlay on tap/hover (rating, year, episode count).
+- [x] Redesign trending and top-rated rails.
+  - [x] Larger poster images (wider cards for mobile).
+  - [x] Add gradient text overlay for titles (readability).
+  - [x] Show metadata overlay on tap/hover (rating, year, episode count).
   - [ ] "Swipe to see more" indicator on first load.
   - [ ] Horizontal snap scrolling (not smooth fling).
 - [ ] Add "Popular This Week" and "Fan Favorites" sections.
@@ -113,14 +113,14 @@ Tasks:
 
 **Show Card Polish:**
 
-- [ ] Enhance show cards with better metadata display.
-  - [ ] Poster with rounded corners and shadow.
+- [x] Enhance show cards with better metadata display.
+  - [x] Poster with rounded corners and shadow.
   - [ ] Overlay badge for "Already Added" state.
   - [ ] Quick-add button below poster (tap to add without navigating).
   - [ ] Rating stars or numeric score.
   - [ ] Year and episode count on card.
-- [ ] Add card animations.
-  - [ ] Scale/lift on tap.
+- [x] Add card animations.
+  - [x] Scale/lift on tap.
   - [ ] Smooth fade transitions between searches.
 
 **Empty & Error States:**

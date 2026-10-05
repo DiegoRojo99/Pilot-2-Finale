@@ -5,7 +5,7 @@ import { getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import type { TMDBShow } from '@/types/api';
-import { Spacing } from '@/constants/theme';
+import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
 
 export function ShowCard({ show, onShowPress }: { show: TMDBShow; onShowPress?: (show: TMDBShow) => void }) {
   const posterUrl = getPosterUrl(show.poster_path);
@@ -45,29 +45,31 @@ export function ShowCard({ show, onShowPress }: { show: TMDBShow; onShowPress?: 
 
 const styles = StyleSheet.create({
   pressed: {
-    opacity: 0.75,
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
   },
   card: {
     width: 176,
-    padding: Spacing.one,
-    borderRadius: Spacing.three,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    ...Shadows.sm,
   },
   poster: {
     width: '100%',
     aspectRatio: 2 / 3,
-    borderRadius: Spacing.two,
+    borderRadius: BorderRadius.lg,
   },
   posterPlaceholder: {
     width: '100%',
     aspectRatio: 2 / 3,
-    borderRadius: Spacing.two,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.one,
+    paddingHorizontal: Spacing.md,
   },
   infoPanel: {
-    gap: Spacing.half,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.half,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
   },
 });
