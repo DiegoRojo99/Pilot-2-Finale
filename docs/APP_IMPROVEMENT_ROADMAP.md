@@ -320,12 +320,6 @@ Tasks:
   - [ ] Quick-remove option in context menu (not inline).
   - [ ] Visual feedback for status changes (toast notification).
 
-**Season Progress:**
-
-- [ ] Enhance season headers with tracking data.
-  - [ ] Progress bar with percentage label.
-  - [ ] "X of Y episodes watched" subtitle.
-
 **Episode Quick-Logging:**
 
 - [ ] Add episode quick-logging.
