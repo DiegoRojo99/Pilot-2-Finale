@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: in progress (Steps 1-6 complete)
+Status: in progress (Steps 1-7 complete)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -109,7 +109,7 @@ Tasks:
 - [ ] Implement carousel auto-advance (optional, with pause on tap).
   - [ ] Auto-scroll every 5-8 seconds.
   - [ ] Pause when user taps or swipes.
-  - [ ] Visible page indicators (dots) to show position.
+  - [x] Visible page indicators (dots) to show position.
 
 **Show Card Polish:**
 
