@@ -70,7 +70,7 @@ Acceptance Checks:
 
 ## Phase 1: Discover Tab — Native Search & Browsing
 
-Status: in progress (Steps 1-7 complete)
+Status: ✅ COMPLETED (All 8 Steps)
 
 Purpose: Transform Discover from a web-style search interface into a native browsing and discovery experience.
 
@@ -132,15 +132,15 @@ Tasks:
   - [x] Offline message with retry button.
   - [x] Failed search retry with visual feedback.
 - [ ] Add loading skeleton for search results.
-  - [ ] Pulsing poster placeholders.
-  - [ ] Skeleton text for metadata.
+  - [x] Pulsing poster placeholders.
+  - [x] Skeleton text for metadata.
 
 Acceptance Checks:
 
-- [ ] Search feels responsive and native (not web-like).
-- [ ] Discovery rails are visually compelling and encourage exploration.
-- [ ] Adding a show from Discover doesn't require navigation; quick-add works smoothly.
-- [ ] Empty and error states feel intentional and helpful.
+- [x] Search feels responsive and native (not web-like).
+- [x] Discovery rails are visually compelling and encourage exploration.
+- [x] Adding a show from Discover doesn't require navigation; quick-add works smoothly.
+- [x] Empty and error states feel intentional and helpful.
 
 ---
 

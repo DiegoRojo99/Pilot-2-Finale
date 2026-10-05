@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PosterRail } from '@/components/show/poster-rail';
+import { PosterRailSkeleton } from '@/components/show/poster-rail-skeleton';
+import { SearchResultsSkeleton } from '@/components/show/search-results-skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing, BorderRadius, TouchTarget, Shadows } from '@/constants/theme';
@@ -203,6 +205,8 @@ export default function HomeScreen() {
             shows={searchResults}
             onShowPress={openShow}
           />
+        ) : searchStatus === 'loading' ? (
+          <SearchResultsSkeleton count={6} />
         ) : searchStatus === 'success' && query.trim().length >= 2 ? (
           <ThemedView style={[styles.emptyStateCard, { backgroundColor: theme.surfaceBackground }]}>
             <Ionicons name="search-outline" size={48} color={theme.textSecondary} />
@@ -217,12 +221,10 @@ export default function HomeScreen() {
 
         <ThemedView style={styles.suggestions}>
           {suggestionsStatus === 'loading' ? (
-            <ThemedView style={[styles.emptyStateCard, { backgroundColor: theme.surfaceBackground }]}> 
-              <ActivityIndicator size="large" color={theme.accent} />
-              <ThemedText type="small" themeColor="textSecondary">
-                Loading suggestions...
-              </ThemedText>
-            </ThemedView>
+            <>
+              <PosterRailSkeleton count={5} />
+              <PosterRailSkeleton count={5} />
+            </>
           ) : null}
 
           {suggestionsStatus === 'error' ? (
