@@ -10,6 +10,10 @@ export function getStillUrl(path: string | null) {
   return path ? `https://image.tmdb.org/t/p/w300${path}` : null;
 }
 
+export function getProfileImageUrl(path: string | null, size: 'w185' | 'w342' | 'h632' = 'w185') {
+  return path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
+}
+
 export function getYear(firstAirDate: string) {
   return firstAirDate ? firstAirDate.slice(0, 4) : 'Unknown year';
 }

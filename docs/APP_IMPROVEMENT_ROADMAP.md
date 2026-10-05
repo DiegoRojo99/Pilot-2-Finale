@@ -290,11 +290,8 @@ Tasks:
   - [ ] Share button opens native share sheet.
   - [ ] Pre-filled message: "Check out S2E4 of Show Name on Pilot 2 Finale!".
 
-**Next Episode & Related Content:**
+**Related Content:**
 
-- [ ] Add "Next Episode" card (sticky or prominent).
-  - [ ] Shows unreleased episode with air date countdown.
-  - [ ] Visual distinction for upcoming vs. released.
 - [ ] Add "Related Shows" section.
   - [ ] Similar shows based on genre.
   - [ ] Carousel with quick-view navigation.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity, Share, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
@@ -12,7 +12,7 @@ import { EpisodeDiaryModal } from '@/components/show/episode-diary-modal';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getSeasonDetails } from '@/lib/shows';
-import { getStillUrl } from '@/lib/tmdb-images';
+import { getStillUrl, getProfileImageUrl } from '@/lib/tmdb-images';
 import type { TMDBEpisode } from '@/types/api';
 
 type EpisodeStatus = 'loading' | 'success' | 'error';
@@ -46,6 +46,7 @@ export default function EpisodeDetailScreen() {
   }>();
   const [status, setStatus] = useState<EpisodeStatus>('loading');
   const [episode, setEpisode] = useState<TMDBEpisode | null>(null);
+  const [showName, setShowName] = useState<string>('');
   const [loadedEpisodeKey, setLoadedEpisodeKey] = useState<string | null>(null);
   const [isDiaryOpen, setIsDiaryOpen] = useState(false);
   const theme = useTheme();
@@ -60,20 +61,25 @@ export default function EpisodeDetailScreen() {
     if (!hasValidParams) return;
     let isMounted = true;
 
-    void getSeasonDetails(showId, selectedSeasonNumber)
-      .then((season) => {
+    const loadData = async () => {
+      try {
+        // Load season/episode details
+        const season = await getSeasonDetails(showId, selectedSeasonNumber);
         if (!isMounted) return;
+        
         const foundEpisode = season.episodes?.find((item) => item.episode_number === selectedEpisodeNumber) ?? null;
         setEpisode(foundEpisode);
         setLoadedEpisodeKey(foundEpisode ? episodeKey : null);
         setStatus(foundEpisode ? 'success' : 'error');
-      })
-      .catch(() => {
+      } catch (error) {
         if (!isMounted) return;
         setEpisode(null);
         setLoadedEpisodeKey(null);
         setStatus('error');
-      });
+      }
+    };
+
+    void loadData();
 
     return () => {
       isMounted = false;
@@ -108,7 +114,7 @@ export default function EpisodeDetailScreen() {
             <ThemedText type="small" style={[styles.episodeKeyText, { color: theme.textSecondary }]}>
               S{String(episode.season_number).padStart(2, '0')} E{String(episode.episode_number).padStart(2, '0')}
             </ThemedText>
-            <EpisodeDetails episode={episode} onLogPress={() => setIsDiaryOpen(true)} />
+            <EpisodeDetails episode={episode} onLogPress={() => setIsDiaryOpen(true)} showName={showName} />
           </View>
         ) : null}
 
@@ -144,8 +150,23 @@ export default function EpisodeDetailScreen() {
   );
 }
 
-function EpisodeDetails({ episode, onLogPress }: { episode: TMDBEpisode; onLogPress: () => void }) {
+function EpisodeDetails({ episode, onLogPress, showName }: { episode: TMDBEpisode; onLogPress: () => void; showName?: string }) {
   const theme = useTheme();
+  
+  const handleShare = async () => {
+    try {
+      const message = showName 
+        ? `Check out S${String(episode.season_number).padStart(2, '0')}E${String(episode.episode_number).padStart(2, '0')} "${episode.name}" of ${showName}`
+        : `Check out S${String(episode.season_number).padStart(2, '0')}E${String(episode.episode_number).padStart(2, '0')}: ${episode.name}`;
+      
+      await Share.share({
+        message,
+        title: episode.name,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
   
   return (
     <>
@@ -176,16 +197,26 @@ function EpisodeDetails({ episode, onLogPress }: { episode: TMDBEpisode; onLogPr
         )}
       </View>
 
-      <TouchableOpacity
-        onPress={onLogPress}
-        activeOpacity={0.7}
-        style={[styles.logButton, { backgroundColor: theme.accent }]}
-      >
-        <Ionicons name="add-circle-outline" size={16} color={theme.accentText} />
-        <ThemedText type="small" style={[styles.logButtonText, { color: theme.accentText }]}>
-          Log Episode
-        </ThemedText>
-      </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          onPress={onLogPress}
+          activeOpacity={0.7}
+          style={[styles.logButton, { backgroundColor: theme.accent, flex: 1, height: 44, paddingVertical: Spacing.sm }]}
+        >
+          <Ionicons name="add-circle-outline" size={16} color={theme.accentText} />
+          <ThemedText type="small" style={[styles.logButtonText, { color: theme.accentText }]} numberOfLines={1}>
+            Log
+          </ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleShare}
+          activeOpacity={0.7}
+          style={[styles.shareButton, { borderColor: theme.text }]}
+        >
+          <Ionicons name="share-social" size={16} color={theme.text} />
+        </TouchableOpacity>
+      </View>
 
       {episode.overview && (
         <View style={styles.synopsisSection}>
@@ -195,6 +226,45 @@ function EpisodeDetails({ episode, onLogPress }: { episode: TMDBEpisode; onLogPr
           <ThemedText type="small" style={[styles.synopsisText, { color: theme.text }]}>
             {episode.overview}
           </ThemedText>
+        </View>
+      )}
+
+      {episode.cast && episode.cast.length > 0 && (
+        <View style={styles.castSection}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+            KEY CAST
+          </ThemedText>
+          <FlatList
+            data={episode.cast.slice(0, 10)}
+            keyExtractor={(actor) => actor.id.toString()}
+            horizontal
+            scrollEnabled
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.castCarouselContent}
+            renderItem={({ item: actor }) => (
+              <View style={styles.castCarouselItem}>
+                {actor.profile_path && getProfileImageUrl(actor.profile_path) ? (
+                  <Image
+                    source={{ uri: getProfileImageUrl(actor.profile_path) || '' }}
+                    style={styles.castCarouselImage}
+                    alt={actor.name}
+                  />
+                ) : (
+                  <View style={[styles.castCarouselImage, { backgroundColor: theme.surfaceBackground }]}>
+                    <Ionicons name="person" size={28} color={theme.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.castCarouselInfo}>
+                  <ThemedText type="small" style={{ color: theme.text, fontSize: 11 }} numberOfLines={1} ellipsizeMode="tail">
+                    {actor.name}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 10 }} numberOfLines={1} ellipsizeMode="tail">
+                    {actor.character}
+                  </ThemedText>
+                </View>
+              </View>
+            )}
+          />
         </View>
       )}
     </>
@@ -361,7 +431,7 @@ const styles = StyleSheet.create({
   },
   synopsisSection: {
     marginTop: Spacing.two,
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.two,
   },
   sectionLabel: {
     fontSize: 11,
@@ -371,5 +441,42 @@ const styles = StyleSheet.create({
   synopsisText: {
     fontSize: 14,
     lineHeight: 22,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  shareButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  castSection: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.four,
+  },
+  castCarouselContent: {
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  castCarouselItem: {
+    width: 100,
+    gap: Spacing.sm,
+  },
+  castCarouselImage: {
+    width: 100,
+    height: 135,
+    borderRadius: Spacing.two,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  castCarouselInfo: {
+    gap: Spacing.xs,
   },
 });

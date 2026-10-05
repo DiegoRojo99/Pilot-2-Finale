@@ -20,10 +20,25 @@ export async function GET(
       return NextResponse.json({ error: "Invalid show ID or season number" }, { status: 400 });
     }
 
-    const data = await tmdbFetch<TMDBSeason>(`/tv/${id}/season/${seasonNumber}`);
+    // Fetch season data
+    const data = await tmdbFetch<TMDBSeason>(`/tv/${id}/season/${seasonNumber}?append_to_response=credits`);
+    
+    // Also fetch show cast for episodes
+    const showData = await tmdbFetch<any>(`/tv/${id}?append_to_response=credits`);
+    const showCast = showData.credits?.cast?.slice(0, 20) || [];
+    
     if (!data.episodes) return NextResponse.json({ error: "No episodes found for this season" }, { status: 404 });
     if (!Array.isArray(data.episodes)) return NextResponse.json({ error: "Invalid episodes data for this season" }, { status: 404 });
     if (data.episodes.length === 0) return NextResponse.json({ error: "No episodes found for this season" }, { status: 404 });
+    
+    // Add show cast to each episode and remove guest_stars
+    data.episodes = data.episodes.map((ep: any) => {
+      const { guest_stars, ...episodeWithoutGuests } = ep;
+      return {
+        ...episodeWithoutGuests,
+        cast: showCast,
+      };
+    });
     
     // Decorate episodes with release status
     data.episodes = decorateEpisodesWithReleaseStatus(data.episodes);

@@ -107,6 +107,12 @@ export type TMDBEpisode = {
   still_path: string | null;
   vote_average: number;
   runtime: number | null;
+  cast?: Array<{
+    id: number;
+    name: string;
+    character: string;
+    profile_path: string | null;
+  }>;
   isUnreleased?: boolean;
 };
 
