@@ -250,11 +250,11 @@ Tasks:
 
 **Genre & Overview:**
 
-- [ ] Redesign genre display.
-  - [ ] Colored pill badges for each genre (tie to app accent palette).
-  - [ ] Scrollable horizontal list if many genres.
-- [ ] Add rich overview section.
-  - [ ] "Expand to read more" if overview is long.
+- [x] Redesign genre display.
+  - [x] Colored pill badges for each genre (tie to app accent palette).
+  - [x] Scrollable horizontal list if many genres.
+- [x] Add rich overview section.
+  - [x] "Expand to read more" if overview is long.
   - [ ] Justified text alignment for premium feel.
   - [ ] Pull quote or highlight if available.
 

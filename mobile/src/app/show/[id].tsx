@@ -358,6 +358,7 @@ export default function ShowDetailScreen() {
   const [seasonDataCache, setSeasonDataCache] = useState<Map<string, TMDBSeason>>(new Map());
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
   const [isDiaryModalOpen, setIsDiaryModalOpen] = useState(false);
   const [selectedEpisodeForDiary, setSelectedEpisodeForDiary] = useState<TMDBEpisode | null>(null);
   const [diaryDate, setDiaryDate] = useState(''); // Format: 'YYYY-MM-DD'
@@ -964,6 +965,20 @@ export default function ShowDetailScreen() {
                 </ThemedView>
               </ThemedView>
 
+              {show.genres && show.genres.length > 0 ? (
+                <ThemedView style={styles.genreSection}>
+                  <ThemedView style={styles.genreRow}>
+                    {show.genres.map((genre) => (
+                      <ThemedView key={genre.id} style={[styles.genrePill, { backgroundColor: theme.backgroundElement }]}>
+                        <ThemedText type="xs" style={{ color: theme.text, fontWeight: '600' }}>
+                          {genre.name}
+                        </ThemedText>
+                      </ThemedView>
+                    ))}
+                  </ThemedView>
+                </ThemedView>
+              ) : null}
+
               <ThemedView style={styles.statusPickerContainer}>
                 <TouchableOpacity
                   onPress={() => setShowStatusMenu(!showStatusMenu)}
@@ -1021,23 +1036,28 @@ export default function ShowDetailScreen() {
                 )}
               </ThemedView>
 
-              {show.genres && show.genres.length > 0 ? (
-                <ThemedView style={styles.genreRow}>
-                  {show.genres.slice(0, 4).map((genre) => (
-                    <ThemedView key={genre.id} type="backgroundSelected" style={styles.genrePill}>
-                      <ThemedText type="xs" themeColor="textSecondary">
-                        {genre.name}
-                      </ThemedText>
-                    </ThemedView>
-                  ))}
-                </ThemedView>
+              {show.overview ? (
+                <TouchableOpacity 
+                  onPress={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                  activeOpacity={0.7}
+                  style={styles.overviewSection}
+                >
+                  <ThemedText type="smallBold" style={{ marginBottom: Spacing.sm }}>
+                    OVERVIEW
+                  </ThemedText>
+                  <ThemedText 
+                    style={[styles.overviewText, { color: theme.text }]}
+                    numberOfLines={isOverviewExpanded ? undefined : 3}
+                  >
+                    {show.overview}
+                  </ThemedText>
+                  {!isOverviewExpanded && show.overview && show.overview.length > 150 ? (
+                    <ThemedText type="xs" themeColor="textSecondary" style={{ marginTop: Spacing.sm }}>
+                      Tap to read more
+                    </ThemedText>
+                  ) : null}
+                </TouchableOpacity>
               ) : null}
-
-              <ThemedView style={styles.overviewSection}> 
-                <ThemedText themeColor="textSecondary" style={styles.overviewText}>
-                  {show.overview || 'No overview available yet.'}
-                </ThemedText>
-              </ThemedView>
 
               {show.seasons && show.seasons.length > 0 && userShow ? (
                 <ThemedView style={styles.seasonsSection}> 
@@ -1441,24 +1461,28 @@ const styles = StyleSheet.create({
     height: 1,
     borderBottomWidth: 1,
   },
+  genreSection: {
+    alignSelf: 'stretch',
+    paddingVertical: Spacing.md,
+  },
   genreRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   genrePill: {
     borderRadius: Spacing.five,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
+    paddingVertical: Spacing.sm,
   },
   overviewSection: {
     alignSelf: 'stretch',
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.md,
   },
   overviewText: {
-    lineHeight: 20,
+    lineHeight: 22,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   seasonsSection: {
     alignSelf: 'stretch',
