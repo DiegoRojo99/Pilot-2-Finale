@@ -1,7 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { Colors, BorderRadius, TouchTarget, Shadows } from '@/constants/theme';
 
 const tabs = [
   { name: 'index', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
@@ -18,15 +18,23 @@ export default function AppTabs() {
   return (
     <NativeTabs
       backgroundColor={colors.surfaceBackground}
-      indicatorColor={colors.backgroundElement}
+      indicatorColor={colors.accent}
       labelStyle={{ 
-        default: { color: colors.textSecondary, fontSize: 12 },
-        selected: { color: colors.text, fontSize: 12 } 
+        default: { 
+          color: colors.textSecondary, 
+          fontSize: 11,
+          fontWeight: '500',
+        },
+        selected: { 
+          color: colors.text, 
+          fontSize: 11,
+          fontWeight: '600',
+        } 
       }}>
       {tabs.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf={tab.sf} md={tab.md} selectedColor={colors.accent} />
+          <NativeTabs.Trigger.Icon sf={tab.sf} md={tab.md} selectedColor={colors.text} />
         </NativeTabs.Trigger>
       ))}
     </NativeTabs>
