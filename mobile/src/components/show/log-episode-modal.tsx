@@ -1,11 +1,11 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+ 
 import { useState, useEffect, useCallback } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { RatingSlider } from '@/components/ui/rating-slider';
-/* eslint-enable react-hooks/set-state-in-effect */
+ 
 
 type LogEpisodeModalProps = {
   isOpen: boolean;
@@ -41,7 +41,7 @@ export function LogEpisodeModal({
   const [rating, setRating] = useState(defaultRating ?? 0);
 
   // Reset state when modal opens with fresh defaults
-  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+   
   useEffect(() => {
     if (!isOpen) return;
     setWatchedDate(defaultWatchedDate);
@@ -49,8 +49,6 @@ export function LogEpisodeModal({
   }, [isOpen]);
 
   const handleCancelMemo = useCallback(() => {
-    setWatchedDate('');
-    setRating(0);
     onCancel();
   }, [onCancel]);
 
@@ -63,10 +61,15 @@ export function LogEpisodeModal({
       watchedAt: watchedAtValue,
       rating: rating > 0 ? rating : null,
     });
-
-    setWatchedDate('');
-    setRating(0);
   }, [rating, watchedDate, onSubmit]);
+
+  // Reset state when modal closes (after save completes)
+  useEffect(() => {
+    if (!isOpen) {
+      setWatchedDate('');
+      setRating(0);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -120,6 +123,7 @@ export function LogEpisodeModal({
                 onValueChange={setRating}
                 label="MY RATING"
                 displayValue={`${rating.toFixed(1)} / 10`}
+                disabled={isPending}
               />
             </View>
           </View>

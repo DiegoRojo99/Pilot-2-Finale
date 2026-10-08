@@ -12,6 +12,7 @@ type RatingSliderProps = {
   step?: number;
   label?: string;
   displayValue?: string;
+  disabled?: boolean;
 };
 
 export function RatingSlider({
@@ -22,6 +23,7 @@ export function RatingSlider({
   step = 0.1,
   label,
   displayValue,
+  disabled = false,
 }: RatingSliderProps) {
   const theme = useTheme();
 
@@ -52,6 +54,7 @@ export function RatingSlider({
           minimumTrackTintColor={theme.accent}
           maximumTrackTintColor={theme.border}
           thumbTintColor={theme.accent}
+          disabled={disabled}
         />
       </View>
 
