@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/update-next-episodes",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
