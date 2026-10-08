@@ -42,29 +42,13 @@ export function ShowCardSkeleton() {
     >
       {/* Poster skeleton */}
       <View style={styles.poster} />
-
-      {/* Info section skeleton */}
-      <View style={styles.info}>
-        <View
-          style={[
-            styles.titleSkeleton,
-            { backgroundColor: theme.border },
-          ]}
-        />
-        <View
-          style={[
-            styles.subtitleSkeleton,
-            { backgroundColor: theme.border },
-          ]}
-        />
-      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 176,
+    width: 120,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
   },
@@ -72,19 +56,5 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 2 / 3,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  info: {
-    padding: Spacing.sm,
-    gap: Spacing.xs,
-  },
-  titleSkeleton: {
-    height: 14,
-    borderRadius: BorderRadius.xs,
-    width: '80%',
-  },
-  subtitleSkeleton: {
-    height: 12,
-    borderRadius: BorderRadius.xs,
-    width: '60%',
   },
 });
