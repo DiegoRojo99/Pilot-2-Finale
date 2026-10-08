@@ -1471,11 +1471,9 @@ function ShowStatusBadge({ status }: { status: string }) {
   const statusLabel = STATUS_LABELS[status as ShowStatus] || status;
 
   return (
-    <ThemedView>
-      <ThemedText type="small" style={[styles.statusBadge, { backgroundColor: statusColor.backgroundColor, color: statusColor.color }]}>
-        {statusLabel}
-      </ThemedText>
-    </ThemedView>
+    <ThemedText type="small" style={[styles.statusBadge, { backgroundColor: statusColor.backgroundColor, color: statusColor.color }]}>
+      {statusLabel}
+    </ThemedText>
   );
 }
 
@@ -1644,7 +1642,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   heroMetaRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'flex-start',
     gap: Spacing.two,
     justifyContent: 'space-between',
@@ -1670,6 +1668,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
     borderWidth: 1,
+    borderColor: 'transparent',
   },
   statusPickerContainer: {
     alignSelf: 'stretch',
