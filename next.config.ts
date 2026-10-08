@@ -17,6 +17,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+} as NextConfig & {
+  crons?: Array<{
+    path: string;
+    schedule: string;
+  }>;
 };
+
+(nextConfig as any).crons = [
+  {
+    path: "/api/admin/update-next-episodes",
+    schedule: "0 2 * * *", // Daily at 2 AM UTC
+  },
+];
 
 export default nextConfig;
