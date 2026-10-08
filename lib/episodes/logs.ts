@@ -280,7 +280,6 @@ export async function fetchEpisodeLogsForUser(userId: string, options?: EpisodeL
   });
   
   const episodeLogsWithShow = rows.map(mapEpisodeLogWithShow);
-  console.log(episodeLogsWithShow);
   return episodeLogsWithShow;
 }
 

@@ -14,8 +14,6 @@ function getAdminUserIdSet() {
 export function isAdminUserId(userId: string | null | undefined) {
   if (!userId) return false;
   const adminIds = getAdminUserIdSet();
-  console.log("Admin IDs:", Array.from(adminIds)); // Debugging line
-  console.log("Checking user ID:", userId); // Debugging line
   return adminIds.has(userId);
 }
 
