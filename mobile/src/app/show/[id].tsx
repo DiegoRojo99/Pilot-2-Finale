@@ -15,7 +15,7 @@ import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes'
 import { getBackdropUrl, getPosterUrl, getYear } from '@/lib/tmdb-images';
 import { STATUS_LABELS, type ShowStatus, type TMDBEpisode, type TMDBShow, type UserShow, type TMDBSeason, type TMDBSeasonSummary } from '@/types/api';
 import { type EpisodeLog } from '@/types/episode';
-import { RatingSlider } from '@/components/ui/rating-slider';
+import { LogEpisodeModal } from '@/components/show/log-episode-modal';
 
 type DetailStatus = 'loading' | 'success' | 'error';
 
@@ -740,7 +740,7 @@ export default function ShowDetailScreen() {
     router.push(`/show/${showId}/season/${season}/episode/${episode}`);
   };
 
-  const handleDiarySave = async () => {
+  const handleDiarySave = async (watchedAtIso: string | null, ratingValue: number | null) => {
     if (!selectedEpisodeForDiary) return;
     
     const key = episodeKey(selectedEpisodeForDiary.season_number, selectedEpisodeForDiary.episode_number);
@@ -760,17 +760,16 @@ export default function ShowDetailScreen() {
     }
     // Add to watched
     else {
-      const watchedAt = diaryDate ? new Date(diaryDate).toISOString() : null;
       const newLog: EpisodeLog = {
         id: Date.now(),
         tmdb_show_id: showId,
         season_number: selectedEpisodeForDiary.season_number,
         episode_number: selectedEpisodeForDiary.episode_number,
         episode_name: selectedEpisodeForDiary.name,
-        watched_at: watchedAt,
+        watched_at: watchedAtIso,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        rating: diaryRating > 0 ? diaryRating : null,
+        rating: ratingValue,
         notes: null,
       };
       setEpisodeLogs((prev) => [...prev, newLog]);
@@ -778,7 +777,7 @@ export default function ShowDetailScreen() {
     
     setIsDiarySaving(true);
     try {
-      const watchedAt = isCurrentlyWatched ? null : (diaryDate ? new Date(diaryDate).toISOString() : null);
+      const watchedAt = isCurrentlyWatched ? null : watchedAtIso;
       
       await logEpisode({
         tmdb_show_id: showId,
@@ -787,7 +786,7 @@ export default function ShowDetailScreen() {
         episode_number: selectedEpisodeForDiary.episode_number,
         episode_name: selectedEpisodeForDiary.name,
         watched_at: watchedAt,
-        rating: diaryRating > 0 ? diaryRating : undefined,
+        rating: ratingValue ?? undefined,
       });
       
       setIsDiaryModalOpen(false);
@@ -1377,77 +1376,24 @@ export default function ShowDetailScreen() {
         </View>
       </ScrollView>
 
-      {isDiaryModalOpen && selectedEpisodeForDiary && (
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <View style={[styles.modalContent, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-            <ThemedText type="smallBold">Log Episode Watch</ThemedText>
-            <View style={styles.episodeDetails}>
-              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
-                {show?.name} - S{String(selectedEpisodeForDiary.season_number).padStart(2, '0')} E{String(selectedEpisodeForDiary.episode_number).padStart(2, '0')}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
-                {selectedEpisodeForDiary.name}
-              </ThemedText>
-            </View>
-            
-            <View style={styles.modalInputs}>
-              <View>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-                  WATCHED
-                </ThemedText>
-                <TextInput
-                  style={[
-                    styles.modalInput,
-                    { 
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                      paddingHorizontal: Spacing.two,
-                      color: theme.text,
-                    }
-                  ]}
-                  value={diaryDate}
-                  onChangeText={setDiaryDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={theme.textSecondary}
-                />
-              </View>
-
-              <View>
-                <RatingSlider
-                  value={diaryRating}
-                  onValueChange={setDiaryRating}
-                  label="MY RATING"
-                  displayValue={`${diaryRating.toFixed(1)} / 10`}
-                />
-              </View>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
-                onPress={() => {
-                  setIsDiaryModalOpen(false);
-                  setSelectedEpisodeForDiary(null);
-                  setDiaryDate(new Date().toISOString().split('T')[0]);
-                  setDiaryRating(0);
-                }}
-                disabled={isDiarySaving}
-              >
-                <ThemedText type="small">Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: theme.accent }]}
-                onPress={handleDiarySave}
-                disabled={isDiarySaving}
-              >
-                <ThemedText type="small" style={{ color: theme.accentText }}>
-                  {isDiarySaving ? 'Saving...' : 'Save'}
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      <LogEpisodeModal
+        isOpen={isDiaryModalOpen}
+        episodeLabel={selectedEpisodeForDiary ? `S${String(selectedEpisodeForDiary.season_number).padStart(2, '0')} E${String(selectedEpisodeForDiary.episode_number).padStart(2, '0')}` : ''}
+        showName={show?.name}
+        episodeName={selectedEpisodeForDiary?.name}
+        isPending={isDiarySaving}
+        defaultWatchedAt={diaryDate}
+        defaultRating={diaryRating}
+        onSubmit={({ watchedAt, rating }) => {
+          handleDiarySave(watchedAt, rating);
+        }}
+        onCancel={() => {
+          setIsDiaryModalOpen(false);
+          setSelectedEpisodeForDiary(null);
+          setDiaryDate(new Date().toISOString().split('T')[0]);
+          setDiaryRating(0);
+        }}
+      />
 
       {bulkMarkConfirm && (
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>

@@ -10,7 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getPosterUrl } from '@/lib/tmdb-images';
 import { logEpisode } from '@/lib/episodes';
-import { EpisodeDiaryModal } from '@/components/show/episode-diary-modal';
+import { LogEpisodeModal } from '@/components/show/log-episode-modal';
 import type { UserShow } from '@/types/api';
 
 type UserShowCardProps = {
@@ -166,12 +166,14 @@ export function UserShowCard({ show, onEpisodeLogged }: UserShowCardProps) {
         </ThemedView>
       </Pressable>
 
-      <EpisodeDiaryModal
+      <LogEpisodeModal
         isOpen={isEpisodeDiaryModalOpen}
         episodeLabel={nextEpisodeLabel ?? 'Unknown Episode'}
         showName={show.name}
         episodeName={nextEpisode?.episode_name ?? undefined}
         isPending={isLoggingEpisode}
+        defaultWatchedAt={new Date().toISOString().split('T')[0]}
+        defaultRating={0}
         onSubmit={handleLogEpisode}
         onCancel={() => setIsEpisodeDiaryModalOpen(false)}
       />

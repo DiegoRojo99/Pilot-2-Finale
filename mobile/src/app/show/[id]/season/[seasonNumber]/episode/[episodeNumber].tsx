@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EpisodeDiaryModal } from '@/components/show/episode-diary-modal';
+import { LogEpisodeModal } from '@/components/show/log-episode-modal';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getSeasonDetails } from '@/lib/shows';
@@ -133,13 +133,14 @@ export default function EpisodeDetailScreen() {
       </ScrollView>
 
       {episode && (
-        <EpisodeDiaryModal
+        <LogEpisodeModal
           isOpen={isDiaryOpen}
           episodeLabel={episodeLabel}
+          showName={showName}
           episodeName={episode.name}
           isPending={false}
-          title="Log Episode"
-          submitLabel="Log"
+          defaultWatchedAt={new Date().toISOString().split('T')[0]}
+          defaultRating={0}
           onSubmit={async () => {
             setIsDiaryOpen(false);
           }}
