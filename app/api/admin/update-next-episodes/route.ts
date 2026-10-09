@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, readJson, enforceRateLimit, getClientAddress } from "@/lib/core";
 import { requireAdminUser } from "@/lib/auth/admin";
-import { updateNextEpisodeToWatch, refreshUserShowProgress } from "@/lib/shows";
+import { updateNextEpisodeToWatch, reconcileUserShowStatus } from "@/lib/shows";
 
 export const runtime = "nodejs";
 
@@ -39,11 +39,9 @@ export async function POST(request: Request) {
   // Verify request is from Vercel cron or authorized admin
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  const isVercelCron = request.headers.get("x-vercel-cron") === "true";
   
-  const hasValidAuth = 
-    isVercelCron || // Vercel cron is automatically authorized
-    (cronSecret && authHeader === `Bearer ${cronSecret}`); // External cron with secret
+  const hasValidAuth =
+    (cronSecret && authHeader === `Bearer ${cronSecret}`); // Vercel cron / external cron with secret
   
   // If no Vercel cron and no valid secret, check for admin JWT
   if (!hasValidAuth) {
@@ -73,7 +71,7 @@ export async function POST(request: Request) {
           gt: cursor, // Pagination using ID cursor
         },
         status: {
-          in: ["watching", "want_to_watch", "on_hold"], // Only update shows user is actively tracking
+          in: ["watching", "want_to_watch", "on_hold", "watched"], // "watched" so new episodes/wrong completions get re-evaluated
         },
       },
       select: {
@@ -104,11 +102,11 @@ export async function POST(request: Request) {
 
     for (const userShow of userShows) {
       try {
-        // Refresh show progress to get accurate remaining episode count
-        await refreshUserShowProgress(userShow.userId, userShow.tmdbId);
-        
-        // Update the next episode to watch based on current watch history and released episodes
+        // Syncs the episode catalog first, then picks the next released unwatched episode
         await updateNextEpisodeToWatch(userShow.userId, userShow.tmdbId);
+
+        // Recomputes progress and fixes the status (e.g. wrongly "watched" shows)
+        await reconcileUserShowStatus(userShow.userId, userShow.tmdbId);
         
         updated += 1;
       } catch (error) {
@@ -141,3 +139,41 @@ export async function POST(request: Request) {
     );
   }
 }
+
+/**
+ * Vercel cron jobs issue GET requests (with "Authorization: Bearer $CRON_SECRET"),
+ * so walk every batch here instead of relying on a client-provided cursor.
+ */
+export async function GET(request: Request) {
+  let cursor: number | null = 0;
+  let processed = 0;
+  let updated = 0;
+  let failures = 0;
+
+  while (cursor !== null) {
+    const response: Response = await POST(
+      new Request(request.url, {
+        method: "POST",
+        headers: request.headers,
+        body: JSON.stringify({ cursor, batch_size: 50 }),
+      }),
+    );
+
+    if (!response.ok) return response;
+
+    const result = (await response.json()) as {
+      processedInBatch: number;
+      updatedInBatch: number;
+      failuresInBatch: number;
+      nextCursor: number | null;
+    };
+
+    processed += result.processedInBatch;
+    updated += result.updatedInBatch;
+    failures += result.failuresInBatch;
+    cursor = result.nextCursor;
+  }
+
+  return NextResponse.json({ message: "Cron completed", processed, updated, failures });
+}
+

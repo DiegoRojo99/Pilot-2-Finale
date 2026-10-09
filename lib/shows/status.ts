@@ -1,6 +1,35 @@
 import type { ShowStatus } from "@/types";
 import { prisma } from "@/lib/core";
 import { findNextUnwatchedEpisode, isEpisodeUnreleased } from "@/lib/episodes";
+import { syncShowEpisodeCatalog } from "@/lib/episodes/catalog";
+
+/**
+ * Episode rows are created as bare records when a user logs an episode, so a show
+ * started from the mobile app can end up with only the logged episodes in the DB.
+ * Sync the full TMDB catalog when it is incomplete or a watched episode lacks an air date.
+ */
+async function ensureEpisodeCatalog(tmdbShowId: number) {
+  try {
+    const show = await prisma.show.findUnique({
+      where: { tmdbId: tmdbShowId },
+      select: { numberOfEpisodes: true },
+    });
+    const expected = show?.numberOfEpisodes ?? 0;
+
+    const [known, watchedWithoutAirDate] = await Promise.all([
+      prisma.episode.count({ where: { tmdbShowId } }),
+      prisma.episode.count({
+        where: { tmdbShowId, airDate: null, watchEntries: { some: {} } },
+      }),
+    ]);
+
+    if (expected > 0 && known >= expected && watchedWithoutAirDate === 0) return;
+
+    await syncShowEpisodeCatalog(tmdbShowId, { force: watchedWithoutAirDate > 0 });
+  } catch (error) {
+    console.error("[shows/status] episode catalog sync failed", { tmdbShowId, error });
+  }
+}
 
 type ProgressSnapshot = {
   totalEpisodes: number;
@@ -46,7 +75,6 @@ export async function refreshUserShowProgress(userId: string, tmdbShowId: number
 
   const watchedEpisodesCount = watchedEntries.length;
   const watchedRuntimeMinutes = watchedEntries.reduce((sum, row) => sum + (row.episode.runtime ?? 0), 0);
-  const totalEpisodes = userShow.show.numberOfEpisodes ?? 0;
   const totalRuntimeMinutes = userShow.show.totalRuntimeMinutes ?? 0;
   
   // Get count of released episodes only
@@ -81,7 +109,7 @@ export async function refreshUserShowProgress(userId: string, tmdbShowId: number
   });
 
   return {
-    totalEpisodes,
+    totalEpisodes: releasedEpisodesCount,
     watchedEpisodesCount,
   } satisfies ProgressSnapshot;
 }
@@ -163,6 +191,7 @@ export async function reconcileUserShowStatus(userId: string, tmdbShowId: number
  * Finds the first unwatched episode and stores its ID for quick retrieval
  */
 export async function updateNextEpisodeToWatch(userId: string, tmdbShowId: number) {
+  await ensureEpisodeCatalog(tmdbShowId);
   const nextEpisodeId = await findNextUnwatchedEpisode(userId, tmdbShowId);
   await prisma.userShow.updateMany({
     where: {

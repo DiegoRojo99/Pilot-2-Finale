@@ -109,7 +109,10 @@ async function upsertSeasonEpisodes(tmdbShowId: number, seasonNumber: number) {
   });
 }
 
-export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<CatalogSyncResult> {
+export async function syncShowEpisodeCatalog(
+  tmdbShowId: number,
+  options: { force?: boolean } = {},
+): Promise<CatalogSyncResult> {
   const show = await tmdbFetch<TmdbShowSummary>(`/tv/${tmdbShowId}`);
   const expectedEpisodes = Math.max(0, Number(show.number_of_episodes ?? 0));
   const fallbackRuntime = (show.episode_run_time ?? []).find((value) => Number.isFinite(value) && value > 0) ?? 0;
@@ -135,7 +138,7 @@ export async function syncShowEpisodeCatalog(tmdbShowId: number): Promise<Catalo
     },
   });
 
-  const shouldSync = expectedEpisodes === 0 || knownEpisodes < expectedEpisodes;
+  const shouldSync = options.force || expectedEpisodes === 0 || knownEpisodes < expectedEpisodes;
 
   let finalKnown = knownEpisodes;
 
