@@ -532,9 +532,9 @@ function ShowDetailSkeleton() {
         <Skeleton style={styles.skeletonBackdropFill} />
       </ThemedView>
 
-      <ThemedView type="backgroundElement" style={styles.skeletonHeroCard}>
+      <ThemedView style={styles.skeletonHeroCard}>
         <Skeleton style={styles.skeletonPoster} />
-        <ThemedView type="backgroundElement" style={styles.skeletonHeroText}>
+        <ThemedView style={styles.skeletonHeroText}>
           <Skeleton style={styles.skeletonTitle} />
           <Skeleton style={styles.skeletonMeta} />
           <Skeleton style={styles.skeletonMetaShort} />
@@ -546,6 +546,8 @@ function ShowDetailSkeleton() {
         <Skeleton style={styles.skeletonGenrePill} />
         <Skeleton style={styles.skeletonGenrePillShort} />
       </ThemedView>
+
+      <Skeleton style={styles.skeletonStatusButton} />
 
       <ThemedView type="backgroundElement" style={styles.skeletonContentCard}>
         <Skeleton style={styles.skeletonSectionTitle} />
@@ -1126,7 +1128,7 @@ export default function ShowDetailScreen() {
               source={{ uri: backdropUrl }}
               style={styles.backdrop}
               contentFit="cover"
-              contentPosition="top center"
+              contentPosition={{ top: '50%', left: '50%' }}
             />
             <LinearGradient
               pointerEvents="none"
@@ -1514,11 +1516,10 @@ const styles = StyleSheet.create({
   skeletonHeroCard: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: Spacing.three,
-    padding: Spacing.two,
-    borderRadius: Spacing.four,
     marginTop: -Spacing.seven,
+    backgroundColor: 'transparent',
   },
   skeletonPoster: {
     width: 110,
@@ -1527,7 +1528,10 @@ const styles = StyleSheet.create({
   },
   skeletonHeroText: {
     flex: 1,
-    gap: Spacing.two,
+    gap: Spacing.xs,
+    paddingRight: Spacing.two,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
   },
   skeletonTitle: {
     width: '90%',
@@ -1547,6 +1551,7 @@ const styles = StyleSheet.create({
   skeletonGenreRow: {
     flexDirection: 'row',
     gap: Spacing.two,
+    marginVertical: Spacing.md,
   },
   skeletonGenrePill: {
     width: 84,
@@ -1557,6 +1562,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 28,
     borderRadius: Spacing.five,
+  },
+  skeletonStatusButton: {
+    alignSelf: 'stretch',
+    height: 44,
+    borderRadius: Spacing.three,
+    marginVertical: Spacing.sm,
   },
   skeletonContentCard: {
     alignSelf: 'stretch',
