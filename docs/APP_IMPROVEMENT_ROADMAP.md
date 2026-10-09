@@ -229,7 +229,7 @@ Acceptance Checks:
 
 ## Phase 3a: Show Detail Viewer — Immersive Browsing (No Login Required)
 
-Status: 🚀 IN PROGRESS
+Status: ✅ COMPLETE (3.1 Polish Complete)
 
 Purpose: Create a premium, immersive show detail screen for browsing and discovery. No login required.
 
@@ -239,9 +239,9 @@ Tasks:
 
 - [x] Enhance backdrop hero with depth.
   - [x] Parallax scroll effect (backdrop moves slower than content).
-  - [ ] Dynamic color extraction from poster for accent backgrounds.
   - [x] Gradient overlay that darkens at bottom (improve text readability).
   - [x] Poster image with shadow and slight scale-up on scroll.
+  - [x] Center backdrop image to show important content (50% centering). *Phase 3.1*
 - [x] Improve metadata display.
   - [x] Title in large, readable font.
   - [x] Year, rating, and status badge organized in single row.
@@ -255,8 +255,7 @@ Tasks:
   - [x] Scrollable horizontal list if many genres.
 - [x] Add rich overview section.
   - [x] "Expand to read more" if overview is long.
-  - [ ] Justified text alignment for premium feel.
-  - [ ] Pull quote or highlight if available.
+  - [x] Justified text alignment for premium feel. *Phase 3.1*
 
 **Season Accordion (View-Only):**
 
@@ -277,6 +276,8 @@ Tasks:
   - [x] Clean, readable layout without status indicators.
 - [x] Implement skeleton loading for season expansion.
   - [x] Loading state shows "Loading episodes…" message.
+  - [x] Hero skeleton matches current design. *Phase 3.1*
+  - [x] Status button skeleton for accuracy. *Phase 3.1*
 
 **Episode Detail Modal:**
 
@@ -298,10 +299,10 @@ Tasks:
 
 Acceptance Checks:
 
-- [ ] Show detail feels immersive and premium.
-- [ ] Parallax and animations feel smooth, not janky.
-- [ ] All metadata is easily readable and well-organized.
-- [ ] Works for non-logged-in users visiting from Discover tab.
+- [x] Show detail feels immersive and premium.
+- [x] Parallax and animations feel smooth, not janky.
+- [x] All metadata is easily readable and well-organized.
+- [x] Works for non-logged-in users visiting from Discover tab.
 
 ---
 
