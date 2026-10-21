@@ -46,6 +46,19 @@ export default function TabLayout() {
             }}
           />
           <Stack.Screen
+            name="achievements"
+            options={{
+              headerShown: true,
+              headerTitle: 'Achievements',
+              headerTintColor: colors.text,
+              headerStyle: {
+                backgroundColor: colors.surfaceBackground,
+              },
+              headerShadowVisible: false,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
             name="show/[id]"
             options={{
               headerShown: true,
