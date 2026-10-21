@@ -218,6 +218,7 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
                           <Image
                             source={{ uri: posterUrl }}
                             style={styles.episodePoster}
+                            alt="Episode still"
                           />
                         ) : (
                           <View style={[styles.episodePoster, { backgroundColor: theme.backgroundElement }]} />

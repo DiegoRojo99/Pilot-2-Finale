@@ -1,9 +1,9 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider as ExpoThemeProvider } from 'expo-router';
-import { Platform, useColorScheme } from 'react-native';
+import { useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/components/auth/auth-provider';
 import { ThemeProvider } from '@/components/theme/theme-provider';
-import { Colors, Shadows, BorderRadius } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();

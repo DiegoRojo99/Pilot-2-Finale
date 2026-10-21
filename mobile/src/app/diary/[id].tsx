@@ -56,7 +56,7 @@ export default function DiaryEntryDetailScreen() {
             console.error('Failed to fetch episode details:', err);
           }
         }
-      } catch (error) {
+      } catch {
         Alert.alert('Error', 'Failed to load entry');
       } finally {
         setLoading(false);
@@ -107,7 +107,7 @@ export default function DiaryEntryDetailScreen() {
       
       // Success - go back immediately (no alert needed for success)
       router.back();
-    } catch (error) {
+    } catch {
       // Rollback on failure
       setEntry(originalEntry);
       setRating(originalEntry.rating ?? 0);
@@ -175,22 +175,6 @@ export default function DiaryEntryDetailScreen() {
     ? `https://image.tmdb.org/t/p/w500${episodeDetails.still_path}`
     : null;
 
-  function renderStars(rating: number | null | undefined): string {
-    if (!rating || rating <= 0) return '';
-    const starsRating = rating / 2;
-    const clampedRating = Math.min(Math.max(starsRating, 0), 5);
-    const fullStars = Math.floor(clampedRating);
-    const hasHalf = clampedRating % 1 >= 0.5;
-
-    let stars = '★'.repeat(fullStars);
-    if (hasHalf) stars += '☆';
-
-    const emptyCount = Math.max(0, 5 - Math.ceil(starsRating));
-    stars += '☆'.repeat(emptyCount);
-
-    return stars;
-  }
-
   function goToPreviousEntry() {
     if (!previousEntry) return;
     router.push(`/diary/${previousEntry.id}`);
@@ -226,6 +210,7 @@ export default function DiaryEntryDetailScreen() {
               <Image
                 source={{ uri: backdropUrl }}
                 style={styles.backdrop}
+                alt="Backdrop image"
               />
             ) : (
               <ThemedView type="backgroundSelected" style={styles.backdrop}>

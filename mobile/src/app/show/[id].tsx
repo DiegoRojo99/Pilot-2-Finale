@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, Platform, Modal, Animated } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -47,6 +47,7 @@ function EpisodeRow({ episode, isWatched, onToggle, onPress }: EpisodeRowProps) 
             source={{ uri: getBackdropUrl(episode.still_path) || '' }}
             style={[styles.episodeImage, isUnreleased && { opacity: 0.5 }]}
             contentFit="cover"
+            alt="Episode still"
           />
         ) : (
           <ThemedView type="backgroundSelected" style={styles.episodeImagePlaceholder}>
@@ -163,6 +164,7 @@ function EpisodeRowViewOnly({ episode, onPress }: { episode: TMDBEpisode; onPres
             source={{ uri: getBackdropUrl(episode.still_path) || '' }}
             style={[styles.episodeImage, isUnreleased && { opacity: 0.5 }]}
             contentFit="cover"
+            alt="Episode still"
           />
         ) : (
           <ThemedView type="backgroundSelected" style={styles.episodeImagePlaceholder}>
@@ -245,7 +247,6 @@ function EpisodeRowViewOnly({ episode, onPress }: { episode: TMDBEpisode; onPres
 }
 
 function SeasonAccordion({
-  showId,
   season,
   watchedCount,
   watchedSet,
@@ -254,7 +255,6 @@ function SeasonAccordion({
   onMarkSeasonAll,
   getCachedSeasonDetails,
 }: {
-  showId: number;
   season: TMDBSeasonSummary;
   watchedCount: number;
   watchedSet: Set<string>;
@@ -915,7 +915,7 @@ export default function ShowDetailScreen() {
   const handleConfirmMarkPrevious = async () => {
     if (!markPreviousConfirm || !show) return;
 
-    const { seasonNumber, episodeNumber, episodeName, tmdbEpisodeId, count } = markPreviousConfirm;
+    const { seasonNumber, episodeNumber, episodeName, tmdbEpisodeId } = markPreviousConfirm;
     const season = show.seasons?.find(s => s.season_number === seasonNumber);
     if (!season) return;
 
@@ -1040,7 +1040,7 @@ export default function ShowDetailScreen() {
   const handleConfirmBulkMark = async () => {
     if (!bulkMarkConfirm || !show) return;
 
-    const { seasonNumber, count, seasonData: passedSeasonData } = bulkMarkConfirm;
+    const { seasonNumber, seasonData: passedSeasonData } = bulkMarkConfirm;
     const season = show.seasons?.find(s => s.season_number === seasonNumber);
     if (!season) return;
 
@@ -1129,6 +1129,7 @@ export default function ShowDetailScreen() {
               style={styles.backdrop}
               contentFit="cover"
               contentPosition={{ top: '50%', left: '50%' }}
+              alt="Backdrop image"
             />
             <LinearGradient
               pointerEvents="none"
@@ -1155,7 +1156,7 @@ export default function ShowDetailScreen() {
             <>
               <ThemedView style={styles.hero}> 
                 {posterUrl ? (
-                  <Image source={{ uri: posterUrl }} style={[styles.poster, styles.posterShadow]} contentFit="cover" />
+                  <Image source={{ uri: posterUrl }} style={[styles.poster, styles.posterShadow]} contentFit="cover" alt="Poster image" />
                 ) : (
                   <ThemedView type="backgroundSelected" style={[styles.posterPlaceholder, styles.posterShadow]}>
                     <ThemedText type="small" themeColor="textSecondary">
@@ -1304,7 +1305,6 @@ export default function ShowDetailScreen() {
                       userShow ? (
                         <SeasonAccordion
                           key={seasonSummary.season_number}
-                          showId={showId}
                           season={seasonSummary}
                           watchedCount={watchedCountBySeason.get(seasonSummary.season_number) ?? 0}
                           watchedSet={watchedSet}
@@ -1325,6 +1325,12 @@ export default function ShowDetailScreen() {
                     )}
                 </ThemedView>
               ) : null}
+
+              {isLoadingRelated && (
+                <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.md }}>
+                  Loading related shows...
+                </ThemedText>
+              )}
 
               {relatedShows.length > 0 && (
                 <ThemedView style={styles.relatedShowsSection}>
@@ -1352,6 +1358,7 @@ export default function ShowDetailScreen() {
                             source={{ uri: getPosterUrl(relatedShow.poster_path) || '' }}
                             style={styles.relatedShowImage}
                             contentFit="cover"
+                            alt="Related show poster"
                           />
                         ) : (
                           <ThemedView type="backgroundSelected" style={styles.relatedShowImage}>

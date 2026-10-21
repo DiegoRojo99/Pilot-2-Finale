@@ -21,6 +21,7 @@ export function AuthScreen() {
                     source={require('@/assets/images/transparent-logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
+                    alt="App logo"
                 />
             </View>
 
