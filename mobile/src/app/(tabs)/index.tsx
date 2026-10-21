@@ -184,7 +184,7 @@ export default function HomeScreen() {
             <ThemedView style={[styles.emptyStateCard, { backgroundColor: theme.surfaceBackground }]}> 
               <Ionicons name="alert-circle-outline" size={48} color={theme.textSecondary} />
               <View style={styles.emptyStateContent}>
-                <ThemedText type="subtitle" style={styles.emptyStateTitle}>Couldn't load suggestions</ThemedText>
+                <ThemedText type="subtitle" style={styles.emptyStateTitle}>Couldn&apos;t load suggestions</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.emptyStateMessage}>
                   Check your connection, but search is ready anytime
                 </ThemedText>

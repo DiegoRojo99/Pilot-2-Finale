@@ -73,8 +73,10 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
   };
 
   useEffect(() => {
-    if (selectedStatus === '') setShows(allShows);
-    else setShows(allShows.filter((show) => show.status === selectedStatus));
+    const filtered = selectedStatus === '' 
+      ? allShows
+      : allShows.filter((show) => show.status === selectedStatus);
+    setShows(filtered);
   }, [selectedStatus, allShows]);
 
   if (status === 'loading') {

@@ -80,7 +80,7 @@ function AuthenticatedDiary() {
   // Re-group entries when selectedDate changes
   useEffect(() => {
     groupEntriesByDay(entries);
-  }, [selectedDate]);
+  }, [selectedDate, entries]);
 
   useFocusEffect(
     useCallback(() => {

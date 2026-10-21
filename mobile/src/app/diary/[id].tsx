@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,7 +25,6 @@ export default function DiaryEntryDetailScreen() {
   const [rating, setRating] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
   const [watchedDate, setWatchedDate] = useState<string>('');
-  const [hasChanges, setHasChanges] = useState(false);
   const [previousEntry, setPreviousEntry] = useState<EpisodeLog | null>(null);
   const [nextEntry, setNextEntry] = useState<EpisodeLog | null>(null);
 
@@ -52,8 +51,8 @@ export default function DiaryEntryDetailScreen() {
             const episode = season.episodes?.find((ep) => ep.episode_number === found.episode_number);
             if (episode) setEpisodeDetails(episode);
           } 
-          catch (err) {
-            console.error('Failed to fetch episode details:', err);
+          catch {
+            // Silent error for missing episode details
           }
         }
       } catch {
@@ -66,13 +65,13 @@ export default function DiaryEntryDetailScreen() {
     fetchEntry();
   }, [id]);
 
-  useEffect(() => {
-    if (!entry) return;
+  const hasChanges = useMemo(() => {
+    if (!entry) return false;
     const ratingChanged = (entry.rating ?? 0) !== rating;
     const notesChanged = (entry.notes ?? '') !== notes;
     const originalDate = entry.watched_at?.split('T')[0] ?? '';
     const dateChanged = originalDate !== watchedDate;
-    setHasChanges(ratingChanged || notesChanged || dateChanged);
+    return ratingChanged || notesChanged || dateChanged;
   }, [rating, notes, watchedDate, entry]);
 
   const handleSave = async () => {
