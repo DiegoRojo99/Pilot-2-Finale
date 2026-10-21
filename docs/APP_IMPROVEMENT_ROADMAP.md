@@ -463,12 +463,12 @@ Tasks:
   - [x] X-axis: weeks or months.
   - [x] Y-axis: episode count.
   - [x] Smooth bezier curve animation on load.
-- [ ] Add genre breakdown pie/donut chart.
+- [x] Add genre breakdown pie/donut chart.
   - [x] Color-coded by genre.
   - [x] Legend with episode counts.
-  - [x] Pie chart visualization with mock genre detection.
-  - [ ] Tap slice to filter My Shows by genre.
-  - [ ] Animated segment expansion on tap.
+  - [x] Pie chart visualization with genre detection.
+  - [x] Tap slice to highlight genre.
+  - [x] Animated segment expansion on tap.
 - [ ] Add top shows bar chart.
   - [ ] Horizontal bars sorted by episodes watched.
   - [ ] Show poster thumbnail on left.
