@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { BorderRadius, Shadows, Spacing } from '@/constants/theme';
+import { BorderRadius, Shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export function ShowCardSkeleton() {

@@ -26,18 +26,6 @@ function AuthenticatedDiary() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const fetchDiary = useCallback(async () => {
-    try {
-      // Fetch all historical logs (use high limit to get all data, not just recent 100)
-      const logs = await getAllEpisodeLogs(10000);
-      setEntries(logs);
-      groupEntriesByDay(logs);
-      setStatus('success');
-    } catch (error) {
-      setStatus('error');
-    }
-  }, []);
-
   const groupEntriesByDay = (logs: EpisodeLog[]) => {
     const logsToProcess = selectedDate
       ? logs.filter((log) => log.watched_at?.startsWith(selectedDate))
@@ -70,6 +58,18 @@ function AuthenticatedDiary() {
 
     setDays(dayArray);
   };
+
+  const fetchDiary = useCallback(async () => {
+    try {
+      // Fetch all historical logs (use high limit to get all data, not just recent 100)
+      const logs = await getAllEpisodeLogs(10000);
+      setEntries(logs);
+      groupEntriesByDay(logs);
+      setStatus('success');
+    } catch {
+      setStatus('error');
+    }
+  }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

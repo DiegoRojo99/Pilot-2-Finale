@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
-import { useColorScheme } from 'react-native';
 import { getThemePreference, setThemePreference, type ThemePreference } from '@/lib/theme-storage';
 
 type ThemeContextValue = {

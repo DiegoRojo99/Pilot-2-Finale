@@ -60,7 +60,7 @@ export function ThemeModal({ visible, onClose }: ThemeModalProps) {
                   {option.description}
                 </ThemedText>
               </View>
-              {preference === option.value && <Ionicons name="checkmark-circle" size={24} color={theme.accent} />}
+              {preference === option.value && <Ionicons name="checkmark-circle" size={24} color={String(theme.accent)} />}
             </Pressable>
           ))}
         </ScrollView>

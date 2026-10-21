@@ -1,12 +1,12 @@
 import { SymbolView } from 'expo-symbols';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { ShowCard } from './show-card';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { TMDBShow } from '@/types/api';
 
@@ -25,7 +25,7 @@ export function PosterRail({ title, icon, shows, onShowPress }: PosterRailProps)
   const VISIBLE_CARDS = 2.5;
   const TOTAL_PAGES = Math.ceil((shows.length - VISIBLE_CARDS) / 2) || 1;
 
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / (CARD_WIDTH + 12)); // 12 is gap
     setCurrentPage(Math.min(page, TOTAL_PAGES - 1));

@@ -178,15 +178,6 @@ function groupByDay(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDa
 function groupByWeek(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDataPoint[] {
   const grouped: Record<number, number> = {};
 
-  // Get week numbers
-  const getWeekNumber = (date: Date) => {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  };
-
   // Initialize 8 weeks with 0
   for (let i = 0; i < 8; i++) {
     grouped[i] = 0;

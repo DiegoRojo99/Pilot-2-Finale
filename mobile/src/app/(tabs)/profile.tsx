@@ -15,14 +15,11 @@ import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAchievements, isUnlocked, type AchievementProgress } from '@/lib/achievements';
-import { getStats } from '@/lib/episodes';
-import type { EpisodeStatsResponse } from '@/types/episode';
 
 export default function ProfileScreen() {
   const auth = useAuth();
   const theme = useTheme();
   const { preference: themePreference } = useThemePreference();
-  const [stats, setStats] = useState<EpisodeStatsResponse | null>(null);
   const [achievements, setAchievements] = useState<AchievementProgress[] | null>(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -31,7 +28,6 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!isAuthenticated) return;
-      getStats('l30d').then(setStats).catch(() => {});
       getAchievements().then(setAchievements).catch(() => {});
     }, [isAuthenticated]),
   );
@@ -134,7 +130,7 @@ function SettingItem({
       accessibilityRole="button"
       accessibilityLabel={`${title}${value ? `, ${value}` : ''}`}>
       <Ionicons
-        name={icon as any}
+        name={icon as keyof typeof Ionicons.glyphMap}
         size={24}
         color={danger ? theme.danger : theme.accent}
       />

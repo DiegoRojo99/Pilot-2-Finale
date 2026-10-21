@@ -32,7 +32,7 @@ function AuthenticatedStats() {
       const data = await getStats(period);
       setStats(data);
       setStatus('success');
-    } catch (error) {
+    } catch {
       setStatus('error');
     }
   }, [period]);

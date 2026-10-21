@@ -31,7 +31,7 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
       setAllShows(data);
       setStatus('success');
     } 
-    catch (error) {
+    catch {
       setStatus('error');
     }
   };
@@ -41,8 +41,8 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
       const data = await getUpcomingEpisodes('watching');
       setUpcomingEpisodes(data.episodes);
     }
-    catch (error) {
-      console.error('Error fetching upcoming episodes:', error);
+    catch {
+      // Handle error silently
     }
   };
 

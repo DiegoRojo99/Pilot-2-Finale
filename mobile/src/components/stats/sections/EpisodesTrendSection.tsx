@@ -6,7 +6,6 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAllEpisodeLogs } from '@/lib/episodes';
 import { groupEpisodesByTrend, type TrendDataPoint } from '@/lib/stats';
-import type { EpisodeStatsPeriod } from '@/types/episode';
 
 type TrendPeriod = 'l7d' | 'l8w' | 'ly';
 

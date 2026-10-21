@@ -248,7 +248,7 @@ function EpisodeDetails({ episode, onLogPress, showName }: { episode: TMDBEpisod
                   <Image
                     source={{ uri: getProfileImageUrl(actor.profile_path) || '' }}
                     style={styles.castCarouselImage}
-                    alt={actor.name}
+                    alt={actor.name || 'Actor image'}
                   />
                 ) : (
                   <View style={[styles.castCarouselImage, { backgroundColor: theme.surfaceBackground }]}>

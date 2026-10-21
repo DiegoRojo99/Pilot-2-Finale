@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Pressable, View, StyleSheet } from 'react-native';
-import { getPosterUrl, getYear } from '@/lib/tmdb-images';
+import { getPosterUrl } from '@/lib/tmdb-images';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
