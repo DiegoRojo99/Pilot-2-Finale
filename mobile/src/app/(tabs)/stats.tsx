@@ -17,6 +17,7 @@ import {
   FooterNoteSection,
   EpisodesTrendSection,
   YearDashboardSection,
+  GenreBreakdownSection,
 } from '@/components/stats/sections';
 
 function AuthenticatedStats() {
@@ -71,6 +72,7 @@ function AuthenticatedStats() {
       contentContainerStyle={styles.content}
     >
       <YearDashboardSection />
+      <GenreBreakdownSection />
       <OverviewStatsSection stats={stats} />
       <EpisodesTrendSection />
       <TimeSpentSection stats={stats} period={period} setPeriod={setPeriod} formatMinutes={formatMinutes} />
