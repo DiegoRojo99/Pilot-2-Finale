@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, readJson, defaultRateLimit } from "@/lib/core";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { fetchUserShowByTmdbId, fetchUserShowsByUserId, upsertShowCatalog, refreshUserShowProgress, updateNextEpisodeToWatch } from "@/lib/shows";
+import { fetchUserShowsByUserId, upsertShowCatalog, refreshUserShowProgress, updateNextEpisodeToWatch } from "@/lib/shows";
 import type { ShowStatus } from "@/types";
 
 export const runtime = "nodejs";

@@ -16,10 +16,6 @@ export interface YearDashboardStats {
   bestMonth: { month: number; year: number; count: number } | null;
 }
 
-function toLocalDayKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
 function dayIndex(date: Date): number {
   return Math.round(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
 }
