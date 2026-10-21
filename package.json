@@ -1,6 +1,6 @@
 {
   "name": "pilot-2-finale",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "private": true,
   "scripts": {
     "dev": "next dev",
