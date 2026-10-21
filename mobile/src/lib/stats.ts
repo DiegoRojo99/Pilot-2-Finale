@@ -5,6 +5,107 @@ export interface TrendDataPoint {
   count: number;
 }
 
+export interface YearDashboardStats {
+  year: number;
+  episodesThisYear: number;
+  daysWatched: number;
+  avgPerDay: number;
+  currentStreak: number;
+  longestStreak: number;
+  bestDay: { date: Date; count: number } | null;
+  bestMonth: { month: number; year: number; count: number } | null;
+}
+
+function dayIndex(date: Date): number {
+  return Math.round(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+}
+
+export function computeYearDashboard(logs: EpisodeLog[], now: Date = new Date()): YearDashboardStats {
+  const year = now.getFullYear();
+  const daysSet = new Map<number, number>(); // day index -> episodes that day
+  const monthsMap = new Map<string, number>(); // "YYYY-MM" -> episode count
+  let episodesThisYear = 0;
+
+  for (const log of logs) {
+    if (!log.watched_at) continue;
+    const date = new Date(log.watched_at);
+    if (Number.isNaN(date.getTime())) continue;
+    if (date.getFullYear() !== year) continue;
+    episodesThisYear++;
+    const idx = dayIndex(date);
+    daysSet.set(idx, (daysSet.get(idx) ?? 0) + 1);
+
+    // Track by month
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    monthsMap.set(monthKey, (monthsMap.get(monthKey) ?? 0) + 1);
+  }
+
+  // Find best day
+  let bestDayIdx: number | null = null;
+  let bestDayCount = 0;
+  for (const [idx, count] of daysSet) {
+    if (count > bestDayCount) {
+      bestDayCount = count;
+      bestDayIdx = idx;
+    }
+  }
+  const bestDay =
+    bestDayIdx !== null
+      ? { date: new Date(bestDayIdx * 86400000), count: bestDayCount }
+      : null;
+
+  // Find best month
+  let bestMonthKey: string | null = null;
+  let bestMonthCount = 0;
+  for (const [key, count] of monthsMap) {
+    if (count > bestMonthCount) {
+      bestMonthCount = count;
+      bestMonthKey = key;
+    }
+  }
+  const bestMonth =
+    bestMonthKey !== null
+      ? (() => {
+          const [y, m] = bestMonthKey.split('-');
+          return { month: parseInt(m, 10) - 1, year: parseInt(y, 10), count: bestMonthCount };
+        })()
+      : null;
+
+  const sortedDays = [...daysSet.keys()].sort((a, b) => a - b);
+
+  let longestStreak = 0;
+  let run = 0;
+  let prev: number | null = null;
+  for (const day of sortedDays) {
+    run = prev !== null && day === prev + 1 ? run + 1 : 1;
+    longestStreak = Math.max(longestStreak, run);
+    prev = day;
+  }
+
+  // The streak stays alive if the last watch was today or yesterday
+  const today = dayIndex(now);
+  let currentStreak = 0;
+  let cursor = daysSet.has(today) ? today : today - 1;
+  while (daysSet.has(cursor)) {
+    currentStreak++;
+    cursor--;
+  }
+
+  const daysElapsed = today - dayIndex(new Date(year, 0, 1)) + 1;
+  const avgPerDay = daysElapsed > 0 ? episodesThisYear / daysElapsed : 0;
+
+  return {
+    year,
+    episodesThisYear,
+    daysWatched: daysSet.size,
+    avgPerDay,
+    currentStreak,
+    longestStreak,
+    bestDay,
+    bestMonth,
+  };
+}
+
 export function groupEpisodesByTrend(
   logs: EpisodeLog[],
   periodType: 'l7d' | 'l8w' | 'ly'
@@ -76,15 +177,6 @@ function groupByDay(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDa
 
 function groupByWeek(logs: EpisodeLog[], startDate: Date, endDate: Date): TrendDataPoint[] {
   const grouped: Record<number, number> = {};
-
-  // Get week numbers
-  const getWeekNumber = (date: Date) => {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  };
 
   // Initialize 8 weeks with 0
   for (let i = 0; i < 8; i++) {

@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { FormField } from '@/components/ui/form-field';
 import { requestAccountDeletion } from '@/lib/auth';
@@ -36,8 +35,7 @@ export function DeleteAccountCard({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <Card>
-        <ThemedText type="subtitle">Request account deletion</ThemedText>
+      <View style={styles.container}>
         <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
           This submits a request to delete your Pilot 2 Finale account and immediately deletes app-owned tracking data.
         </ThemedText>
@@ -54,7 +52,7 @@ export function DeleteAccountCard({ onClose }: { onClose: () => void }) {
           onPress={() => setIsConfirmingDeletion(true)}
         />
         <Button label="Cancel" variant="secondary" onPress={onClose} />
-      </Card>
+      </View>
 
       <ConfirmSheet
         visible={isConfirmingDeletion}
@@ -69,6 +67,10 @@ export function DeleteAccountCard({ onClose }: { onClose: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    gap: 8,
+    marginTop: 8,
+  },
   description: {
     lineHeight: 20,
   },

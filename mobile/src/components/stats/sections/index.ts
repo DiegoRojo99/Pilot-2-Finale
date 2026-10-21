@@ -6,3 +6,5 @@ export { TimeSpentSection } from './TimeSpentSection';
 export { PendingSection } from './PendingSection';
 export { FooterNoteSection } from './FooterNoteSection';
 export { EpisodesTrendSection } from './EpisodesTrendSection';
+export { YearDashboardSection } from './YearDashboardSection';
+export { GenreBreakdownSection } from './GenreBreakdownSection';

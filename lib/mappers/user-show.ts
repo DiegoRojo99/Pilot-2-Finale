@@ -11,13 +11,8 @@ export function mapUserShow(
   row: UserShowWithShowRow,
   options?: { preferUserNameWhenShowIsPlaceholder?: boolean },
 ): UserShow {
-  const preferUserNameWhenShowIsPlaceholder = options?.preferUserNameWhenShowIsPlaceholder ?? false;
-  const showNameHasTMDBPrefix = row.show.name.startsWith("TMDB Show ");
-  const canUseUserName = typeof row.name === "string" && row.name.trim().length > 0;
-  const name: string =
-    preferUserNameWhenShowIsPlaceholder && showNameHasTMDBPrefix && canUseUserName
-      ? (row.name as string)
-      : row.show.name;
+  // Always use the show name (it's guaranteed to exist)
+  const name: string = row.show.name;
 
   // Only show next episode if it's released (aired)
   const isNextEpisodeUnreleased = row.nextEpisodeToWatch?.airDate

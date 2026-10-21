@@ -3,10 +3,11 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { DiaryEntryList } from '@/components/diary';
+import type { EpisodeLog } from '@/types/episode';
 
 type DiaryDay = {
   date: string;
-  entries: any[];
+  entries: EpisodeLog[];
 };
 
 function getRelativeDate(dateStr: string): string {

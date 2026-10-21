@@ -31,15 +31,7 @@ model UserShow {
   id                     Int        @id @default(autoincrement())
   userId                 String     @map("user_id")
   tmdbId                 Int        @map("tmdb_id")
-  name                   String?
-  posterPath             String?    @map("poster_path")
-  backdropPath           String?    @map("backdrop_path")
-  overview               String?
-  firstAirDate           String?    @map("first_air_date")
   status                 String     @default("watching")
-  voteAverage            Float      @default(0) @map("vote_average") @db.DoublePrecision
-  numberOfSeasons        Int        @default(0) @map("number_of_seasons")
-  numberOfEpisodes       Int        @default(0) @map("number_of_episodes")
   watchedEpisodesCount   Int        @default(0) @map("watched_episodes_count")
   remainingEpisodesCount Int        @default(0) @map("remaining_episodes_count")
   watchedRuntimeMinutes  Int        @default(0) @map("watched_runtime_minutes")

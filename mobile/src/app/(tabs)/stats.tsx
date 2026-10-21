@@ -16,6 +16,8 @@ import {
   PendingSection,
   FooterNoteSection,
   EpisodesTrendSection,
+  YearDashboardSection,
+  GenreBreakdownSection,
 } from '@/components/stats/sections';
 
 function AuthenticatedStats() {
@@ -30,7 +32,7 @@ function AuthenticatedStats() {
       const data = await getStats(period);
       setStats(data);
       setStatus('success');
-    } catch (error) {
+    } catch {
       setStatus('error');
     }
   }, [period]);
@@ -69,6 +71,8 @@ function AuthenticatedStats() {
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
       contentContainerStyle={styles.content}
     >
+      <YearDashboardSection />
+      <GenreBreakdownSection />
       <OverviewStatsSection stats={stats} />
       <EpisodesTrendSection />
       <TimeSpentSection stats={stats} period={period} setPeriod={setPeriod} formatMinutes={formatMinutes} />
@@ -111,10 +115,10 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   content: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.md,
     paddingHorizontal: Spacing.lg,
     gap: Spacing.xl,
   },

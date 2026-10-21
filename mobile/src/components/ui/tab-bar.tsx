@@ -8,8 +8,8 @@ import { Spacing } from '@/constants/theme';
 export interface TabItem {
   id: string;
   label: string;
-  icon?: any; // Ionicons name (strict typing omitted for flexibility)
-  symbolIcon?: any; // SF Symbols with platform overrides
+  icon?: string;
+  symbolIcon?: string | { ios?: string; android?: string; web?: string };
 }
 
 interface TabsProps {
@@ -38,14 +38,14 @@ export function TabBar({ tabs, activeTab, onTabChange, useSymbols = false }: Tab
         >
           {useSymbols && tab.symbolIcon ? (
             <SymbolView
-              name={tab.symbolIcon}
+              name={typeof tab.symbolIcon === 'string' ? tab.symbolIcon : (tab.symbolIcon as any)}
               size={16}
               tintColor={activeTab === tab.id ? theme.accent : theme.textSecondary}
               style={styles.icon}
             />
           ) : tab.icon ? (
             <Ionicons
-              name={activeTab === tab.id ? tab.icon : `${tab.icon}-outline`}
+              name={activeTab === tab.id ? (tab.icon as any) : (`${tab.icon}-outline` as any)}
               size={16}
               color={activeTab === tab.id ? theme.accent : theme.textSecondary}
               style={styles.icon}

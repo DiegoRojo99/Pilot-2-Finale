@@ -31,7 +31,7 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
       setAllShows(data);
       setStatus('success');
     } 
-    catch (error) {
+    catch {
       setStatus('error');
     }
   };
@@ -41,8 +41,8 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
       const data = await getUpcomingEpisodes('watching');
       setUpcomingEpisodes(data.episodes);
     }
-    catch (error) {
-      console.error('Error fetching upcoming episodes:', error);
+    catch {
+      // Handle error silently
     }
   };
 
@@ -73,8 +73,10 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
   };
 
   useEffect(() => {
-    if (selectedStatus === '') setShows(allShows);
-    else setShows(allShows.filter((show) => show.status === selectedStatus));
+    const filtered = selectedStatus === '' 
+      ? allShows
+      : allShows.filter((show) => show.status === selectedStatus);
+    setShows(filtered);
   }, [selectedStatus, allShows]);
 
   if (status === 'loading') {
@@ -218,6 +220,7 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
                           <Image
                             source={{ uri: posterUrl }}
                             style={styles.episodePoster}
+                            alt="Episode still"
                           />
                         ) : (
                           <View style={[styles.episodePoster, { backgroundColor: theme.backgroundElement }]} />

@@ -1,4 +1,3 @@
-import type { EpisodeLog } from "./episode";
 export type ShowStatus = "watching" | "want_to_watch" | "watched" | "dropped" | "on_hold";
 
 export interface ShowRecord {

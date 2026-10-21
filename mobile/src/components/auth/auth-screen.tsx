@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useState } from 'react';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import logo from '@/assets/images/transparent-logo.png';
 
 export function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -18,9 +19,10 @@ export function AuthScreen() {
         <View style={styles.authContainer}>
             <View style={styles.logoContainer}>
                 <Image
-                    source={require('@/assets/images/transparent-logo.png')}
+                    source={logo}
                     style={styles.logo}
                     resizeMode="contain"
+                    alt="App logo"
                 />
             </View>
 

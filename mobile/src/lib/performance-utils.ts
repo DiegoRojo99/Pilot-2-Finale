@@ -73,7 +73,7 @@ export function createOptimisticUpdateHelper<T>(
  * Debounce callback wrapper to prevent rapid function calls.
  * Useful for API calls from rapid user interactions.
  */
-export function debounceCall<T extends (...args: any[]) => any>(
+export function debounceCall<T extends (...args: never[]) => unknown>(
   fn: T,
   delayMs: number = 300
 ): (...args: Parameters<T>) => void {

@@ -98,7 +98,7 @@ export async function GET(request: Request) {
       })
       .map((ep) => {
         const userShow = userShows.find((s) => s.tmdbId === ep.tmdbShowId);
-        const showName = userShow?.show.name ?? userShow?.name ?? "Unknown Show";
+        const showName = userShow?.show.name ?? "Unknown Show";
         return {
           id: ep.id,
           showId: ep.tmdbShowId,

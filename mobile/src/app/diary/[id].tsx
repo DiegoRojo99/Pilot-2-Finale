@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,7 +25,6 @@ export default function DiaryEntryDetailScreen() {
   const [rating, setRating] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
   const [watchedDate, setWatchedDate] = useState<string>('');
-  const [hasChanges, setHasChanges] = useState(false);
   const [previousEntry, setPreviousEntry] = useState<EpisodeLog | null>(null);
   const [nextEntry, setNextEntry] = useState<EpisodeLog | null>(null);
 
@@ -52,11 +51,11 @@ export default function DiaryEntryDetailScreen() {
             const episode = season.episodes?.find((ep) => ep.episode_number === found.episode_number);
             if (episode) setEpisodeDetails(episode);
           } 
-          catch (err) {
-            console.error('Failed to fetch episode details:', err);
+          catch {
+            // Silent error for missing episode details
           }
         }
-      } catch (error) {
+      } catch {
         Alert.alert('Error', 'Failed to load entry');
       } finally {
         setLoading(false);
@@ -66,13 +65,13 @@ export default function DiaryEntryDetailScreen() {
     fetchEntry();
   }, [id]);
 
-  useEffect(() => {
-    if (!entry) return;
+  const hasChanges = useMemo(() => {
+    if (!entry) return false;
     const ratingChanged = (entry.rating ?? 0) !== rating;
     const notesChanged = (entry.notes ?? '') !== notes;
     const originalDate = entry.watched_at?.split('T')[0] ?? '';
     const dateChanged = originalDate !== watchedDate;
-    setHasChanges(ratingChanged || notesChanged || dateChanged);
+    return ratingChanged || notesChanged || dateChanged;
   }, [rating, notes, watchedDate, entry]);
 
   const handleSave = async () => {
@@ -107,7 +106,7 @@ export default function DiaryEntryDetailScreen() {
       
       // Success - go back immediately (no alert needed for success)
       router.back();
-    } catch (error) {
+    } catch {
       // Rollback on failure
       setEntry(originalEntry);
       setRating(originalEntry.rating ?? 0);
@@ -175,22 +174,6 @@ export default function DiaryEntryDetailScreen() {
     ? `https://image.tmdb.org/t/p/w500${episodeDetails.still_path}`
     : null;
 
-  function renderStars(rating: number | null | undefined): string {
-    if (!rating || rating <= 0) return '';
-    const starsRating = rating / 2;
-    const clampedRating = Math.min(Math.max(starsRating, 0), 5);
-    const fullStars = Math.floor(clampedRating);
-    const hasHalf = clampedRating % 1 >= 0.5;
-
-    let stars = '★'.repeat(fullStars);
-    if (hasHalf) stars += '☆';
-
-    const emptyCount = Math.max(0, 5 - Math.ceil(starsRating));
-    stars += '☆'.repeat(emptyCount);
-
-    return stars;
-  }
-
   function goToPreviousEntry() {
     if (!previousEntry) return;
     router.push(`/diary/${previousEntry.id}`);
@@ -226,6 +209,7 @@ export default function DiaryEntryDetailScreen() {
               <Image
                 source={{ uri: backdropUrl }}
                 style={styles.backdrop}
+                alt="Backdrop image"
               />
             ) : (
               <ThemedView type="backgroundSelected" style={styles.backdrop}>

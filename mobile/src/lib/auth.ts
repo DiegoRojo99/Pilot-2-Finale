@@ -41,7 +41,7 @@ async function authFetch(path: string, body?: unknown) {
     
     // Create error with both message and status code for better error detection
     const error = new Error(message || 'Authentication request failed.');
-    (error as any).statusCode = response.status;
+    (error as { statusCode?: number }).statusCode = response.status;
     throw error;
   }
 
@@ -52,7 +52,7 @@ export async function getMobileSession() {
   try { return await authFetch('/api/auth/get-session') as Promise<AuthSessionResponse>; } 
   catch (error) {
     const statusCode = error instanceof Error
-      ? (error as any).statusCode
+      ? (error as { statusCode?: number }).statusCode
       : undefined;
 
     if (statusCode === 401 || statusCode === 403) await clearStoredAuthCookies();

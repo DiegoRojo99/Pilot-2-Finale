@@ -1,8 +1,9 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { Platform, useColorScheme } from 'react-native';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider as ExpoThemeProvider } from 'expo-router';
+import { useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/components/auth/auth-provider';
-import { Colors, Shadows, BorderRadius } from '@/constants/theme';
+import { ThemeProvider } from '@/components/theme/theme-provider';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -10,14 +11,15 @@ export default function TabLayout() {
   const colors = Colors[isDark ? 'dark' : 'light'];
 
   return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
-          }}
-        >
+    <ExpoThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: true,
+            }}
+          >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="discover/trending-all"
@@ -37,6 +39,19 @@ export default function TabLayout() {
             options={{
               headerShown: true,
               headerTitle: 'Top Rated',
+              headerTintColor: colors.text,
+              headerStyle: {
+                backgroundColor: colors.surfaceBackground,
+              },
+              headerShadowVisible: false,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="achievements"
+            options={{
+              headerShown: true,
+              headerTitle: 'Achievements',
               headerTintColor: colors.text,
               headerStyle: {
                 backgroundColor: colors.surfaceBackground,
@@ -66,7 +81,8 @@ export default function TabLayout() {
             }}
           />
         </Stack>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ExpoThemeProvider>
   );
 }

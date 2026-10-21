@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { getBackdropUrl } from '@/lib/tmdb-images';
 import { deleteEpisodeLog } from '@/lib/episodes';
 import { DiaryEntryBottomSheet } from '@/components/diary/diary-entry-bottom-sheet';
@@ -63,7 +62,8 @@ export function DiaryEntryList({ entry, onEntryUpdated }: DiaryEntryListProps) {
           try {
             await deleteEpisodeLog(entry.id);
             onEntryUpdated?.();
-          } catch (error) {
+          } 
+          catch {
             Alert.alert('Error', 'Failed to delete entry');
           }
         },
@@ -82,6 +82,7 @@ export function DiaryEntryList({ entry, onEntryUpdated }: DiaryEntryListProps) {
                 <Image
                   source={{ uri: still }}
                   style={styles.still}
+                  alt="Episode still"
                 />
               ) : (
                 <ThemedView type="backgroundSelected" style={styles.still}>
