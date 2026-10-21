@@ -5,6 +5,71 @@ export interface TrendDataPoint {
   count: number;
 }
 
+export interface YearDashboardStats {
+  year: number;
+  episodesThisYear: number;
+  daysWatched: number;
+  avgPerDay: number;
+  currentStreak: number;
+  longestStreak: number;
+}
+
+function toLocalDayKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function dayIndex(date: Date): number {
+  return Math.round(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+}
+
+export function computeYearDashboard(logs: EpisodeLog[], now: Date = new Date()): YearDashboardStats {
+  const year = now.getFullYear();
+  const daysSet = new Map<number, number>(); // day index -> episodes that day
+  let episodesThisYear = 0;
+
+  for (const log of logs) {
+    if (!log.watched_at) continue;
+    const date = new Date(log.watched_at);
+    if (Number.isNaN(date.getTime())) continue;
+    if (date.getFullYear() !== year) continue;
+    episodesThisYear++;
+    const idx = dayIndex(date);
+    daysSet.set(idx, (daysSet.get(idx) ?? 0) + 1);
+  }
+
+  const sortedDays = [...daysSet.keys()].sort((a, b) => a - b);
+
+  let longestStreak = 0;
+  let run = 0;
+  let prev: number | null = null;
+  for (const day of sortedDays) {
+    run = prev !== null && day === prev + 1 ? run + 1 : 1;
+    longestStreak = Math.max(longestStreak, run);
+    prev = day;
+  }
+
+  // The streak stays alive if the last watch was today or yesterday
+  const today = dayIndex(now);
+  let currentStreak = 0;
+  let cursor = daysSet.has(today) ? today : today - 1;
+  while (daysSet.has(cursor)) {
+    currentStreak++;
+    cursor--;
+  }
+
+  const daysElapsed = today - dayIndex(new Date(year, 0, 1)) + 1;
+  const avgPerDay = daysElapsed > 0 ? episodesThisYear / daysElapsed : 0;
+
+  return {
+    year,
+    episodesThisYear,
+    daysWatched: daysSet.size,
+    avgPerDay,
+    currentStreak,
+    longestStreak,
+  };
+}
+
 export function groupEpisodesByTrend(
   logs: EpisodeLog[],
   periodType: 'l7d' | 'l8w' | 'ly'

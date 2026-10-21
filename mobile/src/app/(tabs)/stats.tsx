@@ -16,6 +16,7 @@ import {
   PendingSection,
   FooterNoteSection,
   EpisodesTrendSection,
+  YearDashboardSection,
 } from '@/components/stats/sections';
 
 function AuthenticatedStats() {
@@ -69,6 +70,7 @@ function AuthenticatedStats() {
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.accent} />}
       contentContainerStyle={styles.content}
     >
+      <YearDashboardSection />
       <OverviewStatsSection stats={stats} />
       <EpisodesTrendSection />
       <TimeSpentSection stats={stats} period={period} setPeriod={setPeriod} formatMinutes={formatMinutes} />
@@ -111,10 +113,10 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   content: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.md,
     paddingHorizontal: Spacing.lg,
     gap: Spacing.xl,
   },

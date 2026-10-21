@@ -451,11 +451,11 @@ Tasks:
 
 **Dashboard Layout:**
 
-- [ ] Implement card-based stat layout.
-  - [ ] Large hero stat: "Episodes watched this year" with big number.
-  - [ ] Secondary stats below (days watched, avg/day, current streak).
-  - [ ] Cards have gradient backgrounds for visual interest.
-  - [ ] Tap cards for detailed breakdowns (modal or navigation).
+- [x] Implement card-based stat layout.
+  - [x] Large hero stat: "Episodes watched this year" with big number.
+  - [x] Secondary stats below (days watched, current streak).
+  - [x] Cards use themed border style matching app aesthetic.
+  - [x] Tap cards for detailed breakdowns (modals with dividers).
 
 **Graphs & Charts:**
 
