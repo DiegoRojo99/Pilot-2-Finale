@@ -459,10 +459,10 @@ Tasks:
 
 **Graphs & Charts:**
 
-- [ ] Add animated line graph (episodes over time).
-  - [ ] X-axis: weeks or months.
-  - [ ] Y-axis: episode count.
-  - [ ] Smooth bezier curve animation on load.
+- [x] Add animated line graph (episodes over time).
+  - [x] X-axis: weeks or months.
+  - [x] Y-axis: episode count.
+  - [x] Smooth bezier curve animation on load.
   - [ ] Tap points to see exact values.
   - [ ] Pinch to zoom and pan.
 - [ ] Add genre breakdown pie/donut chart.

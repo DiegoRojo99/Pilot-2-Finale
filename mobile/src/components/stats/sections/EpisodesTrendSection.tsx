@@ -83,7 +83,7 @@ export function EpisodesTrendSection() {
   };
 
   const screenWidth = Dimensions.get('window').width;
-  const chartWidth = screenWidth - Spacing.lg * 2;
+  const chartWidth = screenWidth - Spacing.sm * 2;
 
   return (
     <View style={styles.section}>
@@ -123,28 +123,30 @@ export function EpisodesTrendSection() {
         </View>
       ) : (
         <View style={[styles.chartContainer, { backgroundColor: theme.backgroundSelected }]}>
-          <LineChart
-            data={chartData}
-            width={chartWidth}
-            height={220}
-            chartConfig={{
-              backgroundColor: theme.backgroundSelected,
-              backgroundGradientFrom: theme.backgroundSelected,
-              backgroundGradientTo: theme.backgroundSelected,
-              decimalPlaces: 0,
-              color: () => theme.border,
-              labelColor: () => theme.text,
-              style: {
-                borderRadius: Spacing.two,
-              },
-              propsForDots: {
-                r: '5',
-                strokeWidth: '2',
-                stroke: theme.accent,
-              },
-            }}
-            bezier
-          />
+          <View style={{ marginLeft: -32, marginBottom: -10 }}>
+            <LineChart
+              data={chartData}
+              width={chartWidth}
+              height={220}
+              chartConfig={{
+                backgroundColor: theme.backgroundSelected,
+                backgroundGradientFrom: theme.backgroundSelected,
+                backgroundGradientTo: theme.backgroundSelected,
+                decimalPlaces: 0,
+                color: () => theme.border,
+                labelColor: () => theme.text,
+                style: {
+                  borderRadius: Spacing.two,
+                },
+                propsForDots: {
+                  r: '5',
+                  strokeWidth: '2',
+                  stroke: theme.accent,
+                },
+              }}
+              bezier
+            />
+          </View>
         </View>
       )}
     </View>
