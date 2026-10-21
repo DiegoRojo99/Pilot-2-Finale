@@ -377,6 +377,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   posterItem: {
+    width: 120,
     marginRight: Spacing.md,
   },
 });
