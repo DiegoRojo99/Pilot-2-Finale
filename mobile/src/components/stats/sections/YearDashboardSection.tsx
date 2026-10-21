@@ -7,6 +7,7 @@ import { BorderRadius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAllEpisodeLogs } from '@/lib/episodes';
 import { computeYearDashboard, type YearDashboardStats } from '@/lib/stats';
+import { YearDashboardSkeleton } from './YearDashboardSkeleton';
 
 function StatCell({
   label,
@@ -62,11 +63,7 @@ export function YearDashboardSection() {
   if (failed && !stats) return null;
 
   if (!stats) {
-    return (
-      <View style={[styles.section, { backgroundColor: theme.backgroundElement }]}>
-        <ActivityIndicator color={theme.accent} />
-      </View>
-    );
+    return <YearDashboardSkeleton />;
   }
 
   return (
