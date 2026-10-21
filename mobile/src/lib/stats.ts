@@ -12,6 +12,8 @@ export interface YearDashboardStats {
   avgPerDay: number;
   currentStreak: number;
   longestStreak: number;
+  bestDay: { date: Date; count: number } | null;
+  bestMonth: { month: number; year: number; count: number } | null;
 }
 
 function toLocalDayKey(date: Date): string {
@@ -25,6 +27,7 @@ function dayIndex(date: Date): number {
 export function computeYearDashboard(logs: EpisodeLog[], now: Date = new Date()): YearDashboardStats {
   const year = now.getFullYear();
   const daysSet = new Map<number, number>(); // day index -> episodes that day
+  const monthsMap = new Map<string, number>(); // "YYYY-MM" -> episode count
   let episodesThisYear = 0;
 
   for (const log of logs) {
@@ -35,7 +38,42 @@ export function computeYearDashboard(logs: EpisodeLog[], now: Date = new Date())
     episodesThisYear++;
     const idx = dayIndex(date);
     daysSet.set(idx, (daysSet.get(idx) ?? 0) + 1);
+
+    // Track by month
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    monthsMap.set(monthKey, (monthsMap.get(monthKey) ?? 0) + 1);
   }
+
+  // Find best day
+  let bestDayIdx: number | null = null;
+  let bestDayCount = 0;
+  for (const [idx, count] of daysSet) {
+    if (count > bestDayCount) {
+      bestDayCount = count;
+      bestDayIdx = idx;
+    }
+  }
+  const bestDay =
+    bestDayIdx !== null
+      ? { date: new Date(bestDayIdx * 86400000), count: bestDayCount }
+      : null;
+
+  // Find best month
+  let bestMonthKey: string | null = null;
+  let bestMonthCount = 0;
+  for (const [key, count] of monthsMap) {
+    if (count > bestMonthCount) {
+      bestMonthCount = count;
+      bestMonthKey = key;
+    }
+  }
+  const bestMonth =
+    bestMonthKey !== null
+      ? (() => {
+          const [y, m] = bestMonthKey.split('-');
+          return { month: parseInt(m, 10) - 1, year: parseInt(y, 10), count: bestMonthCount };
+        })()
+      : null;
 
   const sortedDays = [...daysSet.keys()].sort((a, b) => a - b);
 
@@ -67,6 +105,8 @@ export function computeYearDashboard(logs: EpisodeLog[], now: Date = new Date())
     avgPerDay,
     currentStreak,
     longestStreak,
+    bestDay,
+    bestMonth,
   };
 }
 

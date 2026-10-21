@@ -485,9 +485,10 @@ Tasks:
   - [ ] Current streak with fire emoji 🔥.
   - [ ] Longest streak this year.
   - [ ] Encourage streak continuation.
-- [ ] Add "Best Day" and "Best Month" cards.
-  - [ ] Most episodes watched in a single day.
-  - [ ] Month with highest episode count.
+- [x] Add "Best Day" and "Best Month" cards.
+  - [x] Most episodes watched in a single day.
+  - [x] Month with highest episode count.
+  - [x] Tap to see full date and episode count.
 
 **Comparisons & Achievements:**
 

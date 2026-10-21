@@ -40,7 +40,7 @@ export function YearDashboardSection() {
   const theme = useTheme();
   const [stats, setStats] = useState<YearDashboardStats | null>(null);
   const [failed, setFailed] = useState(false);
-  const [showDetail, setShowDetail] = useState<'streak' | 'hero' | null>(null);
+  const [showDetail, setShowDetail] = useState<'streak' | 'hero' | 'bestDay' | 'bestMonth' | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -105,13 +105,69 @@ export function YearDashboardSection() {
             ]}
           >
             <StatCell
-              label="DAY STREAK"
+              label="STREAK"
               value={stats.currentStreak}
-              detail={stats.currentStreak < stats.longestStreak ? `longest: ${stats.longestStreak}` : `ACTIVE`}
+              detail={`longest: ${stats.longestStreak}`}
             />
           </Pressable>
-          <StatCell label="DAYS LOGGED" value={stats.daysWatched} />
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed: isPressedValue }) => [
+              styles.wrapper,
+              { flex: 1 },
+              isPressedValue && styles.pressed,
+            ]}
+            onPress={() => {}}
+          >
+            <StatCell label="DAYS LOGGED" value={stats.daysWatched} />
+          </Pressable>
         </View>
+
+        {/* Best Day and Best Month row */}
+        {(stats.bestDay || stats.bestMonth) && (
+          <View style={styles.row}>
+            {stats.bestDay ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setShowDetail('bestDay')}
+                style={({ pressed: isPressedValue }) => [
+                  styles.wrapper,
+                  { flex: 1 },
+                  isPressedValue && styles.pressed,
+                ]}
+              >
+                <StatCell
+                  label="BEST DAY"
+                  value={stats.bestDay.count}
+                  detail={new Date(stats.bestDay.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                />
+              </Pressable>
+            ) : null}
+            {stats.bestMonth ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setShowDetail('bestMonth')}
+                style={({ pressed: isPressedValue }) => [
+                  styles.wrapper,
+                  { flex: 1 },
+                  isPressedValue && styles.pressed,
+                ]}
+              >
+                <StatCell
+                  label="BEST MONTH"
+                  value={stats.bestMonth.count}
+                  detail={new Date(stats.bestMonth.year, stats.bestMonth.month).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: '2-digit',
+                  })}
+                />
+              </Pressable>
+            ) : null}
+          </View>
+        )}
       </View>
 
       {/* Detail modal for streak */}
@@ -203,6 +259,108 @@ export function YearDashboardSection() {
                   {stats.daysWatched > 0 ? (stats.episodesThisYear / stats.daysWatched).toFixed(1) : '—'}
                 </ThemedText>
               </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Detail modal for best day */}
+      <Modal
+        visible={showDetail === 'bestDay' && stats.bestDay !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDetail(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setShowDetail(null)}>
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modal, { backgroundColor: theme.backgroundElement }]}
+          >
+            <View style={styles.modalHeader}>
+              <ThemedText type="small" style={{ fontWeight: '800', letterSpacing: 1 }}>
+                BEST DAY
+              </ThemedText>
+              <Pressable onPress={() => setShowDetail(null)} hitSlop={8}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </Pressable>
+            </View>
+            <View style={styles.modalContent}>
+              {stats.bestDay ? (
+                <>
+                  <View style={styles.summaryDetail}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Date
+                    </ThemedText>
+                    <ThemedText type="default" style={{ color: theme.accent, fontWeight: '700' }}>
+                      {new Date(stats.bestDay.date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  <View style={styles.summaryDetail}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Episodes watched
+                    </ThemedText>
+                    <ThemedText type="title" style={{ color: theme.accent, fontWeight: '800' }}>
+                      {stats.bestDay.count}
+                    </ThemedText>
+                  </View>
+                </>
+              ) : null}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Detail modal for best month */}
+      <Modal
+        visible={showDetail === 'bestMonth' && stats.bestMonth !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDetail(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setShowDetail(null)}>
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modal, { backgroundColor: theme.backgroundElement }]}
+          >
+            <View style={styles.modalHeader}>
+              <ThemedText type="small" style={{ fontWeight: '800', letterSpacing: 1 }}>
+                BEST MONTH
+              </ThemedText>
+              <Pressable onPress={() => setShowDetail(null)} hitSlop={8}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </Pressable>
+            </View>
+            <View style={styles.modalContent}>
+              {stats.bestMonth ? (
+                <>
+                  <View style={styles.summaryDetail}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Month
+                    </ThemedText>
+                    <ThemedText type="default" style={{ color: theme.accent, fontWeight: '700' }}>
+                      {new Date(stats.bestMonth.year, stats.bestMonth.month).toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  <View style={styles.summaryDetail}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Episodes watched
+                    </ThemedText>
+                    <ThemedText type="title" style={{ color: theme.accent, fontWeight: '800' }}>
+                      {stats.bestMonth.count}
+                    </ThemedText>
+                  </View>
+                </>
+              ) : null}
             </View>
           </Pressable>
         </Pressable>
