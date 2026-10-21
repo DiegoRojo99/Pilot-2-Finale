@@ -3,7 +3,7 @@ import type { EpisodeLog, EpisodeStatsPeriod, EpisodeStatsResponse, UpcomingEpis
 
 export interface GenreBreakdown {
   genre: string;
-  episodes: number;
+  shows: number;
   color: string;
 }
 

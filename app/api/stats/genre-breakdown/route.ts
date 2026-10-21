@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 interface GenreBreakdown {
   genre: string;
-  episodes: number;
+  shows: number;
   color: string;
 }
 
@@ -21,7 +21,33 @@ const GENRE_COLORS: Record<string, string> = {
   Action: "#ef4444",
   Documentary: "#34d399",
   Animation: "#f59e0b",
+  Adventure: "#34d399",
+  Mystery: "#8b5cf6",
+  Crime: "#dc2626",
+  War: "#64748b",
+  Western: "#b45309",
+  Historical: "#d97706",
+  Musical: "#ec4899",
+  Sport: "#06b6d4",
 };
+
+function generateColorFromGenre(genreName: string): string {
+  if (GENRE_COLORS[genreName]) return GENRE_COLORS[genreName];
+
+  // Generate a stable color based on genre name hash
+  let hash = 0;
+  for (let i = 0; i < genreName.length; i++) {
+    hash = ((hash << 5) - hash) + genreName.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+
+  // Convert hash to HSL color (more vibrant and varied)
+  const hue = Math.abs(hash) % 360;
+  const saturation = 65 + (Math.abs(hash) % 20);
+  const lightness = 45 + (Math.abs(hash) % 15);
+
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
 
 export async function GET(request: Request) {
   const rateLimited = defaultRateLimit(request);
@@ -33,19 +59,15 @@ export async function GET(request: Request) {
   const { userId } = authResult.context;
 
   try {
-    // Get all episode logs for this user to count episodes per genre
-    const episodeLogs = await prisma.watchEntry.findMany({
+    // Get all user shows with their genres
+    const userShows = await prisma.userShow.findMany({
       where: { userId },
       include: {
-        episode: {
+        show: {
           include: {
-            show: {
+            showGenres: {
               include: {
-                showGenres: {
-                  include: {
-                    genre: true,
-                  },
-                },
+                genre: true,
               },
             },
           },
@@ -53,30 +75,28 @@ export async function GET(request: Request) {
       },
     });
 
-    // Count episodes by genre
-    const genreEpisodeCounts: Record<string, number> = {};
+    // Count shows by genre (using Set to avoid duplicates)
+    const genreShowSets: Record<string, Set<number>> = {};
+    userShows.forEach((userShow) => {
+      const genres = userShow.show.showGenres;
 
-    episodeLogs.forEach((log) => {
-      const genres = log.episode.show.showGenres;
-      if (genres.length === 0) {
-        // Fallback to Drama if no genres
-        genreEpisodeCounts["Drama"] = (genreEpisodeCounts["Drama"] || 0) + 1;
-      } else {
-        genres.forEach((sg) => {
-          const genreName = sg.genre.name;
-          genreEpisodeCounts[genreName] = (genreEpisodeCounts[genreName] || 0) + 1;
-        });
-      }
+      // Do not add if no genre
+      if (genres.length === 0) return;
+      genres.forEach((sg) => {
+        const genreName = sg.genre.name;
+        if (!genreShowSets[genreName]) genreShowSets[genreName] = new Set();
+        genreShowSets[genreName].add(userShow.show.tmdbId);
+      });
     });
 
-    // Convert to array and sort by episode count
-    const breakdown: GenreBreakdown[] = Object.entries(genreEpisodeCounts)
-      .map(([genre, episodes]) => ({
+    // Convert to array and sort by show count
+    const breakdown: GenreBreakdown[] = Object.entries(genreShowSets)
+      .map(([genre, showSet]) => ({
         genre,
-        episodes,
-        color: GENRE_COLORS[genre] || "#6366f1",
+        shows: showSet.size,
+        color: generateColorFromGenre(genre),
       }))
-      .sort((a, b) => b.episodes - a.episodes);
+      .sort((a, b) => b.shows - a.shows);
 
     return NextResponse.json(breakdown);
   } catch (error) {

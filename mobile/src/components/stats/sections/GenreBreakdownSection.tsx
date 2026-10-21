@@ -5,25 +5,11 @@ import { PieChart } from 'react-native-chart-kit/v2';
 import { ThemedText } from '@/components/themed-text';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getGenreBreakdown } from '@/lib/episodes';
-
-const GENRE_COLORS: Record<string, string> = {
-  Comedy: '#fbbf24',
-  Drama: '#f87171',
-  'Sci-Fi': '#60a5fa',
-  Fantasy: '#c084fc',
-  Horror: '#991b1b',
-  Thriller: '#7c3aed',
-  Romance: '#ec4899',
-  Action: '#ef4444',
-  Documentary: '#34d399',
-  Animation: '#f59e0b',
-};
 
 interface GenreData {
   name: string;
-  episodes: number;
+  shows: number;
   color: string;
 }
 
@@ -44,7 +30,7 @@ export function GenreBreakdownSection() {
           // Map API response to component format
           const formattedData = data.map((item) => ({
             name: item.genre,
-            episodes: item.episodes,
+            shows: item.shows,
             color: item.color,
           }));
 
@@ -95,7 +81,7 @@ export function GenreBreakdownSection() {
   // Format data for v2 PieChart
   const pieData = genreData.map((d) => ({
     name: d.name,
-    value: d.episodes,
+    value: d.shows,
     color: d.color,
   }));
 
@@ -129,7 +115,7 @@ export function GenreBreakdownSection() {
                   {genre.name}
                 </ThemedText>
                 <ThemedText type="xs" themeColor="textSecondary" style={styles.legendCountSmall}>
-                  {genre.episodes}
+                  {genre.shows}
                 </ThemedText>
               </View>
             ))}
