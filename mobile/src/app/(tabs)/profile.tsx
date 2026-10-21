@@ -1,26 +1,21 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { ActivityIndicator, LayoutAnimation, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/button';
-import { createApiUrl } from '@/lib/api';
+import { Card } from '@/components/ui/card';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getAchievements, isUnlocked, type AchievementProgress } from '@/lib/achievements';
 import { getStats } from '@/lib/episodes';
 import type { EpisodeStatsResponse } from '@/types/episode';
-import { Card } from '@/components/ui/card';
-import { Screen } from '@/components/ui/screen';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { AuthScreen } from '@/components/auth/auth-screen';
-import { DeleteAccountCard } from '@/components/auth/delete-account-card';
 
 export default function ProfileScreen() {
   const auth = useAuth();
   const theme = useTheme();
-  const [showDeleteCard, setShowDeleteCard] = useState(false);
   const [stats, setStats] = useState<EpisodeStatsResponse | null>(null);
   const [achievements, setAchievements] = useState<AchievementProgress[] | null>(null);
   const isAuthenticated = auth.status === 'authenticated';
@@ -35,20 +30,21 @@ export default function ProfileScreen() {
 
   if (auth.status === 'loading') {
     return (
-      <Screen>
-        <Card style={styles.centerCard}>
-          <ActivityIndicator color={theme.accent} />
-          <ThemedText type="small" themeColor="textSecondary">
-            Checking your session...
-          </ThemedText>
-        </Card>
-      </Screen>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ActivityIndicator color={theme.accent} />
+      </SafeAreaView>
     );
   }
 
-  if (auth.status === 'unauthenticated') return <AuthScreen />;
+  if (auth.status === 'unauthenticated') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ThemedText>Sign in to view your profile.</ThemedText>
+      </SafeAreaView>
+    );
+  }
 
-  const displayName = auth.user?.name?.trim() || auth.user?.email?.split('@')[0] || 'Your profile';
+  const displayName = auth.user?.name?.trim() || auth.user?.email?.split('@')[0] || 'User';
   const initials = displayName
     .split(/\s+/)
     .slice(0, 2)
@@ -57,130 +53,107 @@ export default function ProfileScreen() {
   const unlocked = achievements?.filter(isUnlocked).length ?? 0;
 
   return (
-    <Screen>
-      <View style={styles.hero}>
-        <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-          <ThemedText type="subtitle" style={{ color: theme.accentText }}>
-            {initials || '?'}
-          </ThemedText>
-        </View>
-        <ThemedText type="subtitle">{displayName}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {auth.user?.email ?? auth.user?.id}
-        </ThemedText>
-      </View>
-
-      <Card>
-        <View style={styles.statsRow}>
-          <Stat label="Shows" value={stats?.totalShows} />
-          <Stat label="Episodes" value={stats?.totalEpisodes} />
-          <Stat label="Completed" value={stats?.watchedShows} />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/achievements')}
-          style={[styles.achievementsRow, { backgroundColor: theme.backgroundSelected }]}>
-          <ThemedText type="smallBold">🏆 Achievements</ThemedText>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.hero}>
+          <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
+            <ThemedText type="subtitle" style={{ color: theme.accentText }}>
+              {initials || '?'}
+            </ThemedText>
+          </View>
+          <ThemedText type="subtitle">{displayName}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {achievements ? `${unlocked}/${achievements.length} unlocked ›` : '›'}
+            {auth.user?.email ?? auth.user?.id}
           </ThemedText>
-        </Pressable>
-      </Card>
+        </View>
 
-      <Section title="Help">
-        {FAQ.map((item) => (
-          <FaqItem key={item.question} question={item.question} answer={item.answer} />
-        ))}
-      </Section>
+        <SettingSection title="ACCOUNT">
+          <SettingItem icon="👤" title="Personal Information" value={undefined} onPress={() => {}} />
+          <SettingItem icon="🔔" title="Achievements" value={`${unlocked}/${achievements?.length ?? 0}`} onPress={() => router.push('/achievements')} />
+        </SettingSection>
 
-      <Section title="Data & Privacy">
-        <Button label="Privacy Policy" variant="secondary" onPress={() => void Linking.openURL(createApiUrl('/privacy'))} />
-        {!showDeleteCard && (
-          <Button label="Request Account Deletion" variant="danger" onPress={() => setShowDeleteCard(true)} />
-        )}
-        {showDeleteCard && <DeleteAccountCard onClose={() => setShowDeleteCard(false)} />}
-      </Section>
+        <SettingSection title="PREFERENCES">
+          <SettingItem icon="🎨" title="Theme" value="System" onPress={() => {}} />
+          <SettingItem icon="🔒" title="Privacy & Data" value={undefined} onPress={() => {}} />
+        </SettingSection>
 
-      <Section title="About">
-        <ThemedText type="small" themeColor="textSecondary">
-          Pilot 2 Finale v{Constants.expoConfig?.version ?? '—'}
+        <SettingSection title="APP">
+          <SettingItem icon="⭐" title="Rate Pilot 2 Finale" value={undefined} onPress={() => {}} />
+          <SettingItem icon="👋" title="Sign Out" value={undefined} onPress={() => void auth.signOut()} danger />
+        </SettingSection>
+
+        <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>
+          Pilot 2 Finale • Version {Constants.expoConfig?.version ?? '—'}
         </ThemedText>
-      </Section>
-
-      <Button label="Sign out" variant="secondary" onPress={() => void auth.signOut()} />
-    </Screen>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function Stat({ label, value }: { label: string; value?: number }) {
-  return (
-    <View style={styles.stat}>
-      <ThemedText type="subtitle">{value ?? '–'}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-    </View>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function SettingSection({ title, children }: { title: string; children: ReactNode }) {
+  const theme = useTheme();
   return (
     <View style={styles.section}>
-      <ThemedText type="smallBold" themeColor="textSecondary">
-        {title.toUpperCase()}
+      <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
+        {title}
       </ThemedText>
-      {children}
+      <Card style={[styles.settingCard, { borderColor: theme.border }]}>
+        {children}
+      </Card>
     </View>
   );
 }
 
-function FaqItem({ question, answer }: { question: string; answer: string }) {
+function SettingItem({
+  icon,
+  title,
+  value,
+  onPress,
+  danger = false,
+}: {
+  icon: string;
+  title: string;
+  value?: string;
+  onPress: () => void;
+  danger?: boolean;
+}) {
   const theme = useTheme();
-  const [open, setOpen] = useState(false);
-
   return (
     <Pressable
+      onPress={onPress}
+      style={[styles.settingItem, { borderBottomColor: theme.border }]}
       accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
-      onPress={() => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setOpen((value) => !value);
-      }}
-      style={[styles.faq, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-      <ThemedText type="smallBold">
-        {open ? '▾' : '▸'} {question}
+      accessibilityLabel={`${title}${value ? `, ${value}` : ''}`}>
+      <ThemedText type="subtitle" style={{ fontSize: 20 }}>
+        {icon}
       </ThemedText>
-      {open && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {answer}
+      <ThemedText type="smallBold" style={{ flex: 1, color: danger ? theme.danger : theme.text }}>
+        {title}
+      </ThemedText>
+      {value && (
+        <ThemedText type="small" themeColor={danger ? undefined : 'textSecondary'} style={{ color: danger ? theme.danger : undefined }}>
+          {value}
         </ThemedText>
       )}
+      <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: Spacing.sm }}>
+        ›
+      </ThemedText>
     </Pressable>
   );
 }
 
-const FAQ = [
-  {
-    question: 'How do I track an episode?',
-    answer: 'Open a show, pick a season and log an episode as watched. It will appear in your diary and stats.',
-  },
-  {
-    question: 'How are achievements unlocked?',
-    answer: 'Achievements progress automatically as you log episodes, complete shows and rate episodes.',
-  },
-  {
-    question: 'Where does show data come from?',
-    answer: 'Show and episode information is provided by TMDB.',
-  },
-];
-
 const styles = StyleSheet.create({
-  centerCard: {
-    alignItems: 'center',
+  container: {
+    flex: 1,
+  },
+  content: {
+    padding: Spacing.four,
+    gap: Spacing.four,
   },
   hero: {
     alignItems: 'center',
     gap: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   avatar: {
     width: 80,
@@ -189,27 +162,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  stat: {
-    alignItems: 'center',
-  },
-  achievementsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderRadius: Spacing.md,
-  },
   section: {
     gap: Spacing.sm,
   },
-  faq: {
-    gap: Spacing.sm,
-    padding: Spacing.lg,
-    borderRadius: Spacing.lg,
+  sectionTitle: {
+    paddingHorizontal: Spacing.sm,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  settingCard: {
     borderWidth: 1,
+    borderRadius: Spacing.lg,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+    gap: Spacing.three,
+    borderBottomWidth: 1,
+  },
+  footer: {
+    textAlign: 'center',
+    marginTop: Spacing.four,
   },
 });
