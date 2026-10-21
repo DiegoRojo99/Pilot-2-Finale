@@ -565,6 +565,7 @@ Tasks:
 
 **Privacy & Data:**
 
+- [x] Add theme changing option.
 - [x] Add privacy policy link.
   - [x] Link to the web policy page
 - [x] Add account deletion request.

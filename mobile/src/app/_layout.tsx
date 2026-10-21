@@ -1,7 +1,8 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider as ExpoThemeProvider } from 'expo-router';
 import { Platform, useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/components/auth/auth-provider';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 import { Colors, Shadows, BorderRadius } from '@/constants/theme';
 
 export default function TabLayout() {
@@ -10,14 +11,15 @@ export default function TabLayout() {
   const colors = Colors[isDark ? 'dark' : 'light'];
 
   return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
-          }}
-        >
+    <ExpoThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: true,
+            }}
+          >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="discover/trending-all"
@@ -79,7 +81,8 @@ export default function TabLayout() {
             }}
           />
         </Stack>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ExpoThemeProvider>
   );
 }

@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth/auth-provider';
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { PrivacyDataModal } from '@/components/privacy/privacy-data-modal';
+import { ThemeModal } from '@/components/theme/theme-modal';
+import { useThemePreference } from '@/components/theme/theme-provider';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
@@ -19,9 +21,11 @@ import type { EpisodeStatsResponse } from '@/types/episode';
 export default function ProfileScreen() {
   const auth = useAuth();
   const theme = useTheme();
+  const { preference: themePreference } = useThemePreference();
   const [stats, setStats] = useState<EpisodeStatsResponse | null>(null);
   const [achievements, setAchievements] = useState<AchievementProgress[] | null>(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const isAuthenticated = auth.status === 'authenticated';
 
   useFocusEffect(
@@ -71,7 +75,7 @@ export default function ProfileScreen() {
         </SettingSection>
 
         <SettingSection title="PREFERENCES">
-          <SettingItem icon="sunny" title="Theme" value="System" onPress={() => {}} />
+          <SettingItem icon="sunny" title="Theme" value={themePreference.charAt(0).toUpperCase() + themePreference.slice(1)} onPress={() => setShowThemeModal(true)} />
           <SettingItem icon="shield" title="Privacy & Data" value={undefined} onPress={() => setShowPrivacyModal(true)} />
         </SettingSection>
 
@@ -86,6 +90,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <PrivacyDataModal visible={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
+      <ThemeModal visible={showThemeModal} onClose={() => setShowThemeModal(false)} />
     </SafeAreaView>
   );
 }
