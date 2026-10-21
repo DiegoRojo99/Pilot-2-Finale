@@ -5,10 +5,22 @@
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemePreference } from '@/components/theme/theme-provider';
 
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
+  const systemScheme = useColorScheme();
+  const { preference } = useThemePreference();
 
-  return Colors[theme];
+  let scheme: 'light' | 'dark';
+
+  if (preference === 'light') {
+    scheme = 'light';
+  } else if (preference === 'dark') {
+    scheme = 'dark';
+  } else {
+    // system
+    scheme = systemScheme === 'dark' ? 'dark' : 'light';
+  }
+
+  return Colors[scheme];
 }
