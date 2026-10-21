@@ -508,7 +508,7 @@ Acceptance Checks:
 
 ## Phase 6: Profile Tab — Settings & Personalization
 
-Status: needs refinement
+Status: ✅ MOSTLY COMPLETE (85%)
 
 Purpose: Make the profile experience personal, powerful, and native-feeling.
 
@@ -517,14 +517,14 @@ Tasks:
 **Profile Header:**
 
 - [ ] Design profile hero section.
-  - [ ] User avatar (if available) or initials badge.
-  - [ ] Display name and email.
+  - [x] User avatar (if available) or initials badge.
+  - [x] Display name and email.
   - [ ] "Member since" date.
   - [ ] Edit profile button.
-- [ ] Add quick stats summary.
-  - [ ] Total shows tracked, total episodes watched, total runtime.
-  - [ ] "Achievements unlocked" badge with count.
-  - [ ] Tap to navigate to achievements detail.
+- [x] Add quick stats summary.
+  - [x] Total shows tracked, total episodes watched, total runtime.
+  - [x] "Achievements unlocked" badge with count.
+  - [x] Tap to navigate to achievements detail.
 
 **Settings & Preferences:**
 
@@ -539,9 +539,9 @@ Tasks:
   - [ ] Achievement unlocks. *Future enhancement*
   - [ ] Request notification permission on first toggle. *Future enhancement*
 - [ ] Add appearance settings.
-  - [ ] Dark mode toggle (or system-based auto).
-  - [ ] Accent color picker (if app supports themes).
-  - [ ] Dynamic type size preference (iOS).
+  - [x] Dark mode toggle (or system-based auto).
+  - [ ] Accent color picker (if app supports themes). *Future enhancement*
+  - [ ] Dynamic type size preference (iOS). *Future enhancement*
 
 **Achievements Display:**
 
