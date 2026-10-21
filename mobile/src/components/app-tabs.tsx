@@ -1,7 +1,5 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors, BorderRadius, TouchTarget, Shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const tabs = [
   { name: 'index', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
@@ -12,8 +10,7 @@ const tabs = [
 ] as const;
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = useTheme();
 
   return (
     <NativeTabs
