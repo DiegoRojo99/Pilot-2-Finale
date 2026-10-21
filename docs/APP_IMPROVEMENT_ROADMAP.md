@@ -528,16 +528,16 @@ Tasks:
 
 **Settings & Preferences:**
 
-- [ ] Organize settings into clear sections.
-  - [ ] **Tracking Preferences**: Default status on add, notification settings.
-  - [ ] **Display Settings**: Theme (light/dark/auto), language.
-  - [ ] **Data & Privacy**: Export data, request deletion account settings, privacy policy.
-  - [ ] **About**: App version, terms, support contact.
-- [ ] Implement toggles for notifications.
-  - [ ] New episode notifications.
-  - [ ] Streaming service alerts (if integrated in future).
-  - [ ] Achievement unlocks.
-  - [ ] Request notification permission on first toggle.
+- [x] Organize settings into clear sections.
+  - [x] **Account**: Personal information and achievements.
+  - [x] **Display Settings**: Theme (light/dark/auto), language.
+  - [x] **Data & Privacy**: Export data, request deletion account settings, privacy policy.
+  - [x] **About**: App version, terms, support contact.
+- [ ] Implement toggles for notifications. *Future enhancement*
+  - [ ] New episode notifications. *Future enhancement*
+  - [ ] Streaming service alerts (if integrated in future). *Future enhancement*
+  - [ ] Achievement unlocks. *Future enhancement*
+  - [ ] Request notification permission on first toggle. *Future enhancement*
 - [ ] Add appearance settings.
   - [ ] Dark mode toggle (or system-based auto).
   - [ ] Accent color picker (if app supports themes).
@@ -545,13 +545,13 @@ Tasks:
 
 **Achievements Display:**
 
-- [ ] Design achievement grid.
-  - [ ] Unlock icons with titles.
-  - [ ] Locked achievements show progress (e.g., "5/10 shows watched").
-  - [ ] Tap to see achievement description and unlock date.
+- [x] Design achievement grid.
+  - [x] Unlock icons with titles.
+  - [x] Locked achievements show progress (e.g., "5/10 shows watched").
+  - [x] Tap to see achievement description and unlock date.
   - [ ] Share individual achievements.
-- [ ] Add achievement leaderboard (optional, if users connected).
-  - [ ] Upcoming: Compare stats with other users.
+- [ ] Add achievement leaderboard (optional, if users connected). *Future enhancement*
+  - [ ] Upcoming: Compare stats with other users. *Future enhancement*
 
 **Account Management:**
 

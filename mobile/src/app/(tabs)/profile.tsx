@@ -1,29 +1,27 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Constants from 'expo-constants';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth/auth-provider';
+import { AuthScreen } from '@/components/auth/auth-screen';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAchievements, isUnlocked, type AchievementProgress } from '@/lib/achievements';
-import { getStats } from '@/lib/episodes';
-import type { EpisodeStatsResponse } from '@/types/episode';
 
 export default function ProfileScreen() {
   const auth = useAuth();
   const theme = useTheme();
-  const [stats, setStats] = useState<EpisodeStatsResponse | null>(null);
   const [achievements, setAchievements] = useState<AchievementProgress[] | null>(null);
   const isAuthenticated = auth.status === 'authenticated';
 
   useFocusEffect(
     useCallback(() => {
       if (!isAuthenticated) return;
-      getStats('l30d').then(setStats).catch(() => {});
       getAchievements().then(setAchievements).catch(() => {});
     }, [isAuthenticated]),
   );
@@ -36,13 +34,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (auth.status === 'unauthenticated') {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <ThemedText>Sign in to view your profile.</ThemedText>
-      </SafeAreaView>
-    );
-  }
+  if (auth.status === 'unauthenticated') return <AuthScreen />;
 
   const displayName = auth.user?.name?.trim() || auth.user?.email?.split('@')[0] || 'User';
   const initials = displayName
@@ -68,18 +60,18 @@ export default function ProfileScreen() {
         </View>
 
         <SettingSection title="ACCOUNT">
-          <SettingItem icon="👤" title="Personal Information" value={undefined} onPress={() => {}} />
-          <SettingItem icon="🔔" title="Achievements" value={`${unlocked}/${achievements?.length ?? 0}`} onPress={() => router.push('/achievements')} />
+          <SettingItem icon="person" title="Personal Information" value={undefined} onPress={() => {}} />
+          <SettingItem icon="trophy" title="Achievements" value={`${unlocked}/${achievements?.length ?? 0}`} onPress={() => router.push('/achievements')} />
         </SettingSection>
 
         <SettingSection title="PREFERENCES">
-          <SettingItem icon="🎨" title="Theme" value="System" onPress={() => {}} />
-          <SettingItem icon="🔒" title="Privacy & Data" value={undefined} onPress={() => {}} />
+          <SettingItem icon="sunny" title="Theme" value="System" onPress={() => {}} />
+          <SettingItem icon="shield" title="Privacy & Data" value={undefined} onPress={() => {}} />
         </SettingSection>
 
         <SettingSection title="APP">
-          <SettingItem icon="⭐" title="Rate Pilot 2 Finale" value={undefined} onPress={() => {}} />
-          <SettingItem icon="👋" title="Sign Out" value={undefined} onPress={() => void auth.signOut()} danger />
+          <SettingItem icon="star" title="Rate Pilot 2 Finale" value={undefined} onPress={() => {}} />
+          <SettingItem icon="log-out" title="Sign Out" value={undefined} onPress={() => void auth.signOut()} danger />
         </SettingSection>
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>
@@ -90,15 +82,19 @@ export default function ProfileScreen() {
   );
 }
 
-function SettingSection({ title, children }: { title: string; children: ReactNode }) {
+function SettingSection({ title, children }: { title: string; children: ReactNode[] }) {
   const theme = useTheme();
   return (
     <View style={styles.section}>
       <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
         {title}
       </ThemedText>
-      <Card style={[styles.settingCard, { borderColor: theme.border }]}>
-        {children}
+      <Card style={styles.settingCard}>
+        {children.map((child, index) => (
+          <View key={index} style={index < children.length - 1 ? { borderBottomWidth: 1, borderBottomColor: theme.border } : {}}>
+            {child}
+          </View>
+        ))}
       </Card>
     </View>
   );
@@ -121,23 +117,28 @@ function SettingItem({
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.settingItem, { borderBottomColor: theme.border }]}
+      style={styles.settingItem}
       accessibilityRole="button"
       accessibilityLabel={`${title}${value ? `, ${value}` : ''}`}>
-      <ThemedText type="subtitle" style={{ fontSize: 20 }}>
-        {icon}
-      </ThemedText>
+      <Ionicons
+        name={icon as any}
+        size={24}
+        color={danger ? theme.danger : theme.accent}
+      />
       <ThemedText type="smallBold" style={{ flex: 1, color: danger ? theme.danger : theme.text }}>
         {title}
       </ThemedText>
       {value && (
-        <ThemedText type="small" themeColor={danger ? undefined : 'textSecondary'} style={{ color: danger ? theme.danger : undefined }}>
+        <ThemedText type="small" themeColor="textSecondary">
           {value}
         </ThemedText>
       )}
-      <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: Spacing.sm }}>
-        ›
-      </ThemedText>
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={theme.textSecondary}
+        style={{ marginLeft: Spacing.sm }}
+      />
     </Pressable>
   );
 }
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   avatar: {
     width: 80,
@@ -172,20 +173,20 @@ const styles = StyleSheet.create({
   },
   settingCard: {
     borderWidth: 1,
-    borderRadius: Spacing.lg,
+    borderRadius: Spacing.md,
     padding: 0,
     overflow: 'hidden',
+    gap: 0,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     gap: Spacing.three,
-    borderBottomWidth: 1,
   },
   footer: {
     textAlign: 'center',
-    marginTop: Spacing.four,
+    marginTop: Spacing.two,
   },
 });
