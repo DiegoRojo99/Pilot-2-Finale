@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { PieChart } from 'react-native-chart-kit/v2';
 import { ThemedText } from '@/components/themed-text';
@@ -17,6 +17,7 @@ export function GenreBreakdownSection() {
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [genreData, setGenreData] = useState<GenreData[] | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -103,26 +104,42 @@ export function GenreBreakdownSection() {
               height={200}
               legend={false}
               theme={{ background: 'transparent' }}
+              selectedIndex={selectedIndex}
+              interaction={{
+                mode: 'tap',
+                onSelect: (event) => setSelectedIndex(event.index),
+              }}
             />
           </View>
 
           {/* Legend */}
           <View style={styles.legendColumn}>
             {genreData.map((genre) => (
-              <View key={genre.name} style={styles.legendItemCompact}>
-                <View style={[styles.legendColorSmall, { backgroundColor: genre.color }]} />
-                <ThemedText type="xs" style={styles.legendGenreName} numberOfLines={1}>
-                  {genre.name}
-                </ThemedText>
-                <ThemedText type="xs" themeColor="textSecondary" style={styles.legendCountSmall}>
-                  {genre.shows}
-                </ThemedText>
-              </View>
+              <GenreLegendItem
+                key={genre.name}
+                genre={genre}
+                isSelected={selectedIndex === genreData.indexOf(genre)}
+                selectGenre={() => setSelectedIndex(genreData.indexOf(genre))}
+              />
             ))}
           </View>
         </View>
       </View>
     </View>
+  );
+}
+
+function GenreLegendItem({ genre, isSelected, selectGenre }: { genre: GenreData, isSelected: boolean, selectGenre: () => void }) {
+  return (
+    <TouchableOpacity onPress={selectGenre} key={genre.name} style={[styles.legendItemCompact, isSelected && styles.legendItemSelected]}>
+      <View style={[styles.legendColorSmall, { backgroundColor: genre.color }]} />
+      <ThemedText type="xs" style={styles.legendGenreName} numberOfLines={1}>
+        {genre.name}
+      </ThemedText>
+      <ThemedText type="xs" themeColor="textSecondary" style={[styles.legendCountSmall, isSelected && { fontWeight: '600' }]}>
+        {genre.shows}
+      </ThemedText>
+    </TouchableOpacity>
   );
 }
 
@@ -174,6 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
   },
   legendColorSmall: {
     width: 8,
@@ -190,5 +208,8 @@ const styles = StyleSheet.create({
     minWidth: 20,
     textAlign: 'right',
     flexShrink: 0,
+  },
+  legendItemSelected: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
 });
