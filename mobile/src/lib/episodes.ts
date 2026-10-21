@@ -1,12 +1,22 @@
 import { apiRequest } from '@/lib/api';
 import type { EpisodeLog, EpisodeStatsPeriod, EpisodeStatsResponse, UpcomingEpisodesResponse } from '@/types/episode';
 
+export interface GenreBreakdown {
+  genre: string;
+  episodes: number;
+  color: string;
+}
+
 export function getShowEpisodeLogs(tmdbShowId: number) {
   return apiRequest<EpisodeLog[]>(`/api/episodes/show/${tmdbShowId}`);
 }
 
 export function getStats(period: EpisodeStatsPeriod) {
   return apiRequest<EpisodeStatsResponse>(`/api/episodes/stats?period=${period}`);
+}
+
+export function getGenreBreakdown() {
+  return apiRequest<GenreBreakdown[]>(`/api/stats/genre-breakdown`);
 }
 
 export function getUpcomingEpisodes(status: string = 'watching') {

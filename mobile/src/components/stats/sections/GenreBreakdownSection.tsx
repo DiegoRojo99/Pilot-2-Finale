@@ -6,61 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getMyShows } from '@/lib/shows';
-import { getAllEpisodeLogs } from '@/lib/episodes';
-
-interface GenreBreakdown {
-  [key: string]: number;
-}
-
-function mockGenreForShow(name: string): string[] {
-  // Simple mock based on show name patterns
-  const name_lower = name.toLowerCase();
-  const genres: string[] = [];
-
-  if (
-    name_lower.includes('comedy') ||
-    name_lower.includes('funny') ||
-    name_lower.includes('laugh')
-  )
-    genres.push('Comedy');
-  if (
-    name_lower.includes('drama') ||
-    name_lower.includes('serious') ||
-    name_lower.includes('crime')
-  )
-    genres.push('Drama');
-  if (
-    name_lower.includes('sci-fi') ||
-    name_lower.includes('scifi') ||
-    name_lower.includes('future')
-  )
-    genres.push('Sci-Fi');
-  if (
-    name_lower.includes('fantasy') ||
-    name_lower.includes('magic') ||
-    name_lower.includes('quest')
-  )
-    genres.push('Fantasy');
-  if (
-    name_lower.includes('horror') ||
-    name_lower.includes('scary') ||
-    name_lower.includes('dark')
-  )
-    genres.push('Horror');
-  if (
-    name_lower.includes('thriller') ||
-    name_lower.includes('suspense') ||
-    name_lower.includes('mystery')
-  )
-    genres.push('Thriller');
-  if (name_lower.includes('romance') || name_lower.includes('love'))
-    genres.push('Romance');
-  if (name_lower.includes('action') || name_lower.includes('adventure'))
-    genres.push('Action');
-
-  return genres.length > 0 ? genres : ['Drama'];
-}
+import { getGenreBreakdown } from '@/lib/episodes';
 
 const GENRE_COLORS: Record<string, string> = {
   Comedy: '#fbbf24',
@@ -75,48 +21,35 @@ const GENRE_COLORS: Record<string, string> = {
   Animation: '#f59e0b',
 };
 
+interface GenreData {
+  name: string;
+  episodes: number;
+  color: string;
+}
+
 export function GenreBreakdownSection() {
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
-  const [genreData, setGenreData] = useState<{ name: string; episodes: number; color: string }[] | null>(null);
+  const [genreData, setGenreData] = useState<GenreData[] | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       setLoading(true);
 
-      Promise.all([getMyShows(), getAllEpisodeLogs(10000)])
-        .then(([shows, logs]) => {
+      getGenreBreakdown()
+        .then((data) => {
           if (!active) return;
 
-          // Build show ID to genre map
-          const showGenreMap = new Map<number, string[]>();
-          shows.forEach((show) => {
-            showGenreMap.set(show.tmdb_id, mockGenreForShow(show.name));
-          });
+          // Map API response to component format
+          const formattedData = data.map((item) => ({
+            name: item.genre,
+            episodes: item.episodes,
+            color: item.color,
+          }));
 
-          // Count episodes per genre
-          const genreBreakdown: GenreBreakdown = {};
-          logs.forEach((log) => {
-            const genres = showGenreMap.get(log.tmdb_show_id) || ['Drama'];
-            genres.forEach((genre) => {
-              genreBreakdown[genre] = (genreBreakdown[genre] || 0) + 1;
-            });
-          });
-
-          // Convert to array and sort by episode count
-          const data = Object.entries(genreBreakdown)
-            .map(([name, episodes]) => ({
-              name,
-              episodes,
-              color: GENRE_COLORS[name] || '#6366f1',
-            }))
-            .sort((a, b) => b.episodes - a.episodes);
-
-          if (active) {
-            setGenreData(data);
-            setLoading(false);
-          }
+          setGenreData(formattedData);
+          setLoading(false);
         })
         .catch(() => {
           if (active) {
