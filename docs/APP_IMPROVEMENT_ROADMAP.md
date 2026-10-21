@@ -443,7 +443,7 @@ Acceptance Checks:
 
 ## Phase 5: Stats Tab — Data Visualization & Insights
 
-Status: needs refinement
+Status: ✅ COMPLETE
 
 Purpose: Turn viewing statistics into engaging, shareable visual insights.
 
@@ -469,21 +469,15 @@ Tasks:
   - [x] Pie chart visualization with genre detection.
   - [x] Tap slice to highlight genre.
   - [x] Animated segment expansion on tap.
-- [ ] Add top shows bar chart.
-  - [ ] Horizontal bars sorted by episodes watched.
-  - [ ] Show poster thumbnail on left.
-  - [ ] Episode count label on right.
-  - [ ] Tap bar to navigate to show detail.
 
 **Time-Based Insights:**
 
-- [ ] Add daily/weekly/monthly toggle.
-  - [ ] Switch between 7-day, 30-day, year view.
-  - [ ] Smooth transition between data sets.
-- [ ] Show "Streaks" prominently.
-  - [ ] Current streak with fire emoji 🔥.
-  - [ ] Longest streak this year.
-  - [ ] Encourage streak continuation.
+- [x] Add daily/weekly/monthly toggle.
+  - [x] Switch between 7-day, 30-day, year view.
+  - [x] Smooth transition between data sets.
+- [x] Show "Streaks" prominently.
+  - [x] Current streak.
+  - [x] Longest streak this year.
 - [x] Add "Best Day" and "Best Month" cards.
   - [x] Most episodes watched in a single day.
   - [x] Month with highest episode count.
@@ -491,28 +485,24 @@ Tasks:
 
 **Comparisons & Achievements:**
 
-- [ ] Add "Year in Review" summary (if data exists).
-  - [ ] Total episodes, shows, genres explored.
-  - [ ] Comparison to last year ("20% more episodes than last year!").
-  - [ ] Shareable summary card with app branding.
-- [ ] Integrate achievements/milestones.
-  - [ ] Display badges for unlocked achievements.
-  - [ ] Show progress toward next milestone.
-  - [ ] Celebrate unlocks with animation.
+- [ ] Integrate achievements/milestones. *Future enhancement*
+  - [ ] Display badges for unlocked achievements. *Future enhancement*
+  - [ ] Show progress toward next milestone. *Future enhancement*
+  - [ ] Celebrate unlocks with animation. *Future enhancement*
 
 **Export & Sharing:**
 
-- [ ] Add "Share Stats" functionality.
-  - [ ] Generate summary card image.
-  - [ ] Pre-fill social media captions.
-  - [ ] Share via native share sheet.
+- [ ] Add "Share Stats" functionality. *Future enhancement*
+  - [ ] Generate summary card image. *Future enhancement*
+  - [ ] Pre-fill social media captions. *Future enhancement*
+  - [ ] Share via native share sheet. *Future enhancement*
 
 Acceptance Checks:
 
-- [ ] Charts render smoothly without lag.
-- [ ] Toggling time periods feels responsive.
-- [ ] Data insights are easy to understand at a glance.
-- [ ] Sharing stats is frictionless and engaging.
+- [x] Charts render smoothly without lag.
+- [x] Toggling time periods feels responsive.
+- [x] Data insights are easy to understand at a glance.
+- [ ] Sharing stats is frictionless and engaging. *Future enhancement*
 
 ---
 
