@@ -562,10 +562,14 @@ Tasks:
   - [ ] "Download my data" button (JSON export).
   - [ ] Shows all watched episodes, ratings, notes.
   - [ ] Pre-filled email to send export to.
-- [ ] Add account deletion.
-  - [ ] Clear warning message and confirmation flow.
-  - [ ] "Delete Account" button with modal confirmation.
-  - [ ] Opt-in to explain why leaving (analytics).
+
+**Privacy & Data:**
+
+- [x] Add privacy policy link.
+  - [x] Link to the web policy page
+- [x] Add account deletion request.
+  - [x] Clear warning message and confirmation flow.
+  - [x] "Delete Account" button with modal confirmation.
 
 **Help & Support:**
 

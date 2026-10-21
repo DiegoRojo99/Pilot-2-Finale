@@ -7,21 +7,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { AuthScreen } from '@/components/auth/auth-screen';
+import { PrivacyDataModal } from '@/components/privacy/privacy-data-modal';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAchievements, isUnlocked, type AchievementProgress } from '@/lib/achievements';
+import { getStats } from '@/lib/episodes';
+import type { EpisodeStatsResponse } from '@/types/episode';
 
 export default function ProfileScreen() {
   const auth = useAuth();
   const theme = useTheme();
+  const [stats, setStats] = useState<EpisodeStatsResponse | null>(null);
   const [achievements, setAchievements] = useState<AchievementProgress[] | null>(null);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const isAuthenticated = auth.status === 'authenticated';
 
   useFocusEffect(
     useCallback(() => {
       if (!isAuthenticated) return;
+      getStats('l30d').then(setStats).catch(() => {});
       getAchievements().then(setAchievements).catch(() => {});
     }, [isAuthenticated]),
   );
@@ -66,7 +72,7 @@ export default function ProfileScreen() {
 
         <SettingSection title="PREFERENCES">
           <SettingItem icon="sunny" title="Theme" value="System" onPress={() => {}} />
-          <SettingItem icon="shield" title="Privacy & Data" value={undefined} onPress={() => {}} />
+          <SettingItem icon="shield" title="Privacy & Data" value={undefined} onPress={() => setShowPrivacyModal(true)} />
         </SettingSection>
 
         <SettingSection title="APP">
@@ -78,6 +84,8 @@ export default function ProfileScreen() {
           Pilot 2 Finale • Version {Constants.expoConfig?.version ?? '—'}
         </ThemedText>
       </ScrollView>
+
+      <PrivacyDataModal visible={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
     </SafeAreaView>
   );
 }
