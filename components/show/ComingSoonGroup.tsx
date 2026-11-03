@@ -1,4 +1,4 @@
-import styles from "./WatchingPage.module.css";
+import styles from "../pages/WatchingPage.module.css";
 import { UpcomingEpisode } from "@/types";
 
 type UpcomingGroup = {
