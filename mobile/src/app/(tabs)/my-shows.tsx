@@ -218,11 +218,11 @@ function AuthenticatedMyShows({ selectedStatus, selectedTab }: { selectedStatus:
                         {posterUrl ? (
                           <Image
                             source={{ uri: posterUrl }}
-                            style={styles.episodePoster}
+                            style={styles.comingSoonEpisodePoster}
                             alt="Episode still"
                           />
                         ) : (
-                          <View style={[styles.episodePoster, { backgroundColor: theme.backgroundElement }]} />
+                          <View style={[styles.comingSoonEpisodePoster, { backgroundColor: theme.backgroundElement }]} />
                         )}
                         <View style={styles.episodeInfo}>
                           <ThemedText type="small" style={{ fontWeight: '600' }} numberOfLines={1}>
@@ -414,6 +414,11 @@ const styles = StyleSheet.create({
   episodePoster: {
     width: 56,
     height: 85,
+    marginRight: Spacing.two,
+  },
+  comingSoonEpisodePoster: {
+    width: 60,
+    height: 91,
     marginRight: Spacing.two,
   },
   episodeInfo: {
