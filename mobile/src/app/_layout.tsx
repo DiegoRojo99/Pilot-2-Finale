@@ -22,6 +22,26 @@ export default function TabLayout() {
           >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
+            name="stats"
+            options={{
+              headerShown: true,
+              headerTitle: 'Stats',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.surfaceBackground },
+              headerShadowVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="diary/index"
+            options={{
+              headerShown: true,
+              headerTitle: 'Diary',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.surfaceBackground },
+              headerShadowVisible: false,
+            }}
+          />
+          <Stack.Screen
             name="discover/trending-all"
             options={{
               headerShown: true,

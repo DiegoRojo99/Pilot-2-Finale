@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet } from 'react-native';
+import { Alert, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { SymbolView } from 'expo-symbols';
@@ -19,8 +19,7 @@ type UserShowCardProps = {
 };
 
 function getNextEpisodeSummary(show: UserShow) {
-  const nextEpisode = show.next_episode;
-  const isCompleted = show.status === 'watched' && !nextEpisode;
+  const nextEpisode = show.next_episode?.has_reliable_next ? show.next_episode : null;
   
   const nextEpisodeLabel = nextEpisode
     ? `S${String(nextEpisode.season_number).padStart(2, '0')} E${String(nextEpisode.episode_number).padStart(2, '0')}`
@@ -37,27 +36,12 @@ function getNextEpisodeSummary(show: UserShow) {
     };
   }
   
-  // Check if all episodes have been watched
-  const allEpisodesWatched = isCompleted || (show.remaining_episodes_count ?? 0) === 0;
-  
-  // All episodes watched
-  if (allEpisodesWatched) {
-    return {
-      primary: 'Completed',
-      secondary: 'All episodes watched',
-      extra: null,
-      isLoading: false,
-    };
-  }
-  // Show is in progress but we don't have next episode data yet (loading state)
-  else {
-    return {
-      primary: 'Start watching',
-      secondary: 'S01 E01',
-      extra: null,
-      isLoading: true,
-    };
-  }
+  return {
+    primary: 'No episode ready',
+    secondary: 'Caught up or episode data unavailable',
+    extra: null,
+    isLoading: true,
+  };
 }
 
 export function UserShowCard({ show, onEpisodeLogged }: UserShowCardProps) {
@@ -69,7 +53,7 @@ export function UserShowCard({ show, onEpisodeLogged }: UserShowCardProps) {
   const [isLoggingEpisode, setIsLoggingEpisode] = useState(false);
   const goToShow = () => { router.push(`/show/${show.tmdb_id}`); };
 
-  const nextEpisode = show.next_episode ?? null;
+  const nextEpisode = show.next_episode?.has_reliable_next ? show.next_episode : null;
   const nextEpisodeLabel = nextEpisode
     ? `S${String(nextEpisode.season_number).padStart(2, '0')} E${String(nextEpisode.episode_number).padStart(2, '0')}`
     : null;
@@ -98,6 +82,7 @@ export function UserShowCard({ show, onEpisodeLogged }: UserShowCardProps) {
       onEpisodeLogged?.();
     } catch (error) {
       console.error('Error logging episode:', error);
+      Alert.alert('Could not log episode', 'Please try again.');
     } finally {
       setIsLoggingEpisode(false);
     }

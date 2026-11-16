@@ -189,7 +189,7 @@ export default function DiaryEntryDetailScreen() {
       <ThemedView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={() => router.push('/diary')} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.dismissTo('/diary')} style={styles.backButton}>
             <ThemedText style={{ fontSize: 20, fontWeight: '600' }}>‹</ThemedText>
             <ThemedText type="subtitle" style={styles.backText}>
               Diary

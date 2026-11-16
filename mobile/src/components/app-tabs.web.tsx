@@ -15,10 +15,10 @@ import { ThemedView } from './themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 const tabs: Array<{ name: string; href: Href; label: string; icon: string }> = [
-  { name: 'discover', href: '/', label: 'Discover', icon: 'S' },
+  { name: 'up-next', href: '/', label: 'Up Next', icon: '▶' },
+  { name: 'discover', href: '/discover', label: 'Discover', icon: 'S' },
+  { name: 'calendar', href: '/calendar', label: 'Calendar', icon: 'C' },
   { name: 'my-shows', href: '/my-shows', label: 'My Shows', icon: 'TV' },
-  { name: 'diary', href: '/diary', label: 'Diary', icon: 'D' },
-  { name: 'stats', href: '/stats', label: 'Stats', icon: 'B' },
   { name: 'profile', href: '/profile', label: 'Profile', icon: 'P' },
 ];
 
@@ -39,7 +39,7 @@ export default function AppTabs() {
   );
 }
 
-type TabButtonProps = TabTriggerSlotProps & {
+type TabButtonProps = Omit<TabTriggerSlotProps, 'ref'> & {
   icon: string;
 };
 

@@ -2,10 +2,10 @@ import { NativeTabs } from 'expo-router/native-tabs';
 import { useTheme } from '@/hooks/use-theme';
 
 const tabs = [
-  { name: 'index', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
+  { name: 'index', label: 'Up Next', sf: 'play.circle', md: 'play_circle' },
+  { name: 'discover', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
+  { name: 'calendar', label: 'Calendar', sf: 'calendar', md: 'calendar_month' },
   { name: 'my-shows', label: 'My Shows', sf: 'tv', md: 'live_tv' },
-  { name: 'diary', label: 'Diary', sf: 'book.circle', md: 'note_alt' },
-  { name: 'stats', label: 'Stats', sf: 'chart.bar', md: 'bar_chart' },
   { name: 'profile', label: 'Profile', sf: 'person.crop.circle', md: 'account_circle' },
 ] as const;
 
