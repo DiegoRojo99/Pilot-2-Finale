@@ -194,13 +194,13 @@ const styles = StyleSheet.create({
   poster: {
     width: 68,
     height: 104,
-    borderTopLeftRadius: Spacing.two,
-    borderBottomLeftRadius: Spacing.two,
+    borderTopLeftRadius: Spacing.three,
+    borderBottomLeftRadius: Spacing.three,
   },
   posterPlaceholder: {
     width: 68,
     height: 104,
-    borderRadius: Spacing.two,
+    borderRadius: Spacing.three,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.one,
