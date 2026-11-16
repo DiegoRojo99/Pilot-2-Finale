@@ -16,7 +16,7 @@ export function mapUserShow(
 
   // Only show next episode if it's released (aired)
   const isNextEpisodeUnreleased = row.nextEpisodeToWatch?.airDate
-    ? isEpisodeUnreleased({ air_date: row.nextEpisodeToWatch.airDate } as any)
+    ? isEpisodeUnreleased({ air_date: row.nextEpisodeToWatch.airDate })
     : false;
 
   const nextEpisode = row.nextEpisodeToWatch && !isNextEpisodeUnreleased ? {
@@ -40,6 +40,7 @@ export function mapUserShow(
     number_of_seasons: row.show.numberOfSeasons,
     number_of_episodes: row.show.numberOfEpisodes,
     remaining_episodes_count: row.remainingEpisodesCount,
+    watched_episodes_count: row.watchedEpisodesCount,
     added_at: row.addedAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     next_episode: nextEpisode,
