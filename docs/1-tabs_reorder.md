@@ -24,7 +24,7 @@ Up Next is about the next episode the user can watch; Calendar is about future a
 - [x] Calendar includes all tracked show statuses.
 - [x] Diary remains accessible from Profile.
 - [x] Up Next keeps Watching shows without a reliable next episode and explains that they may be caught up or have unavailable data.
-- [x] Calendar uses a month view with an episode agenda.
+- [x] Calendar uses a horizontally scrollable day strip with a date-grouped episode agenda. Tapping a day jumps to its section without filtering other dates out.
 - [x] My Shows opens on Watching; progress must not imply certainty when counts are incomplete.
 
 ## 1. Navigation and migration
@@ -51,6 +51,7 @@ Up Next is about the next episode the user can watch; Calendar is about future a
 
 - [x] Extract Coming Soon from My Shows into the Calendar tab; reuse the existing upcoming-episodes API where it meets the agreed requirements.
 - [x] Present upcoming episodes by air date in the chosen calendar/agenda layout, with show name and episode identification, and navigation to relevant details.
+- [x] Replace the month grid with a day strip and date-grouped cards showing episode artwork, show name, season, and episode.
 - [x] Apply the agreed show-status scope and handle multiple episodes on one date, date boundaries, and missing or unknown air dates explicitly.
 - [ ] Check whether catalog synchronization and API data cover the desired date range; document any limitations or make targeted API changes if needed.
 - [x] Add independent loading, empty, error/retry, and refresh states; do not present request failures as an empty calendar.
@@ -80,4 +81,4 @@ Up Next is about the next episode the user can watch; Calendar is about future a
 
 ## Progress
 
-Checked implementation tasks reflect completed code; the separate verification tasks remain open. Mobile and server type checks and focused air-date tests pass, and a web export generates the new routes. Targeted lint reports an existing error in Diary and existing warnings; interactive and device verification remains outstanding.
+Checked implementation tasks reflect completed code; the separate verification tasks remain open. The Calendar day-strip redesign passes targeted lint, mobile/server type checks, date-grouping and air-date tests, and a web export. Broader lint previously reported an existing error in Diary and existing warnings; interactive and device verification remains outstanding.

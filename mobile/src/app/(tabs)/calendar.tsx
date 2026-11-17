@@ -1,6 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState, type ComponentRef } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,23 +12,35 @@ import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getUpcomingEpisodes } from '@/lib/episodes';
+import { groupCalendarEpisodes } from '@/lib/calendar';
+import { getBackdropUrl, getPosterUrl, getStillUrl } from '@/lib/tmdb-images';
 import type { UpcomingEpisode } from '@/types/episode';
 
 function dateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+function formatDate(date: string, options: Intl.DateTimeFormatOptions) {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, { ...options, timeZone: 'UTC' });
+}
+
+const DAY_WIDTH = 52;
+const DAY_GAP = Spacing.two;
+
 function CalendarContent() {
   const theme = useTheme();
   const [month, setMonth] = useState(() => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    return new Date(now.getUTCFullYear(), now.getUTCMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => new Date().toISOString().slice(0, 10));
   const [episodes, setEpisodes] = useState<UpcomingEpisode[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [refreshing, setRefreshing] = useState(false);
   const requestId = useRef(0);
+  const agendaRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const sectionOffsets = useRef(new Map<string, number>());
+  const pendingDate = useRef<string | null>(null);
 
   const load = useCallback(async (refresh = false) => {
     const id = ++requestId.current;
@@ -51,102 +64,170 @@ function CalendarContent() {
 
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
-  const firstDay = new Date(year, monthIndex, 1).getDay();
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const monthPrefix = dateKey(year, monthIndex, 1).slice(0, 7);
-  const monthEpisodes = episodes.filter((episode) => episode.airDate.slice(0, 7) === monthPrefix)
-    .sort((a, b) => a.airDate.localeCompare(b.airDate));
-  const counts = new Map<string, number>();
-  for (const episode of monthEpisodes) {
-    const key = episode.airDate.slice(0, 10);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
+  const groups = groupCalendarEpisodes(episodes, monthPrefix, selectedDate);
+  const days = Array.from({ length: daysInMonth }, (_, index) => dateKey(year, monthIndex, index + 1));
   const today = new Date().toISOString().slice(0, 10);
-  const visibleEpisodes = selectedDate
-    ? monthEpisodes.filter((episode) => episode.airDate.slice(0, 10) === selectedDate)
-    : monthEpisodes;
+  const initialDayIndex = today.startsWith(`${monthPrefix}-`) ? Number(today.slice(8, 10)) - 1 : 0;
+
+  function selectDay(date: string) {
+    pendingDate.current = date;
+    setSelectedDate(date);
+    const removingEmptyDate = selectedDate !== null && selectedDate !== date
+      && !episodes.some((episode) => episode.airDate.slice(0, 10) === selectedDate);
+    const offset = groups.some((group) => group.date === date) ? sectionOffsets.current.get(date) : undefined;
+    if (offset !== undefined && !removingEmptyDate) {
+      agendaRef.current?.scrollTo({ y: offset, animated: true });
+      pendingDate.current = null;
+    }
+  }
+
+  function scrollToPendingDate() {
+    if (!pendingDate.current) return;
+    const offset = sectionOffsets.current.get(pendingDate.current);
+    if (offset === undefined) return;
+    agendaRef.current?.scrollTo({ y: offset, animated: true });
+    pendingDate.current = null;
+  }
 
   function changeMonth(offset: number) {
+    sectionOffsets.current.clear();
+    pendingDate.current = null;
     setMonth(new Date(year, monthIndex + offset, 1));
     setSelectedDate(null);
+    agendaRef.current?.scrollTo({ y: 0, animated: false });
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} tintColor={theme.accent} />}>
-      {status === 'loading' ? (
-        <Card style={styles.center}><ActivityIndicator color={theme.accent} /><ThemedText>Loading upcoming episodes...</ThemedText></Card>
-      ) : status === 'error' ? (
-        <Card>
-          <ThemedText type="subtitle">Could not load upcoming episodes</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">Check your connection and try again.</ThemedText>
-          <Button label="Try again" onPress={() => void load()} />
-        </Card>
-      ) : (
-        <>
-          <Card>
-            <View style={styles.monthHeader}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Previous month" onPress={() => changeMonth(-1)} style={styles.monthButton}>
-                <Ionicons name="chevron-back" size={22} color={theme.text} />
-              </Pressable>
-              <ThemedText type="subtitle">{month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</ThemedText>
-              <Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => changeMonth(1)} style={styles.monthButton}>
-                <Ionicons name="chevron-forward" size={22} color={theme.text} />
-              </Pressable>
-            </View>
-            <View style={styles.grid}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <ThemedText key={day} type="xs" themeColor="textSecondary" style={styles.weekday}>{day}</ThemedText>
-              ))}
-              {Array.from({ length: firstDay }, (_, index) => <View key={`empty-${index}`} style={styles.day} />)}
-              {Array.from({ length: daysInMonth }, (_, index) => {
-                const day = index + 1;
-                const key = dateKey(year, monthIndex, day);
-                const count = counts.get(key) ?? 0;
-                const selected = key === selectedDate;
-                return (
-                  <Pressable
-                    key={key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${key}${key === today ? ', today' : ''}, ${count} upcoming ${count === 1 ? 'episode' : 'episodes'}`}
-                    accessibilityState={{ selected }}
-                    onPress={() => setSelectedDate(selected ? null : key)}
-                    style={[styles.day, {
-                      backgroundColor: selected ? theme.accent : count ? theme.backgroundSelected : 'transparent',
-                      borderWidth: key === today ? 1 : 0,
-                      borderColor: theme.accent,
-                    }]}>
-                    <ThemedText type="small" style={{ color: selected ? theme.accentText : theme.text }}>{day}</ThemedText>
-                    {count > 0 && <ThemedText type="xxs" style={{ color: selected ? theme.accentText : theme.textSecondary }}>{count}</ThemedText>}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Card>
-          <ThemedText type="subtitle">{selectedDate ? `Episodes on ${selectedDate}` : 'This month'}</ThemedText>
-          {visibleEpisodes.length === 0 ? (
-            <Card><ThemedText type="small" themeColor="textSecondary">No known upcoming episodes for {selectedDate ? 'this date' : 'this month'}.</ThemedText></Card>
-          ) : visibleEpisodes.map((episode) => (
+    <View style={styles.body}>
+      <View style={styles.monthHeader}>
+        <ThemedText type="subtitle">{month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</ThemedText>
+        <View style={styles.monthActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Previous month" onPress={() => changeMonth(-1)} style={styles.monthButton}>
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => changeMonth(1)} style={styles.monthButton}>
+            <Ionicons name="chevron-forward" size={20} color={theme.text} />
+          </Pressable>
+        </View>
+      </View>
+      <FlatList
+        key={monthPrefix}
+        horizontal
+        style={styles.dayStrip}
+        contentContainerStyle={styles.days}
+        showsHorizontalScrollIndicator={false}
+        data={days}
+        extraData={{ selectedDate, episodes }}
+        keyExtractor={(date) => date}
+        initialScrollIndex={initialDayIndex}
+        getItemLayout={(_, index) => ({ length: DAY_WIDTH + DAY_GAP, offset: (DAY_WIDTH + DAY_GAP) * index, index })}
+        renderItem={({ item: date }) => {
+          const count = groups.find((group) => group.date === date)?.episodes.length ?? 0;
+          const selected = date === selectedDate;
+          return (
             <Pressable
-              key={episode.id}
               accessibilityRole="button"
-              accessibilityLabel={`View ${episode.showName}, season ${episode.seasonNumber}, episode ${episode.episodeNumber}`}
-              onPress={() => router.push(`/show/${episode.showId}/season/${episode.seasonNumber}/episode/${episode.episodeNumber}`)}>
-              <Card>
-                <ThemedText type="smallBold">{episode.showName}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {episode.airDate.slice(0, 10)} · S{String(episode.seasonNumber).padStart(2, '0')} E{String(episode.episodeNumber).padStart(2, '0')} · {episode.title}
-                </ThemedText>
-              </Card>
+              accessibilityLabel={`${formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' })}${date === today ? ', today' : ''}, ${count} upcoming ${count === 1 ? 'episode' : 'episodes'}`}
+              accessibilityState={{ selected }}
+              onPress={() => selectDay(date)}
+              style={[styles.day, {
+                backgroundColor: selected ? theme.accent : theme.backgroundElement,
+                borderColor: date === today ? theme.accent : 'transparent',
+              }]}>
+              <ThemedText type="xs" style={{ color: selected ? theme.accentText : theme.textSecondary }}>
+                {formatDate(date, { weekday: 'short' })}
+              </ThemedText>
+              <ThemedText type="smallBold" style={{ color: selected ? theme.accentText : theme.text }}>
+                {Number(date.slice(8, 10))}
+              </ThemedText>
+              <View style={[styles.dot, { backgroundColor: count ? selected ? theme.accentText : theme.accent : 'transparent' }]} />
             </Pressable>
-          ))}
-          <ThemedText type="small" themeColor="textSecondary">
-            Air dates are date-only and may change. Today is based on UTC. Episodes without a known date or not yet in the catalog are not shown.
+          );
+        }}
+      />
+      <ScrollView
+        ref={agendaRef}
+        style={styles.body}
+        contentContainerStyle={styles.content}
+        onContentSizeChange={scrollToPendingDate}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} tintColor={theme.accent} />}>
+        {status === 'loading' ? (
+          <Card style={styles.center}><ActivityIndicator color={theme.accent} /><ThemedText>Loading upcoming episodes...</ThemedText></Card>
+        ) : status === 'error' ? (
+          <Card>
+            <ThemedText type="subtitle">Could not load upcoming episodes</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">Check your connection and try again.</ThemedText>
+            <Button label="Try again" onPress={() => void load()} />
+          </Card>
+        ) : (
+          <>
+            {groups.length === 0 ? (
+              <Card><ThemedText type="small" themeColor="textSecondary">No known upcoming episodes this month.</ThemedText></Card>
+            ) : groups.map((group) => (
+              <View
+                key={group.date}
+                style={styles.dateGroup}
+                onLayout={({ nativeEvent }) => {
+                  sectionOffsets.current.set(group.date, nativeEvent.layout.y);
+                  if (pendingDate.current === group.date) {
+                    agendaRef.current?.scrollTo({ y: nativeEvent.layout.y, animated: true });
+                    pendingDate.current = null;
+                  }
+                }}>
+                <View style={styles.dateHeader}>
+                  <ThemedText type="smallBold" accessibilityRole="header">
+                    {group.date === today ? 'Today' : formatDate(group.date, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </ThemedText>
+                  <ThemedText type="xs" themeColor="textSecondary">
+                    {group.episodes.length} {group.episodes.length === 1 ? 'episode' : 'episodes'}
+                  </ThemedText>
+                </View>
+                {group.episodes.length === 0 ? (
+                  <Card><ThemedText type="small" themeColor="textSecondary">No known upcoming episodes for this date.</ThemedText></Card>
+                ) : group.episodes.map((episode) => <CalendarEpisodeCard key={episode.id} episode={episode} />)}
+              </View>
+            ))}
+            <ThemedText type="small" themeColor="textSecondary">
+              Air dates are date-only and may change. Today is based on UTC. Episodes without a known date or not yet in the catalog are not shown.
+            </ThemedText>
+          </>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+function CalendarEpisodeCard({ episode }: { episode: UpcomingEpisode }) {
+  const theme = useTheme();
+  const image = getStillUrl(episode.stillPath)
+    ?? getBackdropUrl(episode.showBackdropPath)
+    ?? getPosterUrl(episode.showPosterPath);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`View ${episode.showName}, season ${episode.seasonNumber}, episode ${episode.episodeNumber}, ${episode.title}`}
+      onPress={() => router.push(`/show/${episode.showId}/season/${episode.seasonNumber}/episode/${episode.episodeNumber}`)}
+      style={({ pressed }) => pressed && styles.pressed}>
+      <Card style={styles.episodeCard}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.episodeImage} contentFit="cover" alt="" accessibilityIgnoresInvertColors />
+        ) : (
+          <View style={[styles.episodeImage, styles.center, { backgroundColor: theme.backgroundSelected }]}>
+            <Ionicons name="tv-outline" size={28} color={theme.textSecondary} />
+          </View>
+        )}
+        <View style={styles.episodeInfo}>
+          <ThemedText type="smallBold" numberOfLines={2}>{episode.showName}</ThemedText>
+          <ThemedText type="xs" style={{ color: theme.accent }}>
+            Season {episode.seasonNumber} · Episode {episode.episodeNumber}
           </ThemedText>
-        </>
-      )}
-    </ScrollView>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{episode.title}</ThemedText>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} style={styles.episodeChevron} />
+      </Card>
+    </Pressable>
   );
 }
 
@@ -169,10 +250,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: Spacing.lg },
   header: { paddingVertical: Spacing.lg, gap: Spacing.one },
   content: { gap: Spacing.three, paddingBottom: Spacing.lg, flexGrow: 1 },
-  center: { alignItems: 'center' },
+  body: { flex: 1 },
+  center: { alignItems: 'center', justifyContent: 'center' },
   monthHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  monthActions: { flexDirection: 'row' },
   monthButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  weekday: { width: '14.2857%', textAlign: 'center', paddingVertical: Spacing.two },
-  day: { width: '14.2857%', minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: Spacing.two },
+  dayStrip: { flexGrow: 0 },
+  days: { gap: DAY_GAP, paddingTop: Spacing.two, paddingBottom: Spacing.four },
+  day: { width: DAY_WIDTH, minHeight: 80, paddingVertical: Spacing.two, gap: Spacing.one, alignItems: 'center', justifyContent: 'center', borderRadius: Spacing.three, borderWidth: 1 },
+  dot: { width: 4, height: 4, borderRadius: 2 },
+  dateGroup: { gap: Spacing.two },
+  dateHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, paddingVertical: Spacing.two },
+  episodeCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: 0, overflow: 'hidden' },
+  episodeImage: { width: 100, height: 112 },
+  episodeInfo: { flex: 1, gap: Spacing.one, paddingVertical: Spacing.two },
+  episodeChevron: { marginRight: Spacing.two },
+  pressed: { opacity: 0.75 },
 });
