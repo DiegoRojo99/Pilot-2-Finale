@@ -56,7 +56,9 @@ Then choose a target from the Expo terminal UI:
 
 React Native does not use browser elements like `div`, `button`, or `input`. The usual equivalents are `View`, `Pressable`, and `TextInput`.
 
-Expo Router works like the Next.js App Router in spirit: files inside `src/app` define screens and layouts. The current `_layout.tsx` controls the app shell, while `index.tsx` is the first tab screen.
+Expo Router works like the Next.js App Router in spirit: files inside `src/app` define screens and layouts. The root `_layout.tsx` controls the app shell, and the tabs are Up Next, Discover, Calendar, My Shows, and Profile. Stats and Diary are available from Profile.
+
+Calendar includes all tracked show statuses. It shows known upcoming air dates from the local catalog, including today in UTC; missing dates and episodes not yet synced to the catalog are not shown.
 
 Environment variables that need to be available in the mobile JavaScript bundle must start with `EXPO_PUBLIC_`.
 

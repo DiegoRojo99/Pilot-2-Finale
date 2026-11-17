@@ -6,7 +6,7 @@ import type { TMDBEpisode } from '@/types/tmdb';
  * - It has no air_date, OR
  * - Its air_date is in the future
  */
-export function isEpisodeUnreleased(episode: TMDBEpisode | null | undefined): boolean {
+export function isEpisodeUnreleased(episode: Pick<TMDBEpisode, 'air_date'> | null | undefined): boolean {
   if (!episode) return true;
   if (!episode.air_date) return true;
 
@@ -19,6 +19,16 @@ export function isEpisodeUnreleased(episode: TMDBEpisode | null | undefined): bo
   airDate.setUTCHours(0, 0, 0, 0);
 
   return airDate > today;
+}
+
+export function isUpcomingAirDate(airDate: string | null, today: Date, includeToday: boolean): boolean {
+  if (!airDate) return false;
+  const date = new Date(airDate);
+  if (Number.isNaN(date.getTime())) return false;
+  const startOfToday = new Date(today);
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  date.setUTCHours(0, 0, 0, 0);
+  return includeToday ? date >= startOfToday : date > startOfToday;
 }
 
 /**

@@ -70,6 +70,11 @@ export default function ProfileScreen() {
           <SettingItem icon="trophy" title="Achievements" value={`${unlocked}/${achievements?.length ?? 0}`} onPress={() => router.push('/achievements')} />
         </SettingSection>
 
+        <SettingSection title="YOUR ACTIVITY">
+          <SettingItem icon="bar-chart" title="Stats" onPress={() => router.push('/stats')} />
+          <SettingItem icon="book" title="Diary" onPress={() => router.push('/diary')} />
+        </SettingSection>
+
         <SettingSection title="PREFERENCES">
           <SettingItem icon="sunny" title="Theme" value={themePreference.charAt(0).toUpperCase() + themePreference.slice(1)} onPress={() => setShowThemeModal(true)} />
           <SettingItem icon="shield" title="Privacy & Data" value={undefined} onPress={() => setShowPrivacyModal(true)} />

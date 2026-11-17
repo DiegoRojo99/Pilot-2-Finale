@@ -17,7 +17,9 @@ export async function fetchUserShowsByUserId(
       ...(status ? { status } : {}),
     },
     include: {
-      show: true,
+      show: {
+        include: { showGenres: { include: { genre: true } } },
+      },
       nextEpisodeToWatch: {
         select: {
           id: true,
@@ -50,7 +52,9 @@ export async function fetchUserShowByTmdbId(
       },
     },
     include: {
-      show: true,
+      show: {
+        include: { showGenres: { include: { genre: true } } },
+      },
       nextEpisodeToWatch: {
         select: {
           id: true,

@@ -37,7 +37,7 @@ export function AuthGate({ title, description, children }: AuthGateProps) {
         <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
           {description}
         </ThemedText>
-        <Button label="Go to Profile" onPress={() => router.push('/profile')} />
+        <Button label="Go to Profile" onPress={() => router.navigate('/profile')} />
       </Card>
     );
   }

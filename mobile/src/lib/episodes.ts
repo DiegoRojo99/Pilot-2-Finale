@@ -19,8 +19,10 @@ export function getGenreBreakdown() {
   return apiRequest<GenreBreakdown[]>(`/api/stats/genre-breakdown`);
 }
 
-export function getUpcomingEpisodes(status: string = 'watching') {
-  return apiRequest<UpcomingEpisodesResponse>(`/api/episodes/upcoming?status=${status}`);
+export function getUpcomingEpisodes(status?: string) {
+  const params = new URLSearchParams({ includeToday: 'true' });
+  if (status) params.set('status', status);
+  return apiRequest<UpcomingEpisodesResponse>(`/api/episodes/upcoming?${params.toString()}`);
 }
 
 export function getAllEpisodeLogs(limit?: number) {

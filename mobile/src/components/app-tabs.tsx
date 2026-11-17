@@ -1,13 +1,6 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 import { useTheme } from '@/hooks/use-theme';
-
-const tabs = [
-  { name: 'index', label: 'Discover', sf: 'magnifyingglass', md: 'search' },
-  { name: 'my-shows', label: 'My Shows', sf: 'tv', md: 'live_tv' },
-  { name: 'diary', label: 'Diary', sf: 'book.circle', md: 'note_alt' },
-  { name: 'stats', label: 'Stats', sf: 'chart.bar', md: 'bar_chart' },
-  { name: 'profile', label: 'Profile', sf: 'person.crop.circle', md: 'account_circle' },
-] as const;
+import { APP_TABS } from '@/constants/navigation';
 
 export default function AppTabs() {
   const colors = useTheme();
@@ -28,8 +21,8 @@ export default function AppTabs() {
           fontWeight: '600',
         } 
       }}>
-      {tabs.map((tab) => (
-        <NativeTabs.Trigger key={tab.name} name={tab.name}>
+      {APP_TABS.map((tab) => (
+        <NativeTabs.Trigger key={tab.name} name={tab.name} accessibilityLabel={tab.label}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={tab.sf} md={tab.md} selectedColor={colors.text} />
         </NativeTabs.Trigger>

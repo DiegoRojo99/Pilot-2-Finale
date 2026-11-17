@@ -27,6 +27,8 @@ export interface UserShow {
   number_of_seasons: number;
   number_of_episodes: number;
   remaining_episodes_count: number;
+  watched_episodes_count?: number;
+  genres?: Array<{ id: number; name: string }>;
   added_at: string;
   updated_at: string;
   next_episode?: ShowNextEpisode | null;
@@ -38,6 +40,7 @@ export interface UserShowWithShowRow {
   name?: string | null;
   status: ShowStatus | string;
   remainingEpisodesCount: number;
+  watchedEpisodesCount?: number;
   addedAt: Date;
   updatedAt: Date;
   show: {
@@ -49,6 +52,7 @@ export interface UserShowWithShowRow {
     voteAverage: number;
     numberOfSeasons: number;
     numberOfEpisodes: number;
+    showGenres?: Array<{ genre: { id: number; name: string } }>;
   };
   nextEpisodeToWatch?: {
     id: number;

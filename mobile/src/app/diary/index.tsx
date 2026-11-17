@@ -84,8 +84,8 @@ function AuthenticatedDiary() {
 
   useFocusEffect(
     useCallback(() => {
-      if (status === 'loading') void fetchDiary();
-    }, [status, fetchDiary])
+      void fetchDiary();
+    }, [fetchDiary])
   );
 
   if (status === 'loading') return <DiaryLoadingState label="Loading your diary..." />;

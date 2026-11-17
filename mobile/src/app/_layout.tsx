@@ -5,6 +5,10 @@ import { AuthProvider } from '@/components/auth/auth-provider';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import { Colors } from '@/constants/theme';
 
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -20,7 +24,27 @@ export default function TabLayout() {
               gestureEnabled: true,
             }}
           >
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(tabs)" options={{ title: 'Home' }} />
+          <Stack.Screen
+            name="stats"
+            options={{
+              headerShown: true,
+              headerTitle: 'Stats',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.surfaceBackground },
+              headerShadowVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="diary/index"
+            options={{
+              headerShown: true,
+              headerTitle: 'Diary',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.surfaceBackground },
+              headerShadowVisible: false,
+            }}
+          />
           <Stack.Screen
             name="discover/trending-all"
             options={{

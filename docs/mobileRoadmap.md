@@ -2,6 +2,8 @@
 
 Pilot 2 Finale already has a mobile-first web experience and a fresh Expo app under `mobile/`. This roadmap turns that starter into a real companion app that uses the existing Next.js API, auth, Prisma-backed data, and TMDB catalog features.
 
+The original tab milestones below are historical. See [Mobile Tab Restructure](./1-tabs_reorder.md) for the current navigation migration and outstanding verification.
+
 ## Guiding Goals
 
 - Keep the mobile app focused on fast daily episode tracking.

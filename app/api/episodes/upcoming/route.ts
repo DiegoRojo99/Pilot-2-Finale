@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { prisma } from "@/lib/core";
-import { isEpisodeUnreleased } from "@/lib/episodes";
+import { isUpcomingAirDate } from "@/lib/episodes/unreleased";
 import { defaultRateLimit } from "@/lib/core";
 
 export const runtime = "nodejs";
@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   // Query parameters
   const status = searchParams.get("status"); // Optional filter by show status
   const sortBy = (searchParams.get("sortBy") ?? "date") as "date" | "show"; // 'date' or 'show'
+  const includeToday = searchParams.get("includeToday") === "true";
   
   try {
     // Get user's tracked shows with their Show data
@@ -91,10 +92,7 @@ export async function GET(request: Request) {
     // Filter to unreleased episodes (all future episodes)
     const upcomingEpisodes: UpcomingEpisode[] = episodes
       .filter((ep) => {
-        if (!ep.airDate) return false;
-        
-        // Check if it's unreleased
-        return isEpisodeUnreleased({ air_date: ep.airDate } as any);
+        return isUpcomingAirDate(ep.airDate, today, includeToday);
       })
       .map((ep) => {
         const userShow = userShows.find((s) => s.tmdbId === ep.tmdbShowId);

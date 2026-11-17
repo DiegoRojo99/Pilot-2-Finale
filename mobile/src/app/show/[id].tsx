@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { SHOW_STATUS_COLORS } from '@/constants/show-status';
 import { useTheme } from '@/hooks/use-theme';
 import { getShowDetails, getUserShowDetails, getSeasonDetails, addShow, removeShow, updateShowStatus, getSimilarShows } from '@/lib/shows';
 import { getShowEpisodeLogs, logEpisode, logEpisodesBulk } from '@/lib/episodes';
@@ -1468,15 +1469,7 @@ export default function ShowDetailScreen() {
 }
 
 function ShowStatusBadge({ status }: { status: string }) {
-  const STATUS_COLORS: Record<ShowStatus, Record<string, string>> = {
-    watching: { backgroundColor: "rgba(96, 165, 250, 0.1)", color: "rgb(96, 165, 250)" },
-    want_to_watch: { backgroundColor: "rgba(139, 92, 246, 0.1)", color: "rgb(139, 92, 246)" },
-    watched: { backgroundColor: "rgba(34, 197, 94, 0.1)", color: "rgb(34, 197, 94)" },
-    dropped: { backgroundColor: "rgba(239, 68, 68, 0.1)", color: "rgb(239, 68, 68)" },
-    on_hold: { backgroundColor: "rgba(250, 204, 21, 0.1)", color: "rgb(250, 204, 21)" },
-  };
-
-  const statusColor = STATUS_COLORS[status as ShowStatus] || { backgroundColor: "", color: "" };
+  const statusColor = SHOW_STATUS_COLORS[status as ShowStatus] || { backgroundColor: "", color: "" };
   const statusLabel = STATUS_LABELS[status as ShowStatus] || status;
 
   return (
