@@ -58,9 +58,10 @@ Up Next is about the next episode the user can watch; Calendar is about future a
 
 ## 5. My Shows
 
-- [x] Replace next-episode-heavy cards with a show-focused library view showing poster, title, status, and watched-episode count.
+- [x] Replace next-episode-heavy cards with a compact show-focused library view showing poster, title, metadata, status, and watching progress.
 - [x] Keep the existing status filters and access to show details and status management.
-- [x] Handle missing episode counts without deriving an inaccurate progress percentage.
+- [x] Show year, genres, season count, and a status-colored badge. For in-progress shows with known counts, show the next episode and watched/total percentage with a matching bar; hide the entire progress section at 0% and 100%.
+- [x] Put All first in the status filters, keep Watching selected by default, and show counts beside each filter.
 - [x] Refresh library progress and status after changes elsewhere; provide loading, empty, error/retry, and refresh states.
 
 ## 6. Profile, Stats, and Diary

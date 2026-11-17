@@ -1,5 +1,5 @@
 import type { ShowStatus, UserShow, UserShowWithShowRow } from "@/types";
-import { isEpisodeUnreleased } from "@/lib/episodes";
+import { isEpisodeUnreleased } from "@/lib/episodes/unreleased";
 
 const VALID_STATUSES: ShowStatus[] = ["watching", "want_to_watch", "watched", "dropped", "on_hold"];
 
@@ -41,6 +41,7 @@ export function mapUserShow(
     number_of_episodes: row.show.numberOfEpisodes,
     remaining_episodes_count: row.remainingEpisodesCount,
     watched_episodes_count: row.watchedEpisodesCount,
+    genres: row.show.showGenres?.map(({ genre }) => ({ id: genre.id, name: genre.name })),
     added_at: row.addedAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     next_episode: nextEpisode,

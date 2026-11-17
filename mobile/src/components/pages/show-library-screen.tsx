@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,14 +11,16 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spacing } from '@/constants/theme';
+import { SHOW_STATUS_COLORS } from '@/constants/show-status';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyShows } from '@/lib/shows';
-import { getPosterUrl } from '@/lib/tmdb-images';
+import { getPosterUrl, getYear } from '@/lib/tmdb-images';
+import { getLibraryProgress } from '@/lib/show-library';
 import { STATUS_LABELS, type ShowStatus, type UserShow } from '@/types/api';
 
 type Mode = 'up-next' | 'library';
 type Filter = ShowStatus | 'all';
-const filters: Filter[] = ['watching', 'all', 'want_to_watch', 'watched', 'on_hold', 'dropped'];
+const filters: Filter[] = ['all', 'watching', 'want_to_watch', 'watched', 'on_hold', 'dropped'];
 
 function LibraryContent({ mode }: { mode: Mode }) {
   const theme = useTheme();
@@ -51,6 +53,8 @@ function LibraryContent({ mode }: { mode: Mode }) {
   const visibleShows = shows.filter((show) =>
     mode === 'up-next' ? show.status === 'watching' : filter === 'all' || show.status === filter,
   );
+  const counts: Record<Filter, number> = { all: shows.length, watching: 0, want_to_watch: 0, watched: 0, on_hold: 0, dropped: 0 };
+  for (const show of shows) counts[show.status] += 1;
 
   return (
     <View style={styles.body}>
@@ -60,12 +64,18 @@ function LibraryContent({ mode }: { mode: Mode }) {
             <Pressable
               key={item}
               accessibilityRole="button"
+              accessibilityLabel={`${item === 'all' ? 'All' : STATUS_LABELS[item]}${status === 'success' ? `, ${counts[item]} shows` : ''}`}
               accessibilityState={{ selected: filter === item }}
               onPress={() => setFilter(item)}
               style={[styles.filter, { backgroundColor: filter === item ? theme.accent : theme.backgroundElement }]}>
               <ThemedText type="small" style={{ color: filter === item ? theme.accentText : theme.text }}>
                 {item === 'all' ? 'All' : STATUS_LABELS[item]}
               </ThemedText>
+              {status === 'success' && (
+                <ThemedText type="xxs" style={[styles.filterCount, { color: filter === item ? theme.accentText : theme.textSecondary }]}>
+                  {counts[item]}
+                </ThemedText>
+              )}
             </Pressable>
           ))}
         </ScrollView>
@@ -91,7 +101,27 @@ function LibraryContent({ mode }: { mode: Mode }) {
               ))}
             </View>
           ) : (
-            <Card style={styles.center}><ActivityIndicator color={theme.accent} /><ThemedText>Loading your shows...</ThemedText></Card>
+            <View accessible accessibilityLabel="Loading your shows" accessibilityState={{ busy: true }} style={styles.skeletonList}>
+              {Array.from({ length: 5 }, (_, index) => (
+                <Card key={index} style={styles.showCard}>
+                  <Skeleton style={styles.poster} />
+                  <View style={styles.showInfo}>
+                    <View style={styles.showHeading}>
+                      <Skeleton style={styles.skeletonLibraryTitle} />
+                      <Skeleton style={styles.skeletonBadge} />
+                    </View>
+                    <Skeleton style={styles.skeletonMetadata} />
+                    <View style={styles.progress}>
+                      <View style={styles.progressLabels}>
+                        <Skeleton style={styles.skeletonProgressLabel} />
+                        <Skeleton style={styles.skeletonPercentage} />
+                      </View>
+                      <Skeleton style={styles.progressTrack} />
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </View>
           )
         ) : status === 'error' ? (
           <Card>
@@ -117,18 +147,41 @@ function LibraryContent({ mode }: { mode: Mode }) {
 function LibraryCard({ show }: { show: UserShow }) {
   const theme = useTheme();
   const poster = getPosterUrl(show.poster_path);
-  const watched = show.watched_episodes_count;
+  const statusColor = SHOW_STATUS_COLORS[show.status];
+  const progress = getLibraryProgress(show);
+  const metadata = [
+    show.first_air_date ? getYear(show.first_air_date) : null,
+    show.genres?.map((genre) => genre.name).join(', '),
+    show.number_of_seasons > 0 ? `${show.number_of_seasons} ${show.number_of_seasons === 1 ? 'season' : 'seasons'}` : null,
+  ].filter(Boolean).join(' · ');
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`View ${show.name}`} onPress={() => router.push(`/show/${show.tmdb_id}`)}>
       <Card style={styles.showCard}>
         {poster ? <Image source={{ uri: poster }} style={styles.poster} contentFit="cover" alt={`${show.name} poster`} />
           : <View style={[styles.poster, { backgroundColor: theme.backgroundSelected }]} />}
         <View style={styles.showInfo}>
-          <ThemedText type="smallBold">{show.name}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{STATUS_LABELS[show.status]}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {watched == null ? 'Progress unavailable' : `${watched} ${watched === 1 ? 'episode' : 'episodes'} watched`}
-          </ThemedText>
+          <View style={styles.showHeading}>
+            <ThemedText type="smallBold" numberOfLines={2} style={styles.showTitle}>{show.name}</ThemedText>
+            <ThemedText type="xxs" style={[styles.statusBadge, statusColor]}>{STATUS_LABELS[show.status]}</ThemedText>
+          </View>
+          {metadata ? <ThemedText type="xs" themeColor="textSecondary" numberOfLines={2}>{metadata}</ThemedText> : null}
+          {progress && (
+            <View style={styles.progress}>
+              <View style={styles.progressLabels}>
+                <ThemedText type="xxs" themeColor="textSecondary" numberOfLines={1} style={styles.progressLabel}>
+                  {progress.label}
+                </ThemedText>
+                <ThemedText type="xxs" themeColor="textSecondary">{progress.percentage}%</ThemedText>
+              </View>
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel={`${show.name} watched progress`}
+                accessibilityValue={{ min: 0, max: 100, now: progress.percentage }}
+                style={[styles.progressTrack, { backgroundColor: statusColor.backgroundColor }]}>
+                <View style={[styles.progressFill, { width: `${progress.percentage}%`, backgroundColor: statusColor.color }]} />
+              </View>
+            </View>
+          )}
         </View>
       </Card>
     </Pressable>
@@ -158,9 +211,9 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   filterScroll: { flexGrow: 0 },
   filters: { gap: Spacing.two, paddingBottom: Spacing.three },
-  filter: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: Spacing.three, justifyContent: 'center' },
+  filter: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
+  filterCount: { opacity: 0.7 },
   list: { gap: Spacing.two, paddingBottom: Spacing.lg, flexGrow: 1 },
-  center: { alignItems: 'center' },
   skeletonList: { gap: Spacing.two },
   skeletonCard: { flexDirection: 'row', alignItems: 'center', padding: 0, borderRadius: Spacing.three, overflow: 'hidden' },
   skeletonPoster: { width: 68, height: 104 },
@@ -170,7 +223,20 @@ const styles = StyleSheet.create({
   skeletonDetails: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   skeletonName: { flex: 1, height: 14, borderRadius: Spacing.one },
   skeletonAction: { width: 32, height: 32, borderRadius: Spacing.three },
-  showCard: { flexDirection: 'row', alignItems: 'center', padding: 0, overflow: 'hidden' },
-  poster: { width: 68, height: 100 },
-  showInfo: { flex: 1, padding: Spacing.three, gap: Spacing.one },
+  skeletonLibraryTitle: { flex: 1, height: 20, borderRadius: Spacing.one },
+  skeletonBadge: { width: 64, height: 20, borderRadius: Spacing.two },
+  skeletonMetadata: { width: '90%', height: 18, borderRadius: Spacing.one },
+  skeletonProgressLabel: { width: '55%', height: 16, borderRadius: Spacing.one },
+  skeletonPercentage: { width: 28, height: 16, borderRadius: Spacing.one },
+  showCard: { flexDirection: 'row', alignItems: 'stretch', gap: Spacing.two, padding: 0, overflow: 'hidden' },
+  poster: { width: 76, minHeight: 114 },
+  showInfo: { flex: 1, paddingVertical: Spacing.two, paddingRight: Spacing.two, gap: Spacing.one },
+  showHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  showTitle: { flex: 1 },
+  statusBadge: { borderRadius: Spacing.two, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half, overflow: 'hidden', flexShrink: 0 },
+  progress: { marginTop: 'auto', paddingTop: Spacing.two, gap: Spacing.one },
+  progressLabels: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  progressLabel: { flex: 1 },
+  progressTrack: { height: 4, borderRadius: Spacing.one, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: Spacing.one },
 });
