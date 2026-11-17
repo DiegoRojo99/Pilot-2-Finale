@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
@@ -9,6 +9,7 @@ import { AuthGate } from '@/components/auth/auth-gate';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getUpcomingEpisodes } from '@/lib/episodes';
@@ -21,7 +22,10 @@ function dateKey(year: number, month: number, day: number) {
 }
 
 function formatDate(date: string, options: Intl.DateTimeFormatOptions) {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, { ...options, timeZone: 'UTC' });
+  if (!date) return '';
+  else if (isNaN(Date.parse(date))) return '';
+  const d = new Date(`${date}T12:00:00Z`);
+  return d.toLocaleDateString(undefined, { ...options, timeZone: 'UTC' });
 }
 
 const DAY_WIDTH = 52;
@@ -154,7 +158,7 @@ function CalendarContent() {
         onContentSizeChange={scrollToPendingDate}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} tintColor={theme.accent} />}>
         {status === 'loading' ? (
-          <Card style={styles.center}><ActivityIndicator color={theme.accent} /><ThemedText>Loading upcoming episodes...</ThemedText></Card>
+          <CalendarSkeleton />
         ) : status === 'error' ? (
           <Card>
             <ThemedText type="subtitle">Could not load upcoming episodes</ThemedText>
@@ -177,7 +181,7 @@ function CalendarContent() {
                   }
                 }}>
                 <View style={styles.dateHeader}>
-                  <ThemedText type="smallBold" accessibilityRole="header">
+                  <ThemedText type="smallBold" accessibilityRole="header" style={styles.dateHeaderText}>
                     {group.date === today ? 'Today' : formatDate(group.date, { weekday: 'long', month: 'short', day: 'numeric' })}
                   </ThemedText>
                   <ThemedText type="xs" themeColor="textSecondary">
@@ -195,6 +199,32 @@ function CalendarContent() {
           </>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function CalendarSkeleton() {
+  return (
+    <View accessible accessibilityLabel="Loading upcoming episodes" accessibilityState={{ busy: true }} style={styles.content}>
+      {[0, 1].map((group) => (
+        <View key={group} style={styles.dateGroup}>
+          <View style={styles.dateHeader}>
+            <Skeleton style={styles.skeletonDate} />
+            <Skeleton style={styles.skeletonCount} />
+          </View>
+          {[0, 1].map((episode) => (
+            <Card key={episode} style={styles.episodeCard}>
+              <Skeleton style={styles.episodeImage} />
+              <View style={styles.episodeInfo}>
+                <Skeleton style={styles.skeletonTitle} />
+                <Skeleton style={styles.skeletonEpisode} />
+                <Skeleton style={styles.skeletonSubtitle} />
+              </View>
+              <Skeleton style={[styles.episodeChevron, styles.skeletonChevron]} />
+            </Card>
+          ))}
+        </View>
+      ))}
     </View>
   );
 }
@@ -260,10 +290,17 @@ const styles = StyleSheet.create({
   day: { width: DAY_WIDTH, minHeight: 80, paddingVertical: Spacing.two, gap: Spacing.one, alignItems: 'center', justifyContent: 'center', borderRadius: Spacing.three, borderWidth: 1 },
   dot: { width: 4, height: 4, borderRadius: 2 },
   dateGroup: { gap: Spacing.two },
-  dateHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, paddingVertical: Spacing.two },
+  dateHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.one, paddingVertical: Spacing.two },
+  dateHeaderText: { flex: 1 },
   episodeCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: 0, overflow: 'hidden' },
   episodeImage: { width: 100, height: 112 },
   episodeInfo: { flex: 1, gap: Spacing.one, paddingVertical: Spacing.two },
   episodeChevron: { marginRight: Spacing.two },
+  skeletonDate: { width: '45%', height: 18, borderRadius: Spacing.one },
+  skeletonCount: { width: 64, height: 12, borderRadius: Spacing.one },
+  skeletonTitle: { width: '90%', height: 18, borderRadius: Spacing.one },
+  skeletonEpisode: { width: '75%', height: 12, borderRadius: Spacing.one },
+  skeletonSubtitle: { width: '65%', height: 16, borderRadius: Spacing.one },
+  skeletonChevron: { width: 18, height: 18, borderRadius: Spacing.one },
   pressed: { opacity: 0.75 },
 });

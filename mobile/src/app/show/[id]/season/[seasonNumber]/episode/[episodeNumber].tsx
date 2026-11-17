@@ -18,23 +18,52 @@ import type { TMDBEpisode } from '@/types/api';
 type EpisodeStatus = 'loading' | 'success' | 'error';
 
 function EpisodeDetailSkeleton() {
+  const theme = useTheme();
   return (
-    <>
-      <Skeleton style={{ width: 180, height: 20, borderRadius: Spacing.two, marginBottom: Spacing.md }} />
-      <Skeleton style={styles.skeletonTitle} />
-      <View style={{ flexDirection: 'row', gap: Spacing.lg, marginBottom: Spacing.lg }}>
-        <Skeleton style={{ width: 120, height: 16, borderRadius: Spacing.two }} />
-        <Skeleton style={{ width: 80, height: 16, borderRadius: Spacing.two }} />
+    <View accessible accessibilityLabel="Loading episode details" accessibilityState={{ busy: true }} style={styles.skeletonContainer}>
+      <View style={styles.stillFrameContainer}>
+        <Skeleton style={styles.still} />
+        <LinearGradient
+          colors={['transparent', theme.background]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.stillGradient}
+        />
       </View>
-      <Skeleton style={{ width: '100%', height: 44, borderRadius: Spacing.two, marginBottom: Spacing.lg }} />
-      
-      <Skeleton style={styles.skeletonSectionTitle} />
-      <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
-        <Skeleton style={styles.skeletonLine} />
-        <Skeleton style={styles.skeletonLine} />
-        <Skeleton style={styles.skeletonLineShort} />
+      <View style={styles.episodeHeaderContainer}>
+        <Skeleton style={styles.skeletonTitle} />
+        <Skeleton style={styles.skeletonEpisodeKey} />
+        <View style={styles.metadataRow}>
+          <Skeleton style={styles.skeletonAirDate} />
+          <Skeleton style={styles.skeletonMetaShort} />
+          <Skeleton style={styles.skeletonMetaShort} />
+        </View>
+        <View style={styles.buttonRow}>
+          <Skeleton style={styles.skeletonLogButton} />
+          <Skeleton style={styles.shareButton} />
+        </View>
+        <View style={styles.synopsisSection}>
+          <Skeleton style={[styles.sectionLabel, styles.skeletonSectionTitle]} />
+          <Skeleton style={styles.skeletonLine} />
+          <Skeleton style={styles.skeletonLine} />
+          <Skeleton style={styles.skeletonLineShort} />
+        </View>
+        <View style={styles.castSection}>
+          <Skeleton style={[styles.sectionLabel, styles.skeletonSectionTitle]} />
+          <ScrollView horizontal scrollEnabled={false} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.castCarouselContent}>
+            {[0, 1, 2, 3].map((actor) => (
+              <View key={actor} style={styles.castCarouselItem}>
+                <Skeleton style={styles.castCarouselImage} />
+                <View style={styles.castCarouselInfo}>
+                  <Skeleton style={styles.skeletonCastName} />
+                  <Skeleton style={styles.skeletonCastCharacter} />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       </View>
-    </>
+    </View>
   );
 }
 
@@ -56,6 +85,7 @@ export default function EpisodeDetailScreen() {
   const episodeKey = `${showId}-${selectedSeasonNumber}-${selectedEpisodeNumber}`;
   const hasValidParams = Number.isFinite(showId) && Number.isFinite(selectedSeasonNumber) && Number.isFinite(selectedEpisodeNumber);
   const isCurrentEpisodeLoaded = loadedEpisodeKey === episodeKey;
+  const isEpisodeLoading = hasValidParams && status !== 'error' && !isCurrentEpisodeLoaded;
 
   useEffect(() => {
     if (!hasValidParams) return;
@@ -94,7 +124,9 @@ export default function EpisodeDetailScreen() {
       <ScrollView
         style={[styles.scrollView, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.scrollContent}>
-        {status === 'success' && episode && stillUrl ? (
+        {isEpisodeLoading ? <EpisodeDetailSkeleton /> : null}
+
+        {status === 'success' && isCurrentEpisodeLoaded && episode && stillUrl ? (
           <View style={styles.stillFrameContainer}>
             <Image source={{ uri: stillUrl }} style={styles.still} alt={episode.name} />
             <LinearGradient
@@ -119,8 +151,6 @@ export default function EpisodeDetailScreen() {
         ) : null}
 
         <SafeAreaView style={styles.safeArea}>
-          {hasValidParams && (status === 'loading' || !isCurrentEpisodeLoaded) ? <EpisodeDetailSkeleton /> : null}
-
           {!hasValidParams || status === 'error' ? (
             <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}> 
               <ThemedText type="subtitle">Episode unavailable</ThemedText>
@@ -339,47 +369,24 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     borderWidth: 1,
   },
-  skeletonStillFrame: {
-    alignSelf: 'stretch',
-    aspectRatio: 2 / 1,
-    marginHorizontal: -Spacing.four,
-    overflow: 'hidden',
-    marginBottom: Spacing.lg,
-  },
-  skeletonStill: {
-    width: '100%',
-    height: '100%',
-  },
-  skeletonHeaderCard: {
-    alignSelf: 'stretch',
-    gap: Spacing.two,
-    paddingVertical: Spacing.md,
-  },
-  skeletonMeta: {
-    width: 160,
-    height: 16,
-    borderRadius: Spacing.two,
-  },
+  skeletonContainer: { width: '100%' },
   skeletonTitle: {
     width: '88%',
-    height: 36,
+    height: 34,
     borderRadius: Spacing.two,
-    marginVertical: Spacing.sm,
   },
+  skeletonEpisodeKey: { width: 64, height: 14, borderRadius: Spacing.one },
+  skeletonAirDate: { width: 120, height: 14, borderRadius: Spacing.one },
   skeletonMetaShort: {
-    width: 140,
-    height: 16,
-    borderRadius: Spacing.two,
+    width: 44,
+    height: 14,
+    borderRadius: Spacing.one,
   },
-  skeletonOverviewCard: {
-    alignSelf: 'stretch',
-    gap: Spacing.two,
-    paddingVertical: Spacing.md,
-  },
+  skeletonLogButton: { flex: 1, height: 44, borderRadius: Spacing.two },
   skeletonSectionTitle: {
-    width: 120,
-    height: 24,
-    borderRadius: Spacing.two,
+    width: 80,
+    height: 12,
+    borderRadius: Spacing.one,
   },
   skeletonLine: {
     width: '100%',
@@ -392,6 +399,8 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: Spacing.two,
   },
+  skeletonCastName: { width: '90%', height: 12, borderRadius: Spacing.one },
+  skeletonCastCharacter: { width: '65%', height: 10, borderRadius: Spacing.one },
   episodeNumber: {
     fontSize: 12,
     fontWeight: '600',
