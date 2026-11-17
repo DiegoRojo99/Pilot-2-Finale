@@ -100,7 +100,7 @@ export default function DiscoverScreen() {
   }, [query]);
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeAreaWrapper}>
+    <SafeAreaView edges={['top']} style={[styles.safeAreaWrapper, { backgroundColor: theme.background }]}>
       <ScrollView
         style={[styles.scrollView, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.scrollContent}>
@@ -259,7 +259,6 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   safeAreaWrapper: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
   scrollView: {
     flex: 1,
