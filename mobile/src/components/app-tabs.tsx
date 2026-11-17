@@ -8,7 +8,9 @@ export default function AppTabs() {
   return (
     <NativeTabs
       backgroundColor={colors.surfaceBackground}
-      indicatorColor={colors.accent}
+      disableIndicator
+      iconColor={{ default: colors.textSecondary, selected: colors.accent }}
+      labelVisibilityMode="labeled"
       labelStyle={{ 
         default: { 
           color: colors.textSecondary, 
@@ -16,7 +18,7 @@ export default function AppTabs() {
           fontWeight: '500',
         },
         selected: { 
-          color: colors.text, 
+          color: colors.accent,
           fontSize: 11,
           fontWeight: '600',
         } 
@@ -24,7 +26,7 @@ export default function AppTabs() {
       {APP_TABS.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name} accessibilityLabel={tab.label}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf={tab.sf} md={tab.md} selectedColor={colors.text} />
+          <NativeTabs.Trigger.Icon sf={tab.sf} md={tab.md} />
         </NativeTabs.Trigger>
       ))}
     </NativeTabs>

@@ -58,6 +58,9 @@ React Native does not use browser elements like `div`, `button`, or `input`. The
 
 Expo Router works like the Next.js App Router in spirit: files inside `src/app` define screens and layouts. The root `_layout.tsx` controls the app shell, and the tabs are Up Next, Discover, Calendar, My Shows, and Profile. Stats and Diary are available from Profile.
 
+Android and web share a custom Expo Router tab bar; iOS keeps native tabs. Android uses a compact 52-point minimum tab row plus the device's bottom safe-area inset, while web keeps its existing spacing. Android's back button returns to Up Next before leaving the tabs.
+All tab labels remain visible, and selected icons and labels use the theme accent color without a selection bubble on Android and web.
+
 Calendar includes all tracked show statuses. It shows known upcoming air dates from the local catalog, including today in UTC; missing dates and episodes not yet synced to the catalog are not shown.
 
 Environment variables that need to be available in the mobile JavaScript bundle must start with `EXPO_PUBLIC_`.
