@@ -9,6 +9,7 @@ import { UserShowCard } from '@/components/show/user-show-card';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyShows } from '@/lib/shows';
@@ -73,7 +74,25 @@ function LibraryContent({ mode }: { mode: Mode }) {
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} tintColor={theme.accent} />}>
         {status === 'loading' ? (
-          <Card style={styles.center}><ActivityIndicator color={theme.accent} /><ThemedText>Loading your shows...</ThemedText></Card>
+          mode === 'up-next' ? (
+            <View accessible accessibilityLabel="Loading your shows" accessibilityState={{ busy: true }} style={styles.skeletonList}>
+              {Array.from({ length: 5 }, (_, index) => (
+                <Card key={index} style={styles.skeletonCard}>
+                  <Skeleton style={styles.skeletonPoster} />
+                  <View style={styles.skeletonInfo}>
+                    <Skeleton style={styles.skeletonTitle} />
+                    <Skeleton style={styles.skeletonEpisode} />
+                    <View style={styles.skeletonDetails}>
+                      <Skeleton style={styles.skeletonName} />
+                      <Skeleton style={styles.skeletonAction} />
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          ) : (
+            <Card style={styles.center}><ActivityIndicator color={theme.accent} /><ThemedText>Loading your shows...</ThemedText></Card>
+          )
         ) : status === 'error' ? (
           <Card>
             <ThemedText type="subtitle">Could not load your shows</ThemedText>
@@ -142,6 +161,15 @@ const styles = StyleSheet.create({
   filter: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: Spacing.three, justifyContent: 'center' },
   list: { gap: Spacing.two, paddingBottom: Spacing.lg, flexGrow: 1 },
   center: { alignItems: 'center' },
+  skeletonList: { gap: Spacing.two },
+  skeletonCard: { flexDirection: 'row', alignItems: 'center', padding: 0, borderRadius: Spacing.three, overflow: 'hidden' },
+  skeletonPoster: { width: 68, height: 104 },
+  skeletonInfo: { flex: 1, paddingHorizontal: Spacing.three, gap: Spacing.two },
+  skeletonTitle: { width: '75%', height: 16, borderRadius: Spacing.one },
+  skeletonEpisode: { width: '35%', height: 14, borderRadius: Spacing.one },
+  skeletonDetails: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  skeletonName: { flex: 1, height: 14, borderRadius: Spacing.one },
+  skeletonAction: { width: 32, height: 32, borderRadius: Spacing.three },
   showCard: { flexDirection: 'row', alignItems: 'center', padding: 0, overflow: 'hidden' },
   poster: { width: 68, height: 100 },
   showInfo: { flex: 1, padding: Spacing.three, gap: Spacing.one },
