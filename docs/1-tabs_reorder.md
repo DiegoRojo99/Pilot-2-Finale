@@ -30,10 +30,19 @@ Up Next is about the next episode the user can watch; Calendar is about future a
 ## 1. Navigation and migration
 
 - [x] Define routes and labels for the five tabs in the agreed order, with Up Next as the initial tab.
-- [ ] Update both native and mobile-web tab implementations, including consistent icons, selected states, and accessibility labels.
+- [x] Update both native and mobile-web tab implementations, including consistent icons, selected states, and accessibility labels.
 - [x] Move Stats and Diary out of the tab bar while keeping both reachable; add a clear Profile entry for Stats and an agreed entry for Diary.
-- [ ] Preserve or redirect existing routes and update internal links, including Diary detail/back navigation. Check deep links and navigation history so existing entry points do not lead to broken screens.
-- [ ] Keep authentication gates and sign-in navigation working on the reorganized screens.
+- [x] Preserve canonical Stats and Diary routes, update Diary detail/back navigation, and add a root anchor for direct-link back navigation.
+- [x] Keep authentication gates on reorganized screens, add a gate to Diary entry deep links, and navigate to the existing Profile tab for sign-in.
+- [ ] Verify tap-driven tab/back navigation and history on Android, iOS, and mobile web.
+- [ ] Verify signing in from a gate, returning to the original screen, and signing out interactively.
+
+Phase 1 verification:
+
+- Mobile type-check and targeted lint pass (one pre-existing unused-variable warning in Diary entry details).
+- Web export generates the canonical routes. With mock sessions, signed-out direct links to Up Next, Calendar, My Shows, Stats, Diary, and Diary entry details show their gates; Profile shows sign-in. Signed-in Profile exposes Stats and Diary, and Diary list/detail direct links load.
+- Web tab order, initial Up Next selection, accessible selected state, and tab bounds pass at 320px, 390px, and 1024px widths. Direct Stats and Diary links have a back link to the app root.
+- Interactive navigation remains unverified: the integrated browser reported a hidden page, and the user could not make it visible. No real credentials or account data were used.
 
 ## 2. Up Next
 

@@ -12,8 +12,18 @@ import { getSeasonDetails } from '@/lib/shows';
 import type { EpisodeLog } from '@/types/episode';
 import type { TMDBEpisode } from '@/types/api';
 import { Image } from 'expo-image';
+import { AuthGate } from '@/components/auth/auth-gate';
 
 export default function DiaryEntryDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return (
+    <AuthGate title="Sign in to view this diary entry" description="Your watched episodes and notes are private to your account.">
+      <AuthenticatedDiaryEntry key={id} />
+    </AuthGate>
+  );
+}
+
+function AuthenticatedDiaryEntry() {
   const theme = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -105,7 +115,7 @@ export default function DiaryEntryDetailScreen() {
       });
       
       // Success - go back immediately (no alert needed for success)
-      router.back();
+      router.dismissTo('/diary');
     } catch {
       // Rollback on failure
       setEntry(originalEntry);
@@ -130,7 +140,7 @@ export default function DiaryEntryDetailScreen() {
           setSaving(true);
           try {
             await deleteEpisodeLog(entry.id);
-            router.back();
+            router.dismissTo('/diary');
           } catch (error) {
             setSaving(false);
             Alert.alert('Error', 'Failed to delete entry. Please try again.');
@@ -176,12 +186,12 @@ export default function DiaryEntryDetailScreen() {
 
   function goToPreviousEntry() {
     if (!previousEntry) return;
-    router.push(`/diary/${previousEntry.id}`);
+    router.replace(`/diary/${previousEntry.id}`);
   }
 
   function goToNextEntry() {
     if (!nextEntry) return;
-    router.push(`/diary/${nextEntry.id}`);
+    router.replace(`/diary/${nextEntry.id}`);
   }
 
   return (
@@ -189,7 +199,7 @@ export default function DiaryEntryDetailScreen() {
       <ThemedView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={() => router.dismissTo('/diary')} style={styles.backButton}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Back to Diary" onPress={() => router.dismissTo('/diary')} style={styles.backButton}>
             <ThemedText style={{ fontSize: 20, fontWeight: '600' }}>‹</ThemedText>
             <ThemedText type="subtitle" style={styles.backText}>
               Diary
